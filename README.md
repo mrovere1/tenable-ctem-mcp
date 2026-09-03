@@ -30,8 +30,13 @@ Requer Python 3.12.
 
 ```bash
 uv venv --python 3.12
-uv pip install -e .
+uv pip install .
 ```
+
+> **Não use `-e` (editável) aqui.** Em venv criada pelo `uv`, o `.pth` do install editável do
+> hatchling é descartado pelo `_virtualenv.pth`, que ordena depois dele, e o pacote fica
+> inimportável por `python -m`. Para desenvolver, use `uv run python -m tenable_ctem_mcp.server`,
+> que resolve o projeto sem depender do `.pth`.
 
 ## Credenciais
 
@@ -62,11 +67,14 @@ Ver `docs/troubleshooting.md`.
 
 ```bash
 # desenvolvimento: o Inspector mostra o JSON cru de request e response
-npx @modelcontextprotocol/inspector .venv/bin/python -m tenable_ctem_mcp.server
+npx @modelcontextprotocol/inspector uv run python -m tenable_ctem_mcp.server
 
 # registrar no Claude Code
 claude mcp add tenable-ctem -- /caminho/para/.venv/bin/python -m tenable_ctem_mcp.server
 ```
+
+As chaves vêm do ambiente do **processo do servidor**. Se o cliente não herdar o seu shell, passe-as
+na configuração do cliente — nunca como parâmetro de tool.
 
 ## Tools
 

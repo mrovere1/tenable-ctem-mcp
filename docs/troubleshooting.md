@@ -72,3 +72,17 @@ tenant. A skill declara M4 como lacuna de propósito nesse caso.
 O limite da Tenable é **dinâmico**: a plataforma calcula quantas requisições aceita por minuto
 conforme a carga. A resposta traz `retry-after` em segundos, e o cliente honra esse header. Não há
 número fixo a ajustar. https://developer.tenable.com/docs/rate-limiting
+
+## `ModuleNotFoundError: No module named 'tenable_ctem_mcp'`
+
+Instalação **editável** (`uv pip install -e .`) em venv criada pelo `uv`. O `.pth` que o hatchling
+grava (`_editable_impl_tenable_ctem_mcp.pth`) ordena **antes** do `_virtualenv.pth` do uv, que
+reescreve `sys.path` e o descarta. Sintoma exato: `uv run python -m ...` funciona e
+`.venv/bin/python -m ...` não.
+
+```bash
+uv pip install .          # instalação normal, sem -e
+```
+
+Para desenvolver sem reinstalar a cada edição, lance com `uv run python -m tenable_ctem_mcp.server`.
+Os testes não são afetados: o `pyproject.toml` define `pythonpath = ["src"]` para o pytest.
