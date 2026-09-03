@@ -25,7 +25,7 @@ import json
 from typing import Any
 
 from .. import agora_utc
-from ..client import CACHE, ErroApi, chamar, total_de
+from ..client import CACHE, ErroApi, chamar, paginar, total_de
 
 # Valores possiveis de exposure_classes. ATENCAO: asset_class NAO e
 # exposure_classes. No sandbox existem ativos com asset_class = IDENTITY, mas
@@ -93,9 +93,11 @@ def _scans_com_historico() -> dict[str, Any]:
             "runs": None,
         }
         try:
-            hist = chamar("GET", f"/scans/{sid}/history",
-                          params={"limit": 200, "offset": 0})
-            runs = hist.get("history") or []
+            # Paginado. Sem isso o scan recorrente com muitos runs volta
+            # truncado no tamanho da pagina - contagem errada com aparencia de
+            # certa, que e exatamente o que este projeto proibe. Medido no
+            # sandbox: o scan 13 tem mais de 200 runs.
+            runs = paginar("GET", f"/scans/{sid}/history", campo="history")
             item["runs"] = len(runs)
             item["runs_completed"] = sum(1 for r in runs if r.get("status") == "completed")
         except ErroApi as e:
@@ -109,8 +111,7 @@ def _scans_com_historico() -> dict[str, Any]:
 
 
 def _agentes() -> dict[str, Any]:
-    ags = chamar("GET", "/scanners/null/agents",
-                 params={"limit": 5000, "offset": 0}).get("agents") or []
+    ags = paginar("GET", "/scanners/null/agents", campo="agents")
     ativos = [a for a in ags if str(a.get("status", "")).lower() == "on"]
     return {"total": len(ags), "ativos": len(ativos),
             "por_status": _contar_por(ags, "status")}
