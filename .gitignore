@@ -1,0 +1,25 @@
+# Dado de tenant nunca entra no git, nem em fixture
+*.csv
+*_resumo_*.json
+tenable_mttr_findings_*
+.env
+.env.*
+
+# Segredos
+*.key
+*.pem
+*.p12
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+.ruff_cache/
+
+# macOS
+.DS_Store
