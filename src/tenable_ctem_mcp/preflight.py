@@ -39,7 +39,7 @@ behaviour DIFFERS on four points, all re-executed with a discriminant pair on
      one WORKS (1 -> 17, 30 -> 118, 90 -> 121). `age` was the name the official
      MCP used, and as a non-existent parameter it is silently discarded.
 
-This does NOT invalidate the matrix: it describes the official MCP's path, and
+This does NOT invalidate the matrix: it describes the earlier path, and
 its verdicts hold there. Here, this list holds.
 """
 
@@ -103,7 +103,7 @@ PROOFS = {
     "age_is_not_a_parameter":
         "`age` is not the parameter name in the API - it is `date_range`, and that "
         "one WORKS: 1 -> 17, 30 -> 118, 80 -> 118, 90 -> 121, 365 -> 121. `age` was "
-        "the official MCP's name; as a non-existent parameter it is silently discarded.",
+        "the earlier path's name; as a non-existent parameter it is silently discarded.",
     "filters_string":
         "filters='tag_count >= 1' as free text returned the 30 assets of the corpus, "
         "with no error. The same filter as a JSON array returned 9. Confirmed 2026-09-03.",
@@ -111,7 +111,7 @@ PROOFS = {
         "`exists` with no value answers HTTP 400 with the literal message 'Missing "
         "value in filter'. With value=['true'] it works: exists gives 4,462 and not "
         "exists gives 1,024, summing to the 5,486 of the corpus. Measured on the "
-        "direct API on 2026-09-03; through the official MCP that operator was "
+        "direct API on 2026-09-03; on the earlier path that operator was "
         "unreachable.",
     "relative_date_on_findings":
         "state=FIXED gives 50. With `older than 3650d` it gives 50 and with "

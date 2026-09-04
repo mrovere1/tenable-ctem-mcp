@@ -108,7 +108,7 @@ def test_a_workbenches_boolean_is_rejected(param):
 
 
 def test_age_is_rejected_because_it_does_not_exist_in_the_api():
-    """CORRECTS the matrix. `age` was the official MCP's name; in the API the
+    """CORRECTS the matrix. `age` was the earlier path's name; in the API the
     parameter is `date_range`. A non-existent parameter is silently discarded -
     the worst case, because it looks filtered and returns the corpus."""
     with pytest.raises(DenyListError) as exc:

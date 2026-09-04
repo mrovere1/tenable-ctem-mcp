@@ -16,29 +16,30 @@ the judgement is configurable, and neither can quietly contaminate the other.
 
 ---
 
-## Why it exists
+## Why it is built this way
 
-The assessment was originally built on Tenable's official MCP. Three things did not work:
+Three design decisions carry the whole project, and each came from a problem measured in a real
+tenant rather than anticipated on paper.
 
-1. **Cost.** ~40 calls for the indicators, and ~15,000 tokens just to fetch the detail of twenty
-   plugins — of which the skill uses five fields.
-2. **MTTR was unreachable.** `last_fixed`, `time_taken_to_fix` and `severity_modification_type` do
-   not exist in the Exposure Management API. Getting them required running a separate Python script
-   outside the flow, by hand, and feeding a CSV back in.
-3. **The aggregation happened on the client, and that produced a wrong number.** The raw runs of a
-   recurring scan gave a median cadence of 1.42 days. Collapsed into distinct assessment days: 21
-   days. Two maturity stages apart, with no signal that anything was wrong.
+**1. The aggregation happens on the server.** The client asks for an indicator and receives a
+finished number with the literal filter that produced it. This is not only about cost — it prevents
+a class of error. The raw runs of a recurring scan gave a median assessment cadence of 1.42 days;
+collapsed into distinct assessment days, 21. **Two maturity stages apart, with nothing in the output
+signalling that anything was wrong.** Aggregation logic that lives on the client gets re-implemented,
+slightly differently, every time someone touches it. Here it lives in one place and has a test.
 
-This server moves the aggregation to the server, brings MTTR inside a tool, and returns evidence
-alongside every number.
+**2. Only the fields that are used are returned.** The full detail of a single plugin is ~8,200
+characters across 97 attributes; the assessment uses five of them. Returning five fields instead of
+97 is what makes a **census** of every critical plugin affordable — and a census removes the
+confidence interval, the weighting base and the allocation bias that a sample forces you to manage
+and declare.
 
-| | Official MCP | This server |
-|---|---|---|
-| Calls for the 19 indicators | ~40 | **~7** |
-| Detail of 20 plugins | 20 calls, ~31,900 tokens | 1 call, ~900 tokens |
-| Plugin coverage | a sample of 20, 37-point confidence interval | **a census of all 121 critical**, no interval needed |
-| MTTR | impossible without an external script | 1 tool |
-| Assessment cadence | 12 raw runs, collapsed on the client | collapsed on the server: **21 d**, not 1.42 |
+**3. Time-to-fix is inside a tool.** The fields that make MTTR computable are not part of the
+inventory API this assessment otherwise reads; they live behind an export endpoint with polling and
+chunked download. Wrapping that in a tool is what keeps the assessment to a single execution path,
+instead of a script run by hand on the side with a CSV carried back in.
+
+The result is the 19 indicators in roughly seven tool calls, with evidence attached to every number.
 
 ---
 

@@ -3,7 +3,7 @@
 A shared reference file. A copy lives inside every `.skill` package that needs it, so each skill
 works on its own once downloaded from the Exchange.
 
-Originally validated through Tenable's official MCP on 2026-09-01. Re-executed against the direct
+Originally validated through an earlier collection path on 2026-09-01. Re-executed against the direct
 REST API on 2026-09-03, which is how the `tenable-ctem-mcp` server talks.
 
 > **Updated 2026-09-04, and on two points the verdict CHANGED.**
@@ -13,9 +13,9 @@ REST API on 2026-09-03, which is how the `tenable-ctem-mcp` server talks.
 > leaves. The manual procedure in section 2 remains the *definition* of what it does — read it to
 > understand, not to run by hand.
 >
-> **2. Four verdicts in this file hold for the official MCP and not for the direct REST API:**
+> **2. Four verdicts in this file hold for that earlier path and not for the direct REST API:**
 >
-> | Here (official MCP) | Through the direct API |
+> | Here (earlier path) | Through the direct API |
 > |---|---|
 > | a date filter on findings is ignored, on every operator | only the **relative** ones (`within last`, `older than`, `newer than`); `<` and `>=` against an absolute date **work** |
 > | `exists` does not work on `finding_vpr_score` | it **works** — the HTTP 400 came from an empty `value` |

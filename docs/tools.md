@@ -107,7 +107,7 @@ server rejects before the request leaves, with rule and proof) and `summary`.
 
 ### The four corrections this preflight found
 
-The trust matrix was measured through Tenable's **official MCP**. This server talks straight to the
+The trust matrix was measured through the **earlier collection path**. This server talks straight to the
 REST API, and on four points the behaviour differs. The matrix is not wrong — it describes its own
 path.
 
@@ -261,7 +261,7 @@ golden test.
 
 Measured on the sandbox's 121 critical plugins: the n=30 sample gave V1 62.7% and the census gave
 61.2% — the sample was right, but you only know that by HAVING the census. Cost: 64 s and ~5,400
-tokens, still three times less than the ~15,000 the official MCP spent on twenty plugins.
+tokens, a fraction of what the same twenty plugins cost when every attribute travels.
 
 Under a census, `weight_base` comes back as `not_applicable` and `ci95_whole_sample` as `null` —
 rather than a label suggesting a method choice was made where none was.

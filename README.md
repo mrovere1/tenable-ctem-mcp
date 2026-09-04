@@ -17,17 +17,18 @@ A local server that moves the aggregation to the server and returns finished num
 indicator comes with `value`, `n`, `literal_filter`, `collected_at_utc` and `preflight_verdict`. A
 query that failed becomes a **declared gap with a cause** — a silent partial number is forbidden.
 
-| | Through the official MCP | With this server |
-|---|---|---|
-| Calls for the 19 indicators | ~40 | ~7 (**4 for the 15 from S to V**, measured) |
-| Detail of 20 plugins | 20 calls, ~31,900 tokens | 1 call, ~900 tokens (**−97.2%**, measured) |
-| Plugin coverage | a sample of 20, with a 37-point CI | **a census of all 121 critical**, ~5,400 tokens, no CI |
-| MTTR | impossible; requires an external Python script | 1 tool |
-| Cadence (M1) | 12 raw runs, collapsed on the client | already collapsed: median **21 d**, not 1.42 |
+| Property | |
+|---|---|
+| Calls for the 19 indicators | **~7**, one per stage plus discovery and preflight |
+| Plugin detail | five fields per plugin, ~900 tokens for twenty |
+| Plugin coverage | a **census** of every critical plugin, so no confidence interval is needed |
+| MTTR | inside a tool, with polling and resumption |
+| Assessment cadence | runs collapsed into distinct days **on the server**: 21 d, not 1.42 |
 
 ## What it is not
 
-A clone of Tenable's official MCP, a generic MCP, a hosted server, or a Tenable product.
+A generic MCP, a hosted server, or a Tenable product. It is purpose-built for one assessment and
+deliberately has no tools beyond it.
 
 ## Installation
 

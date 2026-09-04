@@ -3,8 +3,8 @@
 Every line here was measured against the laboratory tenant, not presumed.
 Source: `_docs/matriz-confianca-filtros-mcp.md`.
 
-> **One path, one set of verdicts.** The source matrix was measured **through Tenable's official
-> MCP**; this server talks **straight to the REST API**. Where the two disagree, the direct-API
+> **One path, one set of verdicts.** The source matrix was measured **through an earlier
+> collection path**; this server talks **straight to the REST API**. Where the two disagree, the direct-API
 > reading below is the one that holds here, and `ctem_preflight()` re-runs everything against the
 > tenant of the moment, which is the final authority. Each section states which path it describes.
 
@@ -50,7 +50,7 @@ The `>= 0.1` path is valid on both paths and monotonic: 0.1 → 4,462 · 7.0 →
 
 ## `age` is not age, and on the direct API it is not a parameter
 
-Through the official MCP, `age` filters by **recency of last observation**, not by the finding's
+Through the earlier collection path, `age` filters by **recency of last observation**, not by the finding's
 age. The sandbox's last scan was 84 days before collection, and the cutoff fell between `age=80`
 (zero) and `age=90` (20) — on the date of the last scan, not on the discovery date, which ranges
 from 2018 to 2026.
@@ -96,13 +96,13 @@ based on a read taken right after a write.
 
 ---
 
-## What the direct API reaches and the official MCP did not
+## What the direct API reaches and the earlier path did not
 
 Measured on 2026-09-03, while porting the queries to the REST API. **None of these items changes an
 indicator formula on its own** — each change is a skill decision, and it is listed here to be
 decided, not applied in silence.
 
-| Item | Status through the official MCP | Status through the direct API |
+| Item | Status on the earlier path | Status through the direct API |
 |---|---|---|
 | `patch_publication_date` | "not reachable" | **available** in `GET /plugins/plugin/{id}` |
 
@@ -176,7 +176,7 @@ the critical backlog number, because it is not reproducible a week later.
 
 ## Summary of the four verdicts that change on the direct API
 
-`_docs/matriz-confianca-filtros-mcp.md` was measured **through the official MCP**. This server talks
+`_docs/matriz-confianca-filtros-mcp.md` was measured **through the earlier collection path**. This server talks
 straight to the REST API, and there four verdicts are different. **The matrix is not wrong** — it
 describes its own path. Running `ctem_preflight()` re-runs everything and is the source for this one.
 

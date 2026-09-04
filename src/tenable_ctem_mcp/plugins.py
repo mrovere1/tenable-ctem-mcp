@@ -253,8 +253,8 @@ def weighted_rate(sample: list[dict], details: dict[int, dict],
 # Above this number of plugins the census gets too expensive and the sample
 # comes back. The number comes from measurement: 121 plugins take 64 s and
 # ~5,400 output tokens (528 ms per plugin, sequential). 300 keeps the worst case
-# at ~2.6 min and ~13,000 tokens - still below the ~15,000 the official MCP
-# spent on TWENTY plugins. Parallelising the calls is the lever for raising this.
+# at ~2.6 min and ~13,000 tokens - still below what TWENTY plugins cost when
+# every attribute travels. Parallelising the calls is the lever for raising this.
 CENSUS_LIMIT = 300
 
 

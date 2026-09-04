@@ -5,10 +5,22 @@ build-backend = "hatchling.build"
 [project]
 name = "tenable-ctem-mcp"
 version = "0.1.0"
-description = "Servidor MCP local (stdio) com os indicadores do assessment de CTEM da Tenable ja agregados, mais MTTR"
+description = "Local (stdio) MCP server delivering the 19 indicators of a CTEM maturity assessment already aggregated, plus MTTR"
 readme = "README.md"
 requires-python = ">=3.12,<3.13"
 license = { file = "LICENSE" }
+keywords = ["mcp", "tenable", "ctem", "exposure-management", "security", "assessment"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Information Technology",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Security",
+]
+
+[project.urls]
+Homepage = "https://github.com/OWNER/tenable-ctem-mcp"
+Issues = "https://github.com/OWNER/tenable-ctem-mcp/issues"
 
 # Dependencia unica: o SDK oficial de MCP.
 # O cliente HTTP NAO tem dependencia externa - urllib da stdlib, portado do

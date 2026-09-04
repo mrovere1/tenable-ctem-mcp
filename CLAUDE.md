@@ -36,8 +36,8 @@ printed exactly as it exists there, in whatever language it was created.
 **It is:** a local, stdio server that moves the aggregation to the server and delivers finished
 numbers with `value`, `n`, `literal_filter`, `collected_at_utc`, `preflight_verdict`.
 
-**It is not:** a clone of Tenable's official MCP, a generic MCP, a hosted server, or a Tenable
-product.
+**It is not:** a generic MCP, a hosted server, or a Tenable product. Purpose-built for one
+assessment, with no tools beyond it.
 
 The performance gain comes from cutting the calls from ~40 to ~7 and from ~15,000 to ~1,500 tokens
 for the 19 indicators plus 20 plugins. **Any change that undoes that gain is wrong.**
@@ -299,4 +299,4 @@ because they are what a regression would break.
 | `_ferramentas/mttr-export/tenable_mttr_export.py` | The basis of `mttr.py`. Version 1.1.0 |
 | `_docs/validacao-dados-coleta-mttr-2026-09-03.md` | MTTR numbers for the golden tests |
 | `_docs/execucao-maturidade-sandbox-2026-09-03.md` | The 19 indicators' numbers for the golden tests |
-| `_docs/matriz-confianca-filtros-mcp.md` | Deny-list, measured through the official MCP |
+| `_docs/matriz-confianca-filtros-mcp.md` | Deny-list, measured through the earlier collection path |

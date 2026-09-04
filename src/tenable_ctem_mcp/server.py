@@ -151,8 +151,8 @@ def ctem_discovery(indicators: list[str] | None = None,
     they fit within `census_limit`, and falls back to a stratified sample above
     that; "census" and "sample" force the choice. The census eliminates the
     confidence interval, the weighting base and the allocation bias - in the
-    sandbox, 121 plugins cost 64 s and ~5,400 tokens, still three times less
-    than the ~15,000 the official MCP spent on TWENTY plugins.
+    sandbox, 121 plugins cost 64 s and ~5,400 tokens, a fraction of what the same
+    twenty plugins cost when every attribute travels.
 
     `indicators=["D1","D3"]` avoids the plugin calls D4 would require.
     """

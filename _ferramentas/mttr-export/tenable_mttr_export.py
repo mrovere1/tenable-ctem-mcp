@@ -1,6 +1,21 @@
 #!/usr/bin/env python3
 r"""
-tenable_mttr_export.py — coletor de MTTR real da Tenable Vulnerability Management.
+tenable_mttr_export.py - standalone MTTR collector.
+
+NOT AN EXECUTION PATH OF THIS PROJECT. It is kept here for two reasons only:
+it is the ORIGIN OF THE CODE that became src/tenable_ctem_mcp/mttr.py, and it
+generated the recorded fixtures the golden tests run against.
+
+The assessment does not call it. `ctem_mobilization` calls `mttr_collect`
+internally, and there is deliberately one execution path, not two. Nothing needs
+to be run by hand and no CSV is carried anywhere.
+
+The original header follows, unchanged, because it documents the reasoning that
+produced the port.
+
+---
+
+tenable_mttr_export.py - coletor de MTTR real da Tenable Vulnerability Management.
 
 Por que este script existe
 --------------------------

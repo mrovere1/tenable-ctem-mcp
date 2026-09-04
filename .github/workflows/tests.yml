@@ -1,0 +1,36 @@
+name: tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  pytest:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Set up Python 3.12
+        run: uv venv --python 3.12
+
+      # Not editable, deliberately: in a uv venv, hatchling's editable .pth is
+      # discarded by _virtualenv.pth. See docs/troubleshooting.md.
+      - name: Install
+        run: |
+          uv pip install .
+          uv pip install pytest
+
+      # The suite runs with NO tenant: the fixtures are recorded, sanitised
+      # responses. No credential is needed, and none is available here.
+      - name: Run tests
+        run: uv run pytest -q
+
+      # Fails if any fixture looks like it carries a key, a real IP, a hostname
+      # or an opaque tenant identifier. It is the guard that matters most on a
+      # public repository, so it also runs on its own and visibly.
+      - name: Fixture safety
+        run: uv run pytest tests/test_fixture_safety.py -v
