@@ -14,7 +14,7 @@ Rule: an untested filter is an untrusted filter. The deny-list rejects BEFORE
 the request leaves - an explicit error, never a count.
 
 A CAVEAT THAT PROVED ITSELF: the verdicts in the matrix were measured through
-Tenable's OFFICIAL MCP. This server talks straight to the REST API, and the
+an EARLIER COLLECTION PATH. This server talks straight to the REST API, and the
 behaviour DIFFERS on four points, all re-executed with a discriminant pair on
 2026-09-03. No verdict was inherited on trust, and that was the right call:
 
@@ -419,8 +419,8 @@ def run_preflight(workbenches_severity: str = "critical") -> dict[str, Any]:
             "undetermined": sum(1 for r in rows
                                 if r["verdict"] in ("undetermined", "suspect")),
         },
-        "note": ("The trust-matrix verdicts were measured through the OFFICIAL "
-                 "MCP. This table is measured against the direct REST API, and "
+        "note": ("The trust-matrix verdicts were measured through an EARLIER collection "
+                 "path. This table is measured against the direct REST API, and "
                  "differs from it on four points - see the header of preflight.py. "
                  "An untested filter is an untrusted filter."),
     }
