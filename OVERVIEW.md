@@ -97,7 +97,7 @@ without anyone writing them anywhere.
 
 ### 4. The skill
 
-Install `_skills/tenable-ctem-maturity-assessment/` — the directory or the `.skill.zip`. The skill
+Install `the repository root (SKILL.md + references/)` — the directory or the `.skill.zip`. The skill
 carries its own reference files and works standalone once installed.
 
 ---

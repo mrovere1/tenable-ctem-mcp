@@ -50,7 +50,7 @@ ctem_diagnostics()
 
 ## Running the skill end to end
 
-1. Install the skill from `_skills/tenable-ctem-maturity-assessment/`.
+1. Install the skill from `the repository root (SKILL.md + references/)`.
 2. Ask for the CTEM maturity assessment.
 3. Check against this list:
 

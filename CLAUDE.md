@@ -295,7 +295,7 @@ because they are what a regression would break.
 |---|---|
 | `_docs/plano-mcp-ctem.md` | Full briefing: scope, tool contract, milestones |
 | `_docs/auditoria-mcp-ctem-2026-09-04.md` | External audit and what was done about each finding |
-| `_skills/tenable-ctem-maturity-assessment/` | The MCP's consumer; carries the formulas, cutoffs and thresholds |
+| `the repository root (SKILL.md + references/)` | The MCP's consumer; carries the formulas, cutoffs and thresholds |
 | `_ferramentas/mttr-export/tenable_mttr_export.py` | The basis of `mttr.py`. Version 1.1.0 |
 | `_docs/validacao-dados-coleta-mttr-2026-09-03.md` | MTTR numbers for the golden tests |
 | `_docs/execucao-maturidade-sandbox-2026-09-03.md` | The 19 indicators' numbers for the golden tests |

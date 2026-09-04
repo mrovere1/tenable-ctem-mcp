@@ -7,6 +7,15 @@ aggregated, plus MTTR — which the Exposure Management API does not reach direc
 > Validated in a laboratory. Test it in your own environment before using it in production.
 > GitHub issues are the channel, with no promised SLA.
 
+**This repository holds two things that ship together:**
+
+| | Where | What it is |
+|---|---|---|
+| **MCP server** | `src/tenable_ctem_mcp/` | Talks to the tenant and returns finished, aggregated numbers |
+| **Claude skill** | [`SKILL.md`](SKILL.md) + [`references/`](references/) at the root | Runs the assessment, applies the thresholds, produces the report — see [`SKILL-README.md`](SKILL-README.md) |
+
+The server measures; the skill judges. The skill cannot run without the server.
+
 > **New here?** [`OVERVIEW.md`](OVERVIEW.md) is the complete description: what the server and the
 > skill are, how to install and run them, the points of attention before showing a report to a
 > customer, the 13 tools and the 19 indicators. This README is the quick start.
