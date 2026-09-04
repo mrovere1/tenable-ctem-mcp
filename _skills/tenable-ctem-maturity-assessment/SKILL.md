@@ -1,597 +1,614 @@
 ---
 name: tenable-ctem-maturity-assessment
 description: >
-  Mede indicadores objetivos do tenant Tenable One, classifica o cliente nos cinco estágios do
-  Exposure Management Maturity Model da Tenable — Ad Hoc, Defined, Standardized, Advanced,
-  Optimized — e entrega plano de evolução de três quarters. Use SEMPRE que o usuário pedir:
-  maturidade CTEM, CTEM maturity, exposure management maturity, maturity assessment, avaliação de
-  maturidade, em que estágio meu cliente está, diagnóstico CTEM, assessment de exposição, nível de
-  maturidade em gestão de exposição, roadmap de maturidade, plano de evolução CTEM, gap analysis de
-  CTEM, os cinco estágios do CTEM, scoping discovery prioritization validation mobilization. Use
-  também em: madurez CTEM, evaluación de madurez, en qué etapa está, hoja de ruta de madurez.
-  Avalia 19 indicadores nos cinco estágios, mapeia cada um aos oito critérios oficiais da Tenable,
-  entrega estágio efetivo e estágio médio lado a lado e nomeia o estágio que limita o conjunto.
-  Somente leitura.
+  Measures objective indicators of a Tenable One tenant, classifies the customer across the five
+  stages of Tenable's Exposure Management Maturity Model — Ad Hoc, Defined, Standardized, Advanced,
+  Optimized — and delivers a three-quarter improvement plan. Use WHENEVER the user asks for: CTEM
+  maturity, exposure management maturity, maturity assessment, what stage is my customer at, CTEM
+  diagnosis, exposure assessment, exposure management maturity level, maturity roadmap, CTEM
+  improvement plan, CTEM gap analysis, the five CTEM stages, scoping discovery prioritization
+  validation mobilization. Use also for: maturidade CTEM, avaliação de maturidade, em que estágio
+  meu cliente está, diagnóstico CTEM, roadmap de maturidade; madurez CTEM, evaluación de madurez,
+  en qué etapa está, hoja de ruta de madurez. Evaluates 19 indicators across the five stages, maps
+  each to Tenable's eight official criteria, delivers the effective stage and the average stage side
+  by side, and names the stage that limits the whole. Read only.
 ---
 
 # Skill: Tenable CTEM Maturity Assessment
 
-Mede o tenant, classifica nos cinco estágios oficiais do Exposure Management Maturity Model da
-Tenable e entrega o caminho para o estágio seguinte.
+Measures the tenant, classifies it across the five official stages of Tenable's Exposure Management
+Maturity Model, and delivers the path to the next stage.
 
-Audiência: CISOs, Security Managers, e Channel SEs conduzindo assessment em cliente ou parceiro.
-Modo: **somente leitura.** Nenhuma ferramenta de escrita é chamada.
+Audience: CISOs, Security Managers, and Channel SEs running an assessment at a customer or partner.
+Mode: **read only.** No write tool is ever called.
 
-**As duas perguntas que ela responde:**
-1. Em que estágio o cliente opera de fato — e qual estágio está segurando os outros?
-2. O que precisa mudar, em ordem de esforço e impacto, para subir de patamar?
+**The two questions it answers:**
+1. Which stage does the customer actually operate at — and which stage is holding the others back?
+2. What has to change, in order of effort and impact, to move up?
 
 ---
 
-## Leitura obrigatória antes de começar
+## Required reading before starting
 
 ```
 view references/mcp-preflight.md
-view references/indicadores-maturidade.md
+view references/maturity-indicators.md
 ```
 
-O primeiro traz o pré-voo de filtro, a armadilha de propagação de índice e a amostragem
-estratificada. **O MCP aceita filtros que não aplica e não retorna erro** — sem o pré-voo esta skill
-publica o total do corpus como se fosse resultado filtrado.
+The first carries the filter preflight, the index-propagation trap and the stratified sampling.
+**The API accepts filters it does not apply and returns no error** — without the preflight this
+skill publishes the corpus total as if it were a filtered result.
 
-O segundo traz os 19 indicadores com fórmula, chamada MCP, cortes e origem de cada limiar.
+The second carries the 19 indicators with their formula, MCP call, cutoffs and the origin of each
+threshold.
 
 ---
 
-## O fato que determina o desenho desta skill
+## Report language — the first thing decided
 
-**Nenhum material oficial da Tenable publica limiar numérico por estágio de maturidade.** O modelo
-é qualitativo; a avaliação oficial usa oito critérios declaratórios sem faixas de score divulgadas.
+The report, the operator dialogue and the delivered dashboard all follow **one language, chosen at
+Step 0**: `EN`, `PT-BR` or `ES`. English is the default.
 
-Por isso a skill separa três camadas, e o relatório também:
+The choice governs three things at once, and this is deliberate: the questions the skill asks the
+operator, the prose of the final report, and the dashboard's initial language. A consultant working
+in Spanish should not have to read English questions to produce a Spanish report.
 
-| Camada | O que é | Configurável |
+What the language choice does **not** change: the tenant's own data. Tag category names, tag values,
+scan names and plugin names are printed exactly as they exist in the tenant, in whatever language
+they were created. Translating a customer's tag called `Criticidade` into `Criticality` in the
+report would break the operator's ability to find it in the console.
+
+The dashboard still ships with all three languages available through the header selector — that
+switch is for the reader who receives the file, not for the operator running the assessment.
+
+---
+
+## The fact that determines this skill's design
+
+**No official Tenable material publishes a numeric threshold per maturity stage.** The model is
+qualitative; the official assessment uses eight declarative criteria with no published score bands.
+
+That is why the skill separates three layers, and so does the report:
+
+| Layer | What it is | Configurable |
 |---|---|---|
-| **1 — Oficial** | Os cinco estágios, os oito critérios, as faixas de CES, AES, ACR e VPR | Não |
-| **2 — Critério da skill** | Os cortes numéricos de cada indicador | Sim, no bloco `maturity_config` |
-| **3 — Sempre visível** | Valor bruto, N, filtro literal, limiar aplicado e sua origem | Sempre presente |
+| **1 — Official** | The five stages, the eight criteria, the CES, AES, ACR and VPR bands | No |
+| **2 — Skill criterion** | The numeric cutoffs of each indicator | Yes, in the `maturity_config` block |
+| **3 — Always visible** | Raw value, N, literal filter, applied threshold and its origin | Always present |
 
-Cravar um percentual como se fosse critério Tenable seria imprecisão. Cada corte aparece no
-relatório rotulado com sua origem: `oficial Tenable`, `externo citado (CISA BOD 26-04)`,
-`default da skill` ou `sobrescrito pelo operador`.
+Nailing a percentage down as if it were a Tenable criterion would be inaccurate. Every cutoff appears
+in the report labelled with its origin: `Tenable official`, `cited external (CISA BOD 26-04)`,
+`skill default` or `operator override`.
 
 ---
 
-> **Operador de primeira execução:** o passo a passo completo — pré-requisitos, variáveis de
-> ambiente, comando do coletor e checklist de entrega ao cliente — está em
-> `references/roteiro-de-execucao.md`, nos três idiomas.
+> **First-run operator:** the complete walkthrough — prerequisites, environment variables and the
+> customer delivery checklist — is in `references/execution-guide.md`, in all three languages.
 
-## Passo 0 — Descoberta e confirmação (OBRIGATÓRIO)
+## Step 0 — Discovery and confirmation (MANDATORY)
 
-**Princípio: descobrir, apresentar, confirmar. Nunca adivinhar por palavra-chave e nunca oferecer
-campo em branco.** O operador não deve ter que lembrar o nome exato de uma categoria de tag; a skill
-consulta o tenant, mostra o que existe e pede o mapeamento escolhendo entre os valores reais.
+**Principle: discover, present, confirm. Never guess from a keyword and never offer a blank field.**
+The operator should not have to remember the exact name of a tag category; the skill queries the
+tenant, shows what exists, and asks for the mapping by choosing among the real values.
 
-A versão anterior deste passo tentava adivinhar a categoria de criticidade e de owner por lista de
-palavras-chave. Isso falha em qualquer cliente que use nomenclatura própria — `Tier`, `BIA`,
-`Classificação`, `P1/P2/P3`, `Gold/Silver/Bronze`, `Squad`, `CI Owner`, ou o nome em outro idioma.
+The previous version of this step tried to guess the criticality and owner categories from a keyword
+list. That fails at any customer using its own nomenclature — `Tier`, `BIA`, `Classificação`,
+`P1/P2/P3`, `Gold/Silver/Bronze`, `Squad`, `CI Owner`, or the name in another language.
 
-### Fase A — Descoberta silenciosa, sem perguntar nada
+### Phase A — Silent discovery, asking nothing
 
-Executar antes de qualquer pergunta, e guardar o resultado:
+Run this before any question, and keep the result:
 
 ```
 ctem_discover_tenant()
 ```
 
-**Uma chamada.** Devolve categorias e valores reais de tag, total de ativos, contagem por
-`asset_class`, `exposure_classes` presentes com o total de cada, scans com histórico e quantas
-execuções cada um tem, e agentes por status. Substitui as ~10 chamadas que esta fase exigia.
+**One call.** It returns the real tag categories and values, total assets, counts by `asset_class`,
+the `exposure_classes` present with the total of each, scans with history and how many runs each
+one has, and agents by status. It replaces the ~10 calls this phase used to require.
 
-O resultado fica em cache por TTL curto no servidor, então reconsultar durante a mesma execução não
-custa chamada nova.
+The result is cached with a short TTL on the server, so re-consulting during the same run costs no
+new call.
 
-**Atenção que o retrato já traz explícita:** `asset_class` não é `exposure_classes`. Um tenant pode
-ter ativos com `asset_class = IDENTITY` e `exposure_classes = IDENTITY` em zero — os ativos de
-identidade estão no inventário sem carregar achados de Identity Exposure. D2 usa
-`exposure_classes`.
+**A caution the snapshot already carries:** `asset_class` is not `exposure_classes`. A tenant may
+have assets with `asset_class = IDENTITY` and `exposure_classes = IDENTITY` at zero — the identity
+assets are in the inventory without carrying Identity Exposure findings. D2 uses `exposure_classes`.
 
-### Fase B — Confirmação, com os valores reais como opções
+### Phase B — Confirmation, with the real values as options
 
-Usar `ask_user_input_v0`. **Toda pergunta de mapeamento oferece as opções encontradas na Fase A,
-mais "nenhuma delas".** Nunca texto livre onde uma lista serve.
+Use `ask_user_input_v0`. **Every mapping question offers the options found in Phase A, plus "none of
+them".** Never free text where a list will do.
 
-### Fase B.1 — A tela de confirmação, antes de qualquer pergunta
+### Phase B.1 — The confirmation screen, before any question
 
-**Não abrir com 14 perguntas.** Depois da Fase A, montar **uma tabela de proposta** com os 14
-campos preenchidos com o melhor palpite da descoberta, mais a razão de cada palpite, e fazer
-**uma** pergunta:
+**Do not open with 14 questions.** After Phase A, build **one proposal table** with the 14 fields
+filled in with the best guess from discovery, plus the reason for each guess, and ask **one**
+question:
 
 ```
-message: (PT) "Descobri o tenant e montei este mapeamento. Confira antes de eu medir —
-              qualquer linha pode ser trocada."
+message: "I discovered the tenant and assembled this mapping. Check it before I measure —
+          any line can be changed."
 
-<tabela: Campo | Valor proposto | Como cheguei nele | Alternativas encontradas>
+<table: Field | Proposed value | How I got there | Alternatives found>
 
 questions:
-  - question: (PT) "Seguir com este mapeamento?"
+  - question: "Proceed with this mapping?"
     type: single_select
     options:
-      - "Seguir assim"
-      - "Ajustar alguns campos — vou dizer quais"
-      - "Rever campo por campo"
+      - "Proceed as is"
+      - "Adjust a few fields — I will say which"
+      - "Review field by field"
 ```
 
-- **"Seguir assim"** → medir. É o caminho esperado quando a descoberta acertou.
-- **"Ajustar alguns campos"** → perguntar **só** os campos que o operador nomeou, com as opções
-  reais da Fase A.
-- **"Rever campo por campo"** → a sequência completa de perguntas abaixo.
+- **"Proceed as is"** → measure. It is the expected path when discovery got it right.
+- **"Adjust a few fields"** → ask **only** the fields the operator named, with the real options from
+  Phase A.
+- **"Review field by field"** → the complete question sequence below.
 
-**Regras da proposta.** Cada linha traz *como* a skill chegou ao valor, e as alternativas que
-existem no tenant — sem isso o operador não tem como julgar. Campos que a skill **não pode
-propor** ficam explicitamente vazios na tabela e são perguntados de todo jeito, porque palpite
-neles é chute: os **valores de maior criticidade** (a skill não conhece a ordem ordinal de `Alta`,
-`Tier 1`, `Gold` ou `Classe A`), o **critério de priorização do cliente**, e o **idioma** do
-relatório.
+**Rules of the proposal.** Each row carries *how* the skill arrived at the value, and the
+alternatives that exist in the tenant — without that the operator has no way to judge. Fields the
+skill **cannot propose** are left explicitly empty in the table and are asked anyway, because a
+guess there is a coin toss: the **highest-criticality values** (the skill does not know the ordinal
+order of `Alta`, `Tier 1`, `Gold` or `Class A`), the **customer's prioritisation criterion**, and
+the **report language**.
 
-**Uma categoria pode ser o que a skill não esperava, e o caminho é oferecer, não adivinhar.** Se o
-tenant tem `Location` com valores `Site 1` e `Site 2`, a proposta oferece `Location` como candidata
-a **localidade** — não a ambiente. Localidade é *onde* o ativo está; ambiente é *produção contra
-homologação*. Se naquele cliente os sites **forem** os ambientes, o operador reaponta na
-confirmação e a skill passa a medir só produção. O inverso também vale: uma categoria chamada
-`Ambiente` com valores `Matriz` e `Filial` é localidade, não ambiente. A skill nunca decide isso
-pelo nome da categoria — ela propõe pelo nome e aceita a correção.
+**A category may be something the skill did not expect, and the way through is to offer, not to
+guess.** If the tenant has `Location` with values `Site 1` and `Site 2`, the proposal offers
+`Location` as a candidate for **locality** — not for environment. Locality is *where* the asset is;
+environment is *production versus staging*. If at that customer the sites **are** the environments,
+the operator repoints it at confirmation. The reverse holds too: a category called `Environment`
+with values `HQ` and `Branch` is locality, not environment. The skill never decides this from the
+category name — it proposes from the name and accepts the correction.
 
-**A tabela de proposta confirmada vai inteira para a aba de Metodologia do relatório**, com a
-coluna "como cheguei nele" preservada. É o que torna a reavaliação comparável e o que permite a um
-segundo consultor auditar o recorte.
+**The confirmed proposal table goes whole into the report's Methodology tab**, with the "how I got
+there" column preserved. It is what makes reassessment comparable and what lets a second consultant
+audit the scope.
 
-### Fase B.2 — As perguntas, quando o operador quer revisar
+### Phase B.2 — The questions, when the operator wants to review
 
 ```
-Pergunta 1 — Idioma do relatório?
-  opções: ["Português (PT-BR)", "English (EN)", "Spanish (ESP)"]
+Question 1 — Report language?
+  options: ["English (EN)", "Português (PT-BR)", "Español (ES)"]
+  → governs the report, the dashboard's initial language AND the remaining questions of this
+    dialogue. Default: EN.
 
-Pergunta 2 — Qual categoria de tag representa a CRITICIDADE do ativo?
-  tipo: single_select
-  opções: [<todas as categorias encontradas na Fase A>, "Nenhuma — o cliente não tem"]
-  → obrigatória. S2 e P1 dependem dela.
+Question 2 — Which tag category represents the asset's CRITICALITY?
+  type: single_select
+  options: [<every category found in Phase A>, "None — the customer has none"]
+  → mandatory. S2 and P1 depend on it.
 
-Pergunta 3 — Dentro dessa categoria, quais valores representam a MAIOR criticidade?
-  tipo: multi_select
-  opções: [<todos os valores da categoria escolhida em P2>]
-  → a skill NÃO sabe se "Alta" é maior que "Média", nem interpretar "Tier 1", "P1", "Gold" ou
-    "Classe A". A ordem ordinal tem de vir do operador. Sem isso, "Crown Jewel" é chute.
+Question 3 — Within that category, which values represent the HIGHEST criticality?
+  type: multi_select
+  options: [<every value of the category chosen in Q2>]
+  → the skill does NOT know whether "Alta" outranks "Média", nor how to read "Tier 1", "P1", "Gold"
+    or "Class A". The ordinal order has to come from the operator. Without it, "Crown Jewel" is a
+    guess.
 
-Pergunta 4 — Qual categoria de tag representa o DONO ou responsável pelo ativo?
-  tipo: single_select
-  opções: [<categorias da Fase A>, "Nenhuma — o cliente não tem"]
-  → S3 e o agrupamento por dono dependem dela.
+Question 4 — Which tag category represents the asset's OWNER?
+  type: single_select
+  options: [<categories from Phase A>, "None — the customer has none"]
+  → S3 and the grouping by owner depend on it.
 
-Pergunta 4b — Qual categoria representa LOCALIDADE (site, região, unidade)?
-  tipo: single_select
-  opções: [<categorias da Fase A>, "Nenhuma — o cliente não tem"]
-  → NÃO filtra escopo e NÃO pontua nenhum indicador. Serve para o roadmap agrupar item por site
-    e para o relatório dizer onde o problema está. É um campo separado de propósito: localidade
-    e ambiente são coisas diferentes, e clientes usam nomes trocados para as duas.
+Question 4b — Which category represents LOCALITY (site, region, unit)?
+  type: single_select
+  options: [<categories from Phase A>, "None — the customer has none"]
+  → does NOT filter scope and does NOT score any indicator. It lets the roadmap group items by site
+    and lets the report say where the problem is. It is a separate field on purpose: locality and
+    environment are different things, and customers swap the names for the two.
 
-Pergunta 5 — Qual categoria representa AMBIENTE (produção, homologação, desenvolvimento)?
-  tipo: single_select
-  opções: [<categorias da Fase A>, "Nenhuma — o cliente não tem"]
-  → se existir, Pergunta 5b pede quais valores são produção, e a skill oferece medir a
-    maturidade só em produção. Medir junto com laboratório distorce todos os indicadores.
+Question 5 — Which category represents ENVIRONMENT (production, staging, development)?
+  type: single_select
+  options: [<categories from Phase A>, "None — the customer has none"]
+  → recorded for the report's narrative and for the v2 roadmap. It does NOT filter the measurement:
+    the v1 scope is the whole tenant. See the note under "Saved profile".
 
-Pergunta 6 — Quais scans representam a AVALIAÇÃO RECORRENTE do ambiente?
-  tipo: multi_select
-  opções: [<scans com status completed e histórico, com nome, data do último run e nº de execuções>]
-  → D1, M1 e M2 saem daqui. Um tenant típico tem scans de teste, de PCI, de POC e um-off.
-    Calcular cadência sobre todos mistura ritmo real com experimento e produz número errado.
+Question 6 — Which scans represent the RECURRING ASSESSMENT of the environment?
+  type: multi_select
+  options: [<scans with completed status and history, with name, last run date and run count>]
+  → D1, M1 and M2 come from here. A typical tenant has test scans, PCI scans, POC scans and one-offs.
+    Computing cadence over all of them mixes real rhythm with experiment and produces a wrong number.
 
-Pergunta 7 — Há ativos a EXCLUIR do escopo do assessment?
-  tipo: single_select
-  opções: ["Não, avaliar tudo", "Excluir por tag", "Excluir por classe de ativo"]
-  → se por tag: Pergunta 7b oferece as categorias e valores da Fase A.
+Question 7 — Any assets to EXCLUDE from the assessment scope?
+  type: single_select
+  options: ["No, assess everything"]
+  → v1 measures the whole tenant. Exclusion by tag is v2 — see the note under "Saved profile".
 
-Pergunta 8 — O cliente usa regras de exceção (accept ou recast) no Tenable VM?
-  tipo: single_select
-  opções: ["Não usa", "Usa pouco (menos de 10% do backlog)", "Usa muito (mais de 10%)", "Não sei"]
-  → NÃO altera cálculo. Determina o texto de ressalva que vai no relatório. **Se M4 for coletado, o
-    coletor**, a coluna `severidade_modificada` mede o campo direto e a ressalva passa a citar o
-    número medido em vez da estimativa do operador — inclusive quando ele responde "Não sei".
-    Ver a seção sobre exceções abaixo.
+Question 8 — Does the customer use exception rules (accept or recast) in Tenable VM?
+  type: single_select
+  options: ["Does not use", "Uses a little (under 10% of the backlog)", "Uses a lot (over 10%)",
+            "I do not know"]
+  → does NOT change any calculation. It determines the caveat text in the report. When M4 is
+    collected, the `modified_severity` field measures the real thing and the caveat cites the
+    measured number instead of the operator's estimate — including when they answered "I do not
+    know". See the exceptions section below.
 
-Pergunta 9 — Superfícies licenciadas pelo cliente?
-  tipo: multi_select
-  opções: ["VM","WAS","Cloud Security","Identity Exposure","OT Security","ASM","AI","Source Code"]
-  → pré-marcar as que a Fase A encontrou em exposure_classes; o operador confirma ou corrige.
+Question 9 — Surfaces licensed by the customer?
+  type: multi_select
+  options: ["VM","WAS","Cloud Security","Identity Exposure","OT Security","ASM","AI","Source Code"]
+  → pre-tick the ones Phase A found in exposure_classes; the operator confirms or corrects.
 
-Pergunta 10 — Critério de priorização que o cliente usa HOJE?
-  opções: ["VPR >= 7 (default)","VPR >= 9","CVSSv3 >= 7","CVSSv3 >= 9","Outro — vou informar","Não sei"]
-  → **Default: `VPR >= 7`**, e é o valor pré-preenchido na tela de confirmação. A escolha do
-    default não é arbitrária: medido no sandbox em 2026-09-03, trocar `CVSSv3 >= 7` por
-    `VPR >= 7` reduz a fila imediata de 3.377 para 1.254 findings — 2.168 saem, 45 entram — e a
-    cobertura de VPR dentro da fatia com CVSS ≥ 7 é de 98,1%, então o critério é aplicável a
-    praticamente toda a fila que o CVSS selecionaria.
-  → **Descritiva, não prescritiva.** Registra o que o cliente faz, não o que deveria fazer.
-    Preencher com o critério recomendado quando o cliente usa outro **quebra P3**: o indicador
-    compara o critério declarado com a oportunidade medida, e uma declaração falsa reporta
-    maturidade que o cliente não tem.
-  → "Não sei" é resposta válida e comum, e **não é o mesmo que aceitar o default**. Consequência
-    explícita, para dois operadores não produzirem P3 diferente do mesmo tenant: **P3 = Ad Hoc**,
-    e a oportunidade continua sendo medida com `vpr >= 7.0` como base de comparação, declarada
-    como base default e não como critério do cliente.
-  → **Aceitar o default sem verificar tem consequência declarada.** Se o operador clicar "Seguir
-    assim" na tela de confirmação sem tocar nesta linha, `confirmado` fica `false`: P3 pontua com
-    `VPR >= 7`, e o relatório escreve, na linha do indicador e na aba de Metodologia:
-    *"critério de priorização assumido como default (VPR ≥ 7), não confirmado com o cliente"*.
-    Sem esse rótulo, um default aceito por comodidade viraria uma declaração de maturidade que
-    ninguém fez — e P3 é exatamente o indicador que mede se a declaração existe.
-  → Como descobrir o critério real, em ordem de confiabilidade: o filtro dos dashboards que o
-    time olha; o filtro da fila no ServiceNow ou Jira; o campo usado no SLA escrito; e só então
-    o que a pessoa diz de memória.
+Question 10 — Which prioritisation criterion does the customer use TODAY?
+  options: ["VPR >= 7 (default)","VPR >= 9","CVSSv3 >= 7","CVSSv3 >= 9","Other — I will say","I do
+            not know"]
+  → **Default: `VPR >= 7`**, and it is the value pre-filled on the confirmation screen. The choice
+    of default is not arbitrary: measured in the sandbox on 2026-09-03, swapping `CVSSv3 >= 7` for
+    `VPR >= 7` shrinks the immediate queue from 3,377 to 1,254 findings — 2,168 leave, 45 enter —
+    and VPR coverage within the CVSS >= 7 slice is 98.1%, so the criterion applies to virtually the
+    whole queue CVSS would select.
+  → **Descriptive, not prescriptive.** It records what the customer does, not what they should do.
+    Filling it in with the recommended criterion when the customer uses another **breaks P3**: the
+    indicator compares the declared criterion against the measured opportunity, and a false
+    declaration reports maturity the customer does not have.
+  → "I do not know" is a valid and common answer, and **it is not the same as accepting the
+    default**. Explicit consequence, so two operators do not produce different P3s from the same
+    tenant: **P3 = Ad Hoc**, and the opportunity is still measured with `vpr >= 7.0` as the
+    comparison base, declared as a default base and not as the customer's criterion.
+  → **Accepting the default without checking has a declared consequence.** If the operator clicks
+    "Proceed as is" on the confirmation screen without touching this line, `confirmed` stays
+    `false`: P3 scores with `VPR >= 7`, and the report writes, on the indicator's row and in the
+    Methodology tab: *"prioritisation criterion assumed as the default (VPR >= 7), not confirmed
+    with the customer"*. Without that label, a default accepted out of convenience would become a
+    declaration of maturity nobody made — and P3 is exactly the indicator that measures whether the
+    declaration exists.
+  → How to find the real criterion, in order of reliability: the filter on the dashboards the team
+    actually looks at; the queue filter in ServiceNow or Jira; the field used in the written SLA;
+    and only then what the person says from memory.
 
-Pergunta 11 — Padrão de prazo para o confronto de KEV?
-  opções: ["CISA BOD 26-04 (3 / 14 / 60 dias)","SLA próprio do cliente","Sem confronto de prazo"]
+Question 11 — Deadline standard for the KEV comparison?
+  options: ["CISA BOD 26-04 (3 / 14 / 60 days)","Customer's own SLA","No deadline comparison"]
 
-Pergunta 12 — Cravar o estágio, ou entregar só os indicadores?
-  opções: ["Cravar o estágio","Só os indicadores, sem classificar"]
+Question 12 — Nail the stage down, or deliver the indicators only?
+  options: ["Nail the stage down","Indicators only, no classification"]
 
-Pergunta 13 — Perfil de limiares?
-  opções: ["Default da skill","Conservador","Agressivo","Carregar perfil próprio"]
+Question 13 — Threshold profile?
+  options: ["Skill default","Conservative","Aggressive","Load my own profile"]
 
-Pergunta 14 — Tamanho da amostra de plugins para V1 e V2?
-  opções: ["Top 30 (recomendado)","Top 50","Top 20 (execução mais curta)"]
+Question 14 — Plugin set size for V1 and V2?
+  options: ["Census when it fits (recommended)","Top 30 sample","Top 50 sample","Top 20 sample"]
 ```
 
-**Quando o operador responde "Nenhuma" num mapeamento**, o indicador que depende dele vira **lacuna
-declarada com causa nomeada** — "o cliente não tem categoria de tag de owner" — e não uma lacuna
-genérica. A diferença importa: a primeira é um achado de Scoping que vira item de roadmap; a segunda
-parece falha da ferramenta.
+**When the operator answers "None" to a mapping**, the indicator that depends on it becomes a
+**declared gap with a named cause** — "the customer has no owner tag category" — and not a generic
+gap. The difference matters: the first is a Scoping finding that becomes a roadmap item; the second
+looks like a tool failure.
 
-**Registrar o mapeamento no relatório.** A aba de metodologia mostra, literalmente, qual categoria
-foi tratada como criticidade, quais valores como maior criticidade, qual como owner, quais scans
-entraram na cadência e o que foi excluído do escopo. Sem isso, dois assessments do mesmo cliente
-feitos por consultores diferentes não são comparáveis.
+**Record the mapping in the report.** The methodology tab shows, literally, which category was
+treated as criticality, which values as highest criticality, which as owner, which scans entered the
+cadence. Without that, two assessments of the same customer by different consultants are not
+comparable.
 
-**Perfil salvo.** Ao final, a skill oferece exportar o mapeamento como bloco YAML para o operador
-guardar e reusar na reavaliação. Trocar o mapeamento entre execuções invalida a comparação, do mesmo
-jeito que trocar o perfil de limiares.
+**Saved profile.** At the end, the skill offers to export the mapping as a YAML block for the
+operator to keep and reuse at reassessment. Changing the mapping between runs invalidates the
+comparison, exactly as changing the threshold profile does.
 
 ```yaml
-mapeamento_cliente:
-  categoria_criticidade: "Business Impact"
-  valores_maior_criticidade: ["Tier 1", "Mission Critical"]
-  categoria_owner: "CI Owner"
-  scans_recorrentes: [33, 40]
-  usa_excecoes: "usa_pouco"
+customer_mapping:
+  criticality_category: "Business Impact"
+  highest_criticality_values: ["Tier 1", "Mission Critical"]
+  owner_category: "CI Owner"
+  recurring_scans: [33, 40]
+  uses_exceptions: "uses_a_little"
 ```
 
-**O recorte da v1 é o tenant inteiro.** O perfil não tem `categoria_ambiente`,
-`valores_producao` nem `excluir` porque nenhum indicador os aplicaria: o servidor mede o corpus
-completo, sempre. Campos que o operador preenche e que ninguém consome são piores que campos
-ausentes — o operador exclui LAB e SANDBOX, confere o YAML, e recebe um relatório do tenant todo
-acreditando que o recorte valeu. Se o cliente precisa de recorte por ambiente ou exclusão de
-laboratório, isso é v2 e entra como filtro de tag nos indicadores, não como campo de perfil.
+**The v1 scope is the whole tenant.** The profile has no `environment_category`,
+`production_values` or `exclude` because no indicator would apply them: the server measures the
+complete corpus, always. Fields the operator fills in and nobody consumes are worse than absent
+fields — the operator excludes LAB and SANDBOX, checks the YAML, and receives a whole-tenant report
+believing the scope held. If a customer needs a scope by environment or a laboratory exclusion, that
+is v2 and enters as a tag filter inside the indicators, not as a profile field.
 
 ---
 
-## Exceções de risco — accept e recast
+## Risk exceptions — accept and recast
 
-**Pergunta que todo cliente faz e que precisa de resposta honesta no relatório.**
+**A question every customer asks, and one that needs an honest answer in the report.**
 
-O que a API da Tenable tem, e a skill **não** alcança pelo MCP:
+What the Tenable API has, and the skill does **not** reach through the Exposure Management API:
 
-| Campo da VM API | Definição da spec |
+| VM API field | Definition from the spec |
 |---|---|
-| `severity_modification_type` | `NONE`, `RECASTED` ou `ACCEPTED` — *"o tipo de modificação que um usuário fez na severidade"* |
-| `severity_id` | a severidade **depois** do recast |
-| `severity_default_id` | *"a severidade originalmente atribuída antes de o usuário recastear o risco"* |
-| `recast_reason`, `recast_rule_uuid` | o comentário e a regra aplicada |
-| `accepted_count`, `recasted_count` | por plugin, na resposta de workbenches |
+| `severity_modification_type` | `NONE`, `RECASTED` or `ACCEPTED` — *"the type of modification a user made to the severity"* |
+| `severity_id` | the severity **after** the recast |
+| `severity_default_id` | *"the severity originally assigned before the user recast the risk"* |
+| `recast_reason`, `recast_rule_uuid` | the comment and the rule applied |
+| `accepted_count`, `recasted_count` | per plugin, in the workbenches response |
 
-O que isso significa para os números desta skill, e que vai declarado:
+What that means for this skill's numbers, and what goes declared:
 
-1. **Finding com risco aceito continua aparecendo como `ACTIVE`.** A API de Exposure Management, que
-   é a que os tools `tenable_one_*` consomem, não tem nenhuma menção a recast, accept ou exceção — o
-   enum de `state` é só `ACTIVE`, `RESURFACED` e `FIXED`. Não há como identificar nem excluir.
-2. **Recast altera a severidade que o inventário reporta.** `severity_id` é o valor recasteado. Um
-   Critical recasteado para Low é contado como Low por qualquer indicador baseado em severidade. Isso
-   **deflaciona silenciosamente** o backlog crítico — o efeito é o oposto do que o operador espera.
-3. `accepted_count` e `recasted_count` existem na resposta de workbenches, mas a saída formatada do
-   MCP não os imprime. Não é possível dizer, sem um tenant que use exceções, se o wrapper descarta o
-   campo ou se o valor era zero.
+1. **A finding with accepted risk still appears as `ACTIVE`.** The Exposure Management API has no
+   mention of recast, accept or exception — the `state` enum is only `ACTIVE`, `RESURFACED` and
+   `FIXED`. There is no way to identify or exclude them.
+2. **A recast changes the severity the inventory reports.** `severity_id` is the recast value. A
+   Critical recast to Low is counted as Low by any severity-based indicator. That **silently
+   deflates** the critical backlog — the effect is the opposite of what the operator expects.
+3. `accepted_count` and `recasted_count` exist in the workbenches response, but are not among the
+   five fields `plugin_details_batch` exposes.
+4. **With `ctem_mobilization`, this stops being blind.** `POST /vulns/export` returns
+   `severity_modification_type`, which M4 hands back in
+   `context.modified_severity_other_than_none`. When M4 exists, count the rows by value (`NONE`,
+   `RECASTED`, `ACCEPTED`) and **use the count instead of the operator's estimate**. The export's
+   slice is usually narrower than the assessment's (severity and day window), so the count is
+   declared with its slice alongside, never extrapolated to the whole backlog. In the reference
+   collection of 2026-09-03, all 4,278 rows came back `NONE`: no severity distorted by an exception
+   in that slice.
 
-4. **Com `ctem_mobilization`, isso deixa de ser cego.** O `POST /vulns/export` devolve
-   `severity_modification_type`, que M4 devolve em `contexto.severidade_modificada_diferente_de_none`. Quando M4
-   existe, contar as linhas por valor (`NONE`, `RECASTED`, `ACCEPTED`) e **usar a contagem em vez
-   da estimativa do operador**. O recorte do export costuma ser mais estreito que o do assessment
-   (severidade e janela de dias), então a contagem é declarada com o recorte ao lado, nunca
-   extrapolada para o backlog inteiro. Na coleta de referência de 2026-09-03, as 4 278 linhas
-   vieram `NONE`: nenhuma severidade distorcida por exceção naquele recorte.
+**Skill behaviour.** The answer to Question 8 changes no calculation — it changes the caveat:
 
-**Comportamento da skill.** A resposta da Pergunta 8 não muda nenhum cálculo — muda a ressalva:
-
-| Resposta | Texto no relatório |
+| Answer | Text in the report |
 |---|---|
-| Não usa | Nenhuma ressalva |
-| Usa pouco | *"O cliente usa regras de exceção. O MCP não permite identificá-las, então elas estão contadas no backlog e um recast pode ter reduzido a severidade reportada. Impacto estimado pelo operador: abaixo de 10%."* |
-| Usa muito | Mesma ressalva, **em destaque no topo do relatório**, com a recomendação de validar os números no console antes de levar ao cliente |
-| Não sei | *"Não foi possível determinar se o cliente usa regras de exceção. Confirmar antes de usar estes números em decisão de investimento."* |
-| Qualquer resposta, **com M4 coletado** | Substituir a estimativa pela medição: *"No recorte do export (severidades X, últimos N dias, M linhas), K findings tinham severidade modificada — J recasteados e L com risco aceito."* O número vem de `contexto.severidade_modificada_diferente_de_none`. Se `K = 0`, dizer isso: é a confirmação de que nenhuma severidade daquele recorte foi ajustada |
-
-**Pedido técnico ao time do MCP**, junto com os outros: expor `severity_modification_type`,
-`severity_default_id` e os contadores `accepted_count` e `recasted_count`. Sem eles, nenhuma skill
-que conte backlog é exata em cliente que trabalha com exceções — e trabalhar com exceções é sinal de
-processo maduro, justamente o cliente que esta skill quer avaliar bem.
+| Does not use | No caveat |
+| Uses a little | *"The customer uses exception rules. The Exposure Management API does not allow identifying them, so they are counted in the backlog and a recast may have reduced the reported severity. Impact estimated by the operator: under 10%."* |
+| Uses a lot | Same caveat, **highlighted at the top of the report**, with a recommendation to validate the numbers in the console before taking them to the customer |
+| I do not know | *"It was not possible to determine whether the customer uses exception rules. Confirm before using these numbers in an investment decision."* |
+| Any answer, **with M4 collected** | Replace the estimate with the measurement: *"In the export's slice (severities X, last N days, M rows), K findings had a modified severity — J recast and L with accepted risk."* The number comes from `context.modified_severity_other_than_none`. If `K = 0`, say so: it is the confirmation that no severity in that slice was adjusted |
 
 ---
 
-## Passo 1 — Pré-voo e corpus
+## Step 1 — Preflight and corpus
 
 ```
 ctem_preflight()
 ```
 
-**Uma chamada.** Devolve a tabela `PREFLIGHT` pronta — cada filtro testado **ao vivo**, com par
-discriminante — e a `deny_list` dos filtros que o servidor rejeita antes de a requisição sair, cada
-um com a regra e a prova medida. A tabela vai inteira para o relatório.
+**One call.** It returns the finished `PREFLIGHT` table — every filter tested **live**, with a
+discriminant pair — and the `deny_list` of filters the server rejects before the request leaves,
+each with its rule and its measured proof. The table goes whole into the report.
 
-O servidor não herda veredito de documento. Três formas de prova: `par_exclusivo` (duas consultas
-mutuamente exclusivas cujos totais têm de somar o corpus — "reduziu" não basta), `booleano`
-(`true` e `false` com totais iguais significam parâmetro ignorado) e `monotonico` (escada de cortes
-estritamente decrescente).
+The server inherits no verdict from any document. Three forms of proof: `exclusive_pair` (two
+mutually exclusive queries whose totals must sum to the corpus — "it reduced" is not enough),
+`boolean` (`true` and `false` with equal totals mean the parameter is ignored) and `monotonic` (a
+strictly decreasing ladder of cutoffs).
 
-**Os denominadores vêm de `ctem_discover_tenant()`**, já coletado no Passo 0: `ativos.total`,
-`ativos.por_asset_class.DEVICE`. O corpus de findings vem no pré-voo.
+**The denominators come from `ctem_discover_tenant()`**, already collected at Step 0:
+`assets.total`, `assets.by_asset_class.DEVICE`. The findings corpus comes from the preflight.
 
-**Não montar filtro de data em findings à mão.** Os operadores relativos (`within last`,
-`older than`, `newer than`) são aceitos e silenciosamente ignorados — o servidor os rejeita com
-erro. Onde a skill precisa de tempo de avaliação, a fonte é `scan_cadence`; onde precisa de tempo
-de correção, é `mttr_collect`.
+**Do not hand-build a date filter on findings.** The relative operators (`within last`,
+`older than`, `newer than`) are accepted and silently ignored — the server rejects them with an
+error. Where the skill needs assessment time, the source is `scan_cadence`; where it needs time to
+fix, it is `mttr_collect`.
 
 ---
 
-## Passo 2 — Coletar os 19 indicadores
+## Step 2 — Collect the 19 indicators
 
-Seguir `references/indicadores-maturidade.md`, que traz por indicador a fórmula e a origem do
-limiar. **A coleta são quatro chamadas**, uma por estágio, cada uma devolvendo os indicadores já
-agregados:
+Follow `references/maturity-indicators.md`, which carries the formula and the threshold origin per
+indicator. **Collection is five calls**, one per stage, each returning the indicators already
+aggregated:
 
 ```
-ctem_scoping(mapeamento)          → S1, S2, S3, S4
+ctem_scoping(mapping)             → S1, S2, S3, S4
 ctem_discovery()                  → D1, D2, D3, D4
-ctem_prioritization(mapeamento, corte_priorizacao_cliente, p2_valor)
-                                  → P1, P2, P3 + as três filas comparadas
-ctem_validation(mapeamento)       → V1, V2, V3, V4
-ctem_mobilization(mapeamento)     → M1, M2, M3, M4
+ctem_prioritization(mapping, customer_priority_cutoff, p2_value)
+                                  → P1, P2, P3 + the three compared queues
+ctem_validation(mapping)          → V1, V2, V3, V4
+ctem_mobilization(mapping)        → M1, M2, M3, M4
 ```
 
-`mapeamento` são as respostas da Fase B do Passo 0:
+`mapping` is the answers from Phase B of Step 0:
 
 ```yaml
-categoria_criticidade: "<nome da categoria>"   # obrigatório para S2, S4 e P1
-categoria_owner:       "<nome da categoria>"   # obrigatório para S3
-scans_recorrentes:     [<scan_id>, ...]        # obrigatório para M1 e M2
+criticality_category: "<category name>"   # mandatory for S2, S4 and P1
+owner_category:       "<category name>"   # mandatory for S3
+recurring_scans:      [<scan_id>, ...]    # mandatory for M1 and M2
 ```
 
-**O servidor não adivinha nenhum desses.** Sem eles o indicador vira lacuna e a causa lista as
-opções que existem no tenant, para o consultor apontar a certa. Isso é deliberado: no sandbox, M1
-dá mediana 21 dias com o scan recorrente declarado e 1,0 dia somando todos os scans com histórico —
-dois estágios de diferença saindo de uma escolha que ninguém fez.
+**The server guesses none of these.** Without them the indicator becomes a gap and the cause lists
+the options that exist in the tenant, so the consultant can point at the right one. This is
+deliberate: in the sandbox, M1 gives a median of 21 days with the declared recurring scan and 1.0
+day adding every scan with history — two stages of difference coming out of a choice nobody made.
 
-**Reexecução parcial.** Todo tool de estágio aceita `indicadores=["V2","V3"]` e calcula só o
-subconjunto pedido. Use isso para recoletar um indicador que ficou em lacuna sem pagar os 17 de
-novo — `ctem_validation(indicadores=["V3"])` não gasta as chamadas de plugin que V1 e V2 exigiriam.
+**Partial re-run.** Every stage tool accepts `indicators=["V2","V3"]` and computes only the
+requested subset. Use that to re-collect an indicator that came back as a gap without paying for all
+19 again — `ctem_validation(indicators=["V3"])` does not spend the plugin calls V1 and V2 would
+require.
 
-**Cada indicador já vem com a evidência.** O envelope traz `valor`, `n`, `filtro_literal`,
-`coletado_em_utc` e `veredito_preflight`; o `contexto` traz o que é específico do indicador
-(estratos, intervalos, cortes, notas de proxy). Copie isso para `EVIDENCIA[id]` e acrescente só o
-corte aplicado com sua origem, que é decisão da skill, não do servidor.
+**Every indicator already carries its evidence.** The envelope brings `value`, `n`,
+`literal_filter`, `collected_at_utc` and `preflight_verdict`; `context` brings what is specific to
+the indicator (strata, intervals, cutoffs, proxy notes). Copy that into `EVIDENCE[id]` and add only
+the applied cutoff with its origin, which is the skill's decision, not the server's.
 
-**Consulta que falhou não vira número.** Vem `valor: null` com `lacuna: true` e `causa` preenchida.
-Número parcial silencioso não existe nesta cadeia.
+**A query that failed does not become a number.** It comes back as `value: null` with `gap: true`
+and `cause` filled in. A silent partial number does not exist in this chain.
 
-### Censo em vez de amostra
+### Census instead of sample
 
-`ctem_discovery`, `ctem_validation` e `ctem_mobilization` aceitam `modo_plugins`, que vem `auto`:
-faz **censo** de todos os plugins da severidade quando a população cabe em `limite_censo` (300), e
-cai para amostra estratificada acima disso. O modo usado vai no `filtro_literal` e em
-`contexto.modo`.
+`ctem_discovery`, `ctem_validation` and `ctem_mobilization` accept `plugin_mode`, which defaults to
+`auto`: it runs a **census** of every plugin of the severity when the population fits within
+`census_limit` (300), and falls back to a stratified sample above that. The mode used goes into
+`literal_filter` and into `context.mode`.
 
-Isto **substitui** `CONFIG.amostra_plugins.censo_d4_m3: false`. Aquela decisão foi correta para o
-caminho antigo: `plugins_search_plugins` aceita palavra-chave e CVE, não lista de IDs. Mas
-`plugin_details_batch` recebe lista de IDs, então o censo passou a ser alcançável — 121 plugins
-críticos custam 64 s e ~5.400 tokens, ainda três vezes menos que os ~15.000 que o caminho antigo
-gastava para **vinte** plugins.
+This **replaces** the old `sample_plugins.census_d4_m3: false`. That decision was correct for the
+old path: `plugins_search_plugins` accepts a keyword and a CVE, not a list of IDs. But
+`plugin_details_batch` takes a list of IDs, so the census became reachable — 121 critical plugins
+cost 64 s and ~5,400 tokens, still three times less than the ~15,000 the old path spent on **twenty**
+plugins.
 
-No censo **não há intervalo de confiança, nem ponderação, nem alocação entre estratos**: a taxa é a
-contagem. O portão de confiança da amostra (`portao_ic`) só se aplica quando `contexto.modo` for
-`amostra`. Quando for `censo`, o relatório declara censo e não publica IC.
+Under a census there is **no confidence interval, no weighting, and no allocation between strata**:
+the rate is the count. The sample's confidence gate (`ci_gate`) only applies when `context.mode` is
+`sample`. When it is `census`, the report declares a census and publishes no CI.
 
-### 2.M4 — MTTR, o único indicador fora da API de Exposure Management
+### 2.M4 — MTTR, the only indicator outside the Exposure Management API
 
-**M4 não exige mais CSV nem script externo.** `ctem_mobilization` chama `mttr_collect` internamente
-e já aplica a guarda de cadência. O coletor `tenable_mttr_export.py` sai do pacote desta skill:
-ele continua existindo como **origem do código** de `mttr.py` no servidor e como gerador das
-fixtures dos golden tests, não como caminho de execução. Um caminho, não dois.
+**M4 no longer requires a CSV or an external script.** `ctem_mobilization` calls `mttr_collect`
+internally and already applies the cadence guard. The `tenable_mttr_export.py` collector has left
+this skill's package: it still exists as the **source of the code** for `mttr.py` on the MCP server
+and as the generator of the golden-test fixtures, not as an execution path. One path, not two.
 
-A razão de M4 ser especial não mudou: `last_fixed`, `time_taken_to_fix` e
-`severity_modification_type` vivem na API de Vulnerability Management, em `POST /vulns/export`, e
-**não estão entre as 44 propriedades de findings** da API de Exposure Management. Não é wrapper
-faltando.
+The reason M4 is special has not changed: `last_fixed`, `time_taken_to_fix` and
+`severity_modification_type` live in the Vulnerability Management API, in `POST /vulns/export`, and
+**are not among the 44 findings properties** of the Exposure Management API. It is not a missing
+wrapper.
 
-**Export demorado não trava a conversa.** Se estourar `mttr_max_wait_s`, M4 volta como lacuna
-**recuperável**, com o `export_uuid` na causa. Chame `ctem_mobilization(indicadores=["M4"],
-mttr_export_uuid="<uuid>")` para retomar. Nunca abra um export novo enquanto houver um aberto para
-aquela chave: a API responde **409**.
+**A slow export does not freeze the conversation.** If `mttr_max_wait_s` is exceeded, M4 comes back
+as a **recoverable** gap, with the `export_uuid` in the cause. Call
+`ctem_mobilization(indicators=["M4"], mttr_export_uuid="<uuid>")` to resume. Never open a new export
+while one is open for that key: the API answers **409**.
 
-**Nunca pedir chaves de API ao operador nesta conversa.** As credenciais vivem no ambiente do
-processo do servidor MCP, em `TIO_ACCESS_KEY` e `TIO_SECRET_KEY`. Nenhum tool aceita chave como
-parâmetro, e a skill jamais pede credencial.
+**Never ask the operator for API keys in this conversation.** The credentials live in the MCP server
+process's environment, in `TIO_ACCESS_KEY` and `TIO_SECRET_KEY`. No tool accepts a key as a
+parameter, and the skill never asks for a credential.
 
-**A guarda de cadência já vem aplicada.** `ctem_mobilization` cruza as janelas do MTTR contra as
-datas de `scan_cadence` dos `scans_recorrentes` declarados, e devolve M4 como lacuna quando um dos
-dois portões dispara:
+**The cadence guard already comes applied.** `ctem_mobilization` crosses the MTTR windows against
+the dates from `scan_cadence` of the declared `recurring_scans`, and returns M4 as a gap when either
+gate fires:
 
-1. `pct_em_lote` acima de `CONFIG.mttr.pct_em_lote_max`;
-2. janelas formadas **só** por datas de scan — mesmo com `pct_em_lote` abaixo do corte.
+1. `pct_in_batch` above `CONFIG.mttr.max_batch_pct`;
+2. windows formed **only** by scan dates — even with `pct_in_batch` below the cutoff.
 
-O portão 2 é o mais forte, e é por isso que ele existe: o percentual depende do corte de lote
-escolhido — no sandbox o mesmo dado dá 93,5% com corte 2 e 38,7% com corte 5, e o corte 5 passaria
-pela guarda de 40%. A composição das datas não depende de escolha nenhuma.
+Gate 2 is the stronger one, and that is why it exists: the percentage depends on the chosen batch
+cutoff — in the sandbox the same data gives 93.5% with cutoff 2 and 38.7% with cutoff 5, and cutoff
+5 would pass a 40% guard. The composition of the dates depends on no choice at all.
 
-**O que a skill ainda precisa fazer:** ler `contexto.p50_critical` e `contexto.p50_high`, mapear
-cada um pelos seus cortes, e tomar o **menor dos dois estágios**. Mobilização madura fecha as duas
-severidades, não compensa uma com a outra. O servidor entrega os dois números e os cortes; o
-estágio é da skill.
+**What the skill still has to do:** read `context.p50_critical` and `context.p50_high`, map each one
+through its cutoffs, and take the **lower of the two stages**. Mature mobilisation closes both
+severities, it does not offset one with the other. The server delivers the two numbers and the
+cutoffs; the stage belongs to the skill.
 
-Procedimento:
+Procedure:
 
-1. `ctem_mobilization` já chama `mttr_collect` internamente. Não há CSV a procurar nem script a
-   rodar, e **nada a perguntar ao operador** — as credenciais vivem no ambiente do servidor MCP.
-2. Se M4 voltar como lacuna **recuperável** (export ainda em andamento), a causa traz o
-   `export_uuid`. Retomar com
-   `ctem_mobilization(indicadores=["M4"], mttr_export_uuid="<uuid>")`.
-   **Nunca** abrir um export novo enquanto houver um aberto: a API responde 409.
-3. Se M4 voltar como lacuna **de mérito** (a guarda de cadência disparou), isso é resultado, não
-   falha: declarar a lacuna com a causa que o servidor devolveu, `P = 16`, e o portão do Passo 4 se
-   ajusta sozinho.
+1. `ctem_mobilization` already calls `mttr_collect` internally. There is no CSV to look for and no
+   script to run, and **nothing to ask the operator** — the credentials live in the MCP server's
+   environment.
+2. If M4 comes back as a **recoverable** gap (export still running), the cause carries the
+   `export_uuid`. Resume with `ctem_mobilization(indicators=["M4"], mttr_export_uuid="<uuid>")`.
+   **Never** open a new export while one is open: the API answers 409.
+3. If M4 comes back as a gap **on merit** (the cadence guard fired), that is a result, not a
+   failure: declare the gap with the cause the server returned, `P = 16`, and the Step 4 gate
+   adjusts itself.
 
-**Nada disso pede nada ao operador.** O fluxo antigo perguntava pelo caminho do CSV e, se não
-houvesse, mandava rodar o coletor no terminal. Esse fluxo foi removido: não há arquivo a informar e
-não há script a rodar.
+**Calculation.** The two p50s arrive ready in `context.p50_critical` and `context.p50_high`,
+computed over `state=FIXED` with `days_to_fix` present, by **interpolated** percentile (the method
+is declared in `context.percentile_method`, alongside the nearest-position value, so the reader can
+measure the effect of the choice).
 
-**Cálculo.** Os dois p50 vêm prontos em `contexto.p50_critical` e `contexto.p50_high`, calculados
-sobre `estado=FIXED` com `dias_para_corrigir` presente, por percentil **interpolado** (o método vai
-declarado em `contexto.metodo_percentil`, junto do valor por posição mais próxima, para o leitor
-medir o efeito da escolha).
-
-Traduzir cada p50 para estágio pelos cortes de M4 em `references/indicadores-maturidade.md`, e:
+Translate each p50 into a stage through the M4 cutoffs in `references/maturity-indicators.md`, and:
 
 ```
-M4 = o MENOR dos dois estágios
+M4 = the LOWER of the two stages
 ```
 
-O menor, e não a média, pela mesma lógica do `estagio_efetivo`: mobilização madura fecha as duas
-severidades, não compensa uma com a outra.
+The lower, not the average, by the same logic as `effective_stage`: mature mobilisation closes both
+severities, it does not offset one with the other.
 
-**Portões de M4, todos obrigatórios:**
+**M4 gates, all mandatory:**
 
-| Condição | Comportamento |
+| Condition | Behaviour |
 |---|---|
-| `n[sev] < CONFIG.mttr.n_minimo_por_severidade` (default 5) | aquela severidade **não** pontua |
-| as duas severidades abaixo do mínimo | **M4 = lacuna**, com o `n` de cada uma declarado |
-| `mttr_fonte = derivado` em mais de `max_derivado_pct` (default 30%) | M4 pontua, com ⚠️ de composição no relatório |
-| `filtros_divergiram = true` no JSON de resumo | **M4 = lacuna.** Job reaproveitado por 409: o recorte não é o pedido. **Ler o booleano**, nunca comparar os dicionários — a API normaliza e adiciona defaults, então a comparação literal acusa divergência em toda execução |
-| `pct_em_lote >= CONFIG.mttr.pct_em_lote_max` (default 40), **calculado pelo servidor com `lote_minimo_por_janela`** | **M4 = lacuna com causa nomeada:** *"MTTR dominado pela cadência de scan (X% dos findings fechados em lote); M1 e M2 já medem cadência"*. Ver abaixo |
-| janelas `(first_found, last_fixed)` formadas só por pares de datas de scan | **M4 = lacuna**, mesmo com `pct_em_lote` abaixo do corte: o número é o intervalo entre scans. Checar contra `scan_history` |
-| linhas `FIXED` com `dias_para_corrigir` vazio | fora do cálculo, contagem declarada. **Nunca** imputar valor |
-| `severidade_modificada != NONE` em alguma linha | M4 pontua, com a ressalva de que a severidade foi ajustada por recast |
+| `n[sev] < CONFIG.mttr.min_n_per_severity` (default 5) | that severity does **not** score |
+| both severities below the minimum | **M4 = gap**, with each `n` declared |
+| `mttr_source = derived` on more than `max_derived_pct` (default 30%) | M4 scores, with a composition ⚠️ in the report |
+| `filters_diverged = true` | **M4 = gap.** Job reused after a 409: the slice is not the request. **Read the boolean**, never compare the dictionaries — the API normalises and adds defaults, so a literal comparison reports a mismatch on every run |
+| `pct_in_batch >= CONFIG.mttr.max_batch_pct` (default 40), **computed by the server with `min_batch_per_window`** | **M4 = gap with a named cause:** *"MTTR dominated by scan cadence (X% of findings closed in a batch); M1 and M2 already measure cadence"*. See below |
+| windows `(first_found, last_fixed)` formed only by pairs of scan dates | **M4 = gap**, even with `pct_in_batch` below the cutoff: the number is the interval between scans |
+| `FIXED` rows with an empty `days_to_fix` | out of the calculation, count declared. **Never** impute a value |
+| `modified_severity != NONE` on any row | M4 scores, with the caveat that the severity was adjusted by a recast |
 
-#### Por que a cadência de scan invalida M4, e não apenas o rotula
+#### Why scan cadence invalidates M4 rather than merely labelling it
 
-`time_taken_to_fix` mede **detecção a detecção**, não tempo de ação. Um ativo escaneado em 09/06,
-não escaneado de novo, e visto limpo em 02/09 produz 85 dias para tudo que estava nele — inclusive
-o que foi corrigido no primeiro dia. O coletor detecta isso agrupando findings do mesmo ativo com
-a mesma `first_found` e a mesma `last_fixed`, e publica `cadencia_de_scan.pct_em_lote`.
+`time_taken_to_fix` measures **detection to detection**, not time to act. An asset scanned on 09 Jun,
+not scanned again, and seen clean on 02 Sep produces 85 days for everything on it — including what
+was fixed on the first day. The server detects this by grouping findings of the same asset with the
+same `first_found` and the same `last_fixed`, and publishes `scan_cadence.pct_in_batch`.
 
-Na skill de dashboard esse caso vira **rótulo** ("limite superior"), porque lá o número ainda
-informa. Aqui vira **lacuna**, e a razão é estrutural: com `pct_em_lote` alto, M4 estaria medindo
-a mesma coisa que M1 e M2 já medem — cadência de avaliação. Pontuar assim contaria cadência duas
-vezes e chamaria de maturidade de remediação o que é maturidade de avaliação. É o mesmo princípio
-que impediu P3 de pontuar sozinho pelo delta puro: **não pontuar como maturidade de processo o que
-é característica do ambiente.**
+In a dashboard skill that case becomes a **label** ("upper bound"), because there the number still
+informs. Here it becomes a **gap**, and the reason is structural: with a high `pct_in_batch`, M4
+would be measuring the same thing M1 and M2 already measure — assessment cadence. Scoring it would
+count cadence twice and call remediation maturity what is in fact assessment maturity. It is the
+same principle that stopped P3 from scoring on the raw delta alone: **do not score as process
+maturity what is a characteristic of the environment.**
 
-Quando M4 vira lacuna por este motivo, o relatório é obrigado a escrever o achado em texto, porque
-ele vale mais que o número perdido:
+When M4 becomes a gap for this reason, the report is required to write the finding in prose, because
+it is worth more than the lost number:
 
-> *"O MTTR não é mensurável neste ambiente porque X% dos findings corrigidos foram vistos
-> fechados no mesmo scan que os vizinhos do mesmo ativo — o número mediria intervalo entre scans,
-> não tempo de correção. O maior lote é <ativo>, com N findings. Aumentar a frequência de
-> avaliação nesse ativo é o que torna o MTTR mensurável, e é item de roadmap de Mobilization."*
+> *"MTTR is not measurable in this environment because X% of the fixed findings were seen closed in
+> the same scan as their neighbours on the same asset — the number would measure the interval
+> between scans, not time to fix. The largest batch is <asset>, with N findings. Increasing the
+> assessment frequency on that asset is what makes MTTR measurable, and it is a Mobilization roadmap
+> item."*
 
-#### O que a validação da coleta de 2026-09-03 mostrou, e o que a skill passa a exigir
+#### What the 2026-09-03 collection validation showed
 
-Coleta real do sandbox, 4 278 findings, 31 `FIXED` com data. O resumo do coletor publicou
-`pct_em_lote = 74,2%`. Recontado linha a linha com corte 2, o valor é **93,5%** — a diferença
-não é erro de conta, é uma **escolha de método não declarada**: o coletor só conta um grupo como
-lote a partir de **3** findings na mesma janela, e há três grupos de 2 que ele descarta.
+A real sandbox collection, 4,278 findings, 31 `FIXED` with a date. Recounted row by row with cutoff
+2, `pct_in_batch` is **93.5%**.
 
-Mais decisivo que o percentual: as 9 janelas `(first_found, last_fixed)` observadas são todas
-pares tirados de **7 datas distintas** (27/01, 08/03, 07/06, 08/06, 09/06, 02/09, 03/09), que são
-as datas de scan do tenant, e **29 dos 31** findings caem numa janela compartilhada. Neste tenant
-o MTTR **é** o intervalo entre scans: mede cadência de avaliação, não tempo de correção. Maior
-lote: 12 findings de um ativo, todos com 85,5 dias exatos. M4 é lacuna aqui, corretamente — e
-seria lacuna pelos dois valores, 74,2% ou 93,5%.
+More decisive than the percentage: the 9 observed `(first_found, last_fixed)` windows are all pairs
+drawn from **7 distinct dates** (27 Jan, 08 Mar, 07 Jun, 08 Jun, 09 Jun, 02 Sep, 03 Sep), which are
+the tenant's scan dates, and **29 of the 31** findings fall into a shared window. In this tenant the
+MTTR **is** the interval between scans: it measures assessment cadence, not time to fix. Largest
+batch: 12 findings on one asset, all with exactly 85.5 days. M4 is a gap here, correctly.
 
-**Consequência para a skill.** O coletor **1.1.0** já publica as três escolhas no resumo
-(`lote_minimo_por_janela`, `sensibilidade_ao_corte`, `estados_incluidos_no_mttr`,
-`metodo_percentil`) — quando esses campos existirem, ler dali. Se o resumo vier de uma versão
-anterior (campos ausentes ⇒ coletor 1.0.0, corte de lote 3), **recontar** com os defaults
-da skill e declarar o recálculo no relatório:
+**Consequence for the skill.** The server publishes the three method choices in the summary
+(`min_batch_per_window`, `sensitivity_to_cutoff`, `states_included_in_mttr`, `percentile_method`) —
+read them from there.
 
-| Escolha de método | Por que importa | O que fazer |
+| Method choice | Why it matters | What to do |
 |---|---|---|
-| corte de lote (`lote_minimo_por_janela`) | no sandbox o mesmo recorte dá 93,5% com corte 2, 74,2% com 3, 64,5% com 4 e 38,7% com 5 — o corte 5 passaria a guarda de 40% e faria M4 pontuar | recontar com **2** (default da skill). Se o resumo usar outro corte, usar o valor recontado e dizer qual foi |
-| estados incluídos no MTTR | o coletor calcula só sobre `FIXED`. Incluindo `REOPENED`, a média de High vai de 60,39 para 49,66 dias — 18% de diferença, e `REOPENED` é justamente o finding que voltou | manter só `FIXED` (um finding reaberto não foi corrigido), e **declarar** a exclusão com a contagem de `REOPENED` |
-| método de percentil | `p90` de Critical dá 101,43 interpolado e 92,91 por posição mais próxima; com n=10 a escolha muda o número em 9% | usar `interpolado` (`CONFIG.mttr.metodo_percentil`) e nomear o método |
+| batch cutoff (`min_batch_per_window`) | in the sandbox the same slice gives 93.5% with cutoff 2, 74.2% with 3, 64.5% with 4 and 38.7% with 5 — cutoff 5 would pass the 40% guard and make M4 score | use **2** (the skill default) and say which cutoff produced the number |
+| states included in the MTTR | the server computes over `FIXED` only. Including `REOPENED`, the High mean goes from 60.39 to 49.66 days — an 18% difference, and `REOPENED` is precisely the finding that came back | keep `FIXED` only (a reopened finding was not fixed), and **declare** the exclusion with the `REOPENED` count |
+| percentile method | Critical `p90` gives 101.43 interpolated and 92.91 by nearest position; with n=10 the choice changes the number by 9% | use `interpolated` (`CONFIG.mttr.percentile_method`) and name the method |
 
-Nenhuma das três muda o veredito neste tenant. Todas mudam o número, e a camada 3 do modelo exige
-que o leitor consiga refazer a conta — por isso as três vão escritas em `EVIDENCIA[M4]`.
+None of the three changes the verdict in this tenant. All three change the number, and layer 3 of the
+model requires the reader to be able to redo the arithmetic — which is why all three go written into
+`EVIDENCE[M4]`.
 
-**`severidade_modificada` agora mede a distorção por exceção.** No retorno de M4 esse campo vem
-de `severity_modification_type`, que a API de Exposure Management não expõe — era ponto cego. Na
-coleta do sandbox as 4 278 linhas vieram `NONE`: nenhum recast, nenhuma aceitação, então nenhuma
-severidade do assessment está inflada ou deflacionada por exceção. Quando houver linhas diferentes
-de `NONE`, contar e declarar por severidade: é a única medição direta que a skill tem do que as
-exceções escondem, e vale para S3, P1 e P2, não só para M4.
+**`modified_severity` now measures the distortion from exceptions.** In M4's return this field comes
+from `severity_modification_type`, which the Exposure Management API does not expose — it used to be
+a blind spot. In the sandbox collection all 4,278 rows came back `NONE`: no recast, no acceptance, so
+no assessment severity is inflated or deflated by an exception. When rows other than `NONE` appear,
+count and declare them per severity: it is the only direct measurement the skill has of what
+exceptions hide, and it applies to S3, P1 and P2, not only to M4.
 
-Em `EVIDENCIA[M4]`, além dos campos padrão, registrar: `export_uuid` e `coletado_em_utc`,
-`filtros_pedidos`, `filtros_divergiram`, `registros_analisados`, `pct_em_lote` **com o corte de
-lote usado**, os estados incluídos no cálculo **com a contagem de `REOPENED` excluída**, o método
-de percentil, a contagem de `severidade_modificada != NONE`, `n` e composição nativo/derivado por
-severidade, e o estágio de cada severidade antes do mínimo.
-A camada 3 do modelo exige que o leitor consiga refazer a conta.
+In `EVIDENCE[M4]`, besides the standard fields, record: `export_uuid` and `collected_at_utc`,
+`requested_filters`, `filters_diverged`, `records_analysed`, `pct_in_batch` **with the batch cutoff
+used**, the states included in the calculation **with the excluded `REOPENED` count**, the percentile
+method, the count of `modified_severity != NONE`, `n` and the native/derived composition per
+severity, and each severity's stage before the minimum was applied. Layer 3 of the model requires the
+reader to be able to redo the arithmetic.
 
 ---
 
-## Passo 3 — Classificar
+## Step 3 — Classify
 
-### 3.1 Estágio por indicador
+### 3.1 Stage per indicator
 
-Comparar o valor contra os quatro cortes, respeitando `invertido` quando menor é melhor.
-Indicadores marcados `informativo` — S4 e V1 — **não** pontuam.
+Compare the value against the four cutoffs, respecting `inverted` where lower is better. Indicators
+marked `informational` — S4 and V1 — do **not** score.
 
-`P3` tem tabela de estágio própria, composta pelo critério que o cliente declara no Passo 0 e pela
-oportunidade medida no backlog. Ver `references/indicadores-maturidade.md`. **P3 depende de P2:**
-se P2 estiver em lacuna, P3 também.
+**Mind the unit.** Rate indicators are reported as **percentages**, and their cutoffs are whole
+numbers: S1 `[20, 50, 80, 95]`, P2 `[40, 70, 90, 98]`, V3 `[25, 15, 8, 3]`. The one ratio expressed
+as a 0..1 fraction is `P3_opportunity`, because it is a ratio and not a rate. Comparing a percentage
+against a fractional cutoff drops an inverted indicator into the worst bucket every time — that was
+a real defect in V3, found in the audit of 2026-09-04.
 
-Resultado: **17 indicadores pontuáveis**, cada um em um dos cinco estágios — 16 quando M4 vira
-lacuna, o que agora acontece por mérito (guarda de cadência) ou por falha de coleta, não por
-ausência de arquivo.
+`P3` has its own stage table, composed of the criterion the customer declares at Step 0 and the
+opportunity measured in the backlog. See `references/maturity-indicators.md`. **P3 depends on P2:**
+if P2 is a gap, so is P3.
 
-### 3.2 Estágio por estágio CTEM
+Result: **17 scoring indicators**, each in one of the five stages — 16 when M4 becomes a gap, which
+now happens on merit (the cadence guard) or through a collection failure, not through a missing file.
 
-Média dos estágios dos indicadores pontuáveis daquele estágio, arredondada para baixo. Arredondar
-para baixo é deliberado: maturidade se demonstra, não se presume.
+### 3.2 Stage per CTEM stage
 
-**A escala é o estágio, não a quantidade de indicadores.** Cada indicador é primeiro traduzido para
-um dos cinco estágios pelos seus quatro cortes; só depois entra na média. Um estágio com três
-indicadores alcança Optimized normalmente — basta que os três caiam em Optimized. Não há
-normalização a fazer, porque a conversão para a escala de 1 a 5 já aconteceu indicador por
-indicador.
+The mean of the stages of that stage's scoring indicators, rounded down. Rounding down is
+deliberate: maturity is demonstrated, not presumed.
 
-Exemplo, para deixar concreto no relatório: **Scoping chega a Optimized** quando S1 ≥ 95%,
-S2 ≥ 90% e S3 ≥ 90%.
+**The scale is the stage, not the number of indicators.** Each indicator is first translated into
+one of the five stages by its four cutoffs; only then does it enter the mean. A stage with three
+indicators reaches Optimized normally — all three simply have to land in Optimized. There is no
+normalisation to do, because the conversion to the 1-to-5 scale already happened indicator by
+indicator.
 
-**Nenhum estágio é classificado com menos de 2 indicadores com dado.** Com 0 ou 1, o estágio vira
-`lacuna` e não entra em nada.
+An example, to make it concrete in the report: **Scoping reaches Optimized** when S1 >= 95%,
+S2 >= 90% and S3 >= 90%.
 
-### 3.2.1 Assimetria de sustentação — declarar sempre
+**No stage is classified with fewer than 2 indicators with data.** With 0 or 1, the stage becomes a
+`gap` and enters nothing.
 
-Os estágios **não têm o mesmo número de indicadores pontuáveis**:
+### 3.2.1 Support asymmetry — always declare it
 
-| Estágio CTEM | Indicadores pontuáveis | Informativos |
+The stages do **not** have the same number of scoring indicators:
+
+| CTEM stage | Scoring indicators | Informational |
 |---|---|---|
 | Scoping | 3 — S1, S2, S3 | S4 |
 | Discovery | **4** — D1, D2, D3, D4 | — |
@@ -599,533 +616,536 @@ Os estágios **não têm o mesmo número de indicadores pontuáveis**:
 | Validation | 3 — V2, V3, V4 | V1 |
 | Mobilization | **4** — M1, M2, M3, M4 | — |
 
-Total: **17 pontuáveis**, **16** quando M4 vira lacuna. 2 informativos.
+Total: **17 scoring**, **16** when M4 becomes a gap. 2 informational.
 
-**M4 continua condicional, mas por outra razão.** Não depende mais de um arquivo existir: o
-`ctem_mobilization` sempre tenta coletá-lo. M4 vira lacuna quando:
+**M4 is still conditional, but for another reason.** It no longer depends on a file existing:
+`ctem_mobilization` always tries to collect it. M4 becomes a gap when:
 
-| Causa | O que é |
+| Cause | What it is |
 |---|---|
-| a guarda de cadência dispara | **resultado, não falha** — o MTTR ali mede intervalo entre scans |
-| o export estoura `max_wait_s` | lacuna **recuperável**: retomar pelo `export_uuid` |
-| o job aplica recorte diferente do pedido | erro estruturado — o recorte não é a pergunta |
-| n abaixo de `n_minimo_por_severidade` | amostra pequena demais para a severidade pontuar |
+| the cadence guard fires | **a result, not a failure** — the MTTR there measures the interval between scans |
+| the export exceeds `max_wait_s` | a **recoverable** gap: resume through the `export_uuid` |
+| the job applies a slice different from the request | a structured error — the slice is not the question |
+| n below `min_n_per_severity` | too small a sample for that severity to score |
 
-Em qualquer desses casos Mobilization volta a três indicadores e o total cai para 16. O portão de
-confiança do Passo 4 é proporcional justamente para absorver isso sem recalibração manual.
+In any of those cases Mobilization drops to three indicators and the total falls to 16. The Step 4
+confidence gate is proportional precisely so it absorbs that without manual recalibration.
 
-A distribuição está quase equilibrada — três estágios com três indicadores, Discovery e
-Mobilization com quatro.
-Ainda assim o relatório é obrigado a mostrar a sustentação, porque um estágio com menos indicadores
-se move com menos evidência.
+The distribution is nearly balanced — three stages with three indicators, Discovery and Mobilization
+with four. Even so the report is required to show the support, because a stage with fewer indicators
+moves on less evidence.
 
-Regras concretas:
+Concrete rules:
 
-1. Cada estágio aparece no relatório com **`n` sustentando**: "Prioritization — Advanced,
-   sustentado por 3 de 3 indicadores".
-2. Quando um estágio é classificado com **menos de 3 indicadores com dado** — por lacuna, não por
-   desenho — e é ele que define o estágio efetivo, a skill acrescenta em destaque: *"o estágio
-   efetivo está sustentado por apenas N indicadores; confirmar antes de transformar em plano de
-   investimento"*.
-3. A aba de metodologia repete a tabela acima, para o leitor saber o peso de cada estágio.
+1. Each stage appears in the report with the **`n` supporting it**: "Prioritization — Advanced,
+   supported by 3 of 3 indicators".
+2. When a stage is classified with **fewer than 3 indicators with data** — through a gap, not by
+   design — and it is the one setting the effective stage, the skill adds, prominently: *"the
+   effective stage is supported by only N indicators; confirm before turning this into an investment
+   plan"*.
+3. The methodology tab repeats the table above, so the reader knows the weight of each stage.
 
-### 3.3 Os dois números do cliente, lado a lado
+### 3.3 The customer's two numbers, side by side
 
 ```
-estagio_efetivo = menor entre os cinco estágios avaliados
-estagio_medio   = média aritmética dos estágios avaliados, arredondada para baixo
+effective_stage = the lowest of the five assessed stages
+average_stage   = the arithmetic mean of the assessed stages, rounded down
 ```
 
-**A diferença entre os dois é o argumento central do relatório.** Um cliente com médio
-`Standardized` e efetivo `Ad Hoc` tem investimento em ferramenta que não vira resultado por causa de
-um estágio bloqueante — e esse estágio é exatamente o escopo do serviço a vender. Quando os dois
-coincidem, a evolução é incremental e distribuída, e a conversa muda de "corrigir uma lacuna" para
-"subir um patamar".
+**The difference between the two is the report's central argument.** A customer with an average of
+`Standardized` and an effective of `Ad Hoc` has tool investment that is not turning into results
+because of one blocking stage — and that stage is exactly the scope of the service to sell. When the
+two coincide, the improvement is incremental and distributed, and the conversation shifts from
+"fix a gap" to "move up a level".
 
-**A skill é obrigada a nomear, em texto, qual estágio está puxando o efetivo para baixo**, e por
-qual indicador. Não basta mostrar o número.
+**The skill is required to name, in prose, which stage is pulling the effective stage down**, and
+through which indicator. Showing the number is not enough.
 
-Justificativa do desenho, para o relatório: o efetivo usa o elo mais fraco porque os estágios do
-CTEM são sequencialmente dependentes — sem contexto de negócio no Scoping, a priorização a jusante
-já está comprometida, por boa que seja a ferramenta.
+Design rationale, for the report: the effective stage uses the weakest link because the CTEM stages
+are sequentially dependent — without business context at Scoping, downstream prioritisation is
+already compromised, however good the tooling is.
 
 ---
 
-## Passo 4 — Portão de confiança
+## Step 4 — Confidence gate
 
-Antes de publicar qualquer estágio:
+Before publishing any stage:
 
-O portão é **proporcional aos pontuáveis daquela run**, não a um número fixo. Isso é necessário
-porque M4 é condicional: 17 pontuáveis quando M4 pontua, 16 quando ele vira lacuna.
+The gate is **proportional to that run's scoring indicators**, not to a fixed number. That is
+necessary because M4 is conditional: 17 scoring when M4 scores, 16 when it becomes a gap.
 
 ```
-P        = pontuáveis aplicáveis nesta run   (17 com M4, 16 sem)
-medidos  = pontuáveis que retornaram dado
-normal   = teto(0,8125 × P)
-com_aviso= teto(0,6250 × P)
+P         = scoring indicators applicable to this run   (17 with M4, 16 without)
+measured  = scoring indicators that returned data
+normal    = ceil(0.8125 × P)
+with_note = ceil(0.6250 × P)
 ```
 
-| Condição | Comportamento |
+| Condition | Behaviour |
 |---|---|
-| `medidos >= normal` | Classificar normalmente |
-| `com_aviso <= medidos < normal` | Classificar, com aviso em destaque de que a base é parcial e listando o que falta |
-| `medidos < com_aviso` | **Não classificar.** Entregar os indicadores disponíveis e o que precisa ser habilitado no tenant |
-| `CONFIG.classificarEstagio = false` | **Não classificar**, independente da contagem. Entregar os 19 com faixas e distâncias até o corte seguinte |
+| `measured >= normal` | Classify normally |
+| `with_note <= measured < normal` | Classify, with a prominent note that the base is partial, listing what is missing |
+| `measured < with_note` | **Do not classify.** Deliver the available indicators and what needs enabling in the tenant |
+| `CONFIG.classify_stage = false` | **Do not classify**, regardless of the count. Deliver all 19 with bands and distances to the next cutoff |
 
-Os dois coeficientes vêm da calibração original de 2026-09-02 (13 e 10 sobre 16) e a reproduzem
-exatamente: `teto(0,8125 × 16) = 13` e `teto(0,6250 × 16) = 10`. Com 17 pontuáveis os cortes
-passam a **14** e **11**. Arredondar para cima aqui, ao contrário do estágio — o portão protege
-contra classificar com base fina, então o empate resolve pelo lado estrito.
+The two coefficients come from the original calibration of 2026-09-02 (13 and 10 out of 16) and
+reproduce it exactly: `ceil(0.8125 × 16) = 13` and `ceil(0.6250 × 16) = 10`. With 17 scoring
+indicators the cutoffs become **14** and **11**. Round up here, unlike the stage — the gate protects
+against classifying on a thin base, so ties resolve to the strict side.
 
-O relatório é obrigado a imprimir `medidos / P` e qual dos três ramos foi aplicado.
+The report is required to print `measured / P` and which of the three branches was applied.
 
-No modo sem classificação, cada indicador ainda mostra a distância até o corte seguinte — "faltam
-6 pontos percentuais em S1 para Advanced" — porque é isso que orienta ação sem cravar rótulo.
+In the no-classification mode, each indicator still shows the distance to the next cutoff — "S1 is 6
+percentage points short of Advanced" — because that is what directs action without pinning a label.
 
 ---
 
-## Passo 5 — Roadmap de três quarters
+## Step 5 — Three-quarter roadmap
 
-Ordenar as lacunas por **esforço estimado contra impacto no estágio efetivo**. Impacto vem de quanto
-o indicador está abaixo do corte seguinte e de quantos estágios ele destrava. Esforço é classificado
-em três níveis, e o critério vai declarado:
+Order the gaps by **estimated effort against impact on the effective stage**. Impact comes from how
+far the indicator sits below the next cutoff and from how many stages it unblocks. Effort is
+classified in three levels, and the criterion goes declared:
 
-| Esforço | Critério | Exemplos |
+| Effort | Criterion | Examples |
 |---|---|---|
-| Baixo | configuração no console, sem projeto | criar categoria de tag, ajustar agendamento de scan |
-| Médio | projeto de semanas, com envolvimento de outra equipe | taguear a base instalada, implantar agente numa faixa de ativos |
-| Alto | mudança de processo ou de contrato | licenciar superfície nova, redesenhar o processo de priorização |
+| Low | console configuration, no project | create a tag category, adjust a scan schedule |
+| Medium | a project of weeks, involving another team | tag the installed base, deploy an agent across a band of assets |
+| High | a change of process or contract | license a new surface, redesign the prioritisation process |
 
-Regra de sequenciamento: **primeiro o que destrava o estágio efetivo**, mesmo que o impacto
-absoluto pareça menor. Subir Scoping de Ad Hoc para Defined vale mais que otimizar Mobilization,
-porque o efetivo é o elo mais fraco.
+Sequencing rule: **first what unblocks the effective stage**, even if the absolute impact looks
+smaller. Raising Scoping from Ad Hoc to Defined is worth more than optimising Mobilization, because
+the effective stage is the weakest link.
 
-Cada item do roadmap traz: indicador alvo, valor atual, corte a alcançar, esforço, e o que
-concretamente fazer. Sem prazo em data — o relatório usa Q1, Q2, Q3 relativos ao início do projeto.
+Each roadmap item carries: target indicator, current value, cutoff to reach, effort, and what
+concretely to do. No calendar dates — the report uses Q1, Q2, Q3 relative to the project start.
 
-**Não converter melhoria de estágio em economia financeira** sem premissa fornecida pelo cliente.
+**Do not convert a stage improvement into financial savings** without a premise supplied by the
+customer.
 
 ---
 
-## Passo 6 — Dashboard
+## Step 6 — Dashboard
 
-Documento HTML único e autocontido, CSS e JS embutidos. Entregar na conversa e como arquivo.
+A single, self-contained HTML document, with CSS and JS embedded. Deliver it in the conversation and
+as a file.
 
-### Forma dos gráficos — decisão deliberada
+### Chart form — a deliberate decision
 
-O radar tem duas fraquezas reais: distorce a área percebida, porque a área cresce com o quadrado do
-valor, e a ordem dos eixos muda a forma do polígono com dados idênticos. A barra horizontal não tem
-nenhuma das duas, e é a forma certa para comparar magnitude entre cinco categorias nomeadas.
+The radar has two real weaknesses: it distorts perceived area, because area grows with the square of
+the value, and the order of the axes changes the polygon's shape with identical data. The horizontal
+bar has neither, and it is the right form for comparing magnitude across five named categories.
 
-Mas o radar tem uma força que a barra não tem: é o formato que a audiência de assessment reconhece
-sem explicação, e é superior para sobrepor duas medições na reavaliação.
+But the radar has a strength the bar does not: it is the format an assessment audience recognises
+without explanation, and it is superior for overlaying two measurements at reassessment.
 
-**Decisão: usar os dois na aba de Panorama**, radar em cima para reconhecimento e barra embaixo para
-leitura, com as armadilhas do radar neutralizadas pelas regras abaixo.
+**Decision: use both on the Overview tab**, radar on top for recognition and bar underneath for
+reading, with the radar's traps neutralised by the rules below.
 
-**Duas formas na aba de Panorama, nesta ordem — decidido em 2026-09-02.**
+**In on top, the radar of the five stages.** A pentagon with one axis per stage, a 1-to-5 scale, and
+grid rings at the five levels. It serves recognition: maturity assessments have used radars for
+decades and the customer understands it without explanation. The blocking stage's vertex takes the
+accent colour.
 
-**Em cima, o radar dos cinco estágios.** Pentágono com um eixo por estágio, escala de 1 a 5, anéis
-de grade nos cinco níveis. Serve ao reconhecimento: assessment de maturidade usa radar há décadas e
-o cliente entende sem explicação. O vértice do estágio bloqueante recebe a cor de acento.
+Mandatory radar rules, because it has two known traps:
+- **Axis order fixed to the CTEM sequence** — Scoping, Discovery, Prioritization, Validation,
+  Mobilization. Never reorder, neither alphabetically nor by value: the same measurement in a
+  different order produces a differently shaped polygon, and the reader reads shape.
+- **The numeric value printed at each vertex.** The eye reads area, and area grows with the square of
+  the value — a stage 4 looks four times a stage 2, not twice. The number beside the vertex corrects
+  the reading.
 
-Regras obrigatórias do radar, porque ele tem duas armadilhas conhecidas:
-- **Ordem dos eixos fixa na sequência do CTEM** — Scoping, Discovery, Prioritization, Validation,
-  Mobilization. Nunca reordenar, nem alfabeticamente nem por valor: a mesma medição em ordem
-  diferente produz polígono de forma diferente, e o leitor lê forma.
-- **Valor numérico impresso em cada vértice.** O olho lê área, e a área cresce com o quadrado do
-  valor — um estágio 4 parece quatro vezes um estágio 2, não o dobro. O número ao lado do vértice
-  corrige a leitura.
+**Underneath, the horizontal bar with emphasis.** One bar per stage, a common 1-to-5 scale, a single
+baseline. The stage that sets the effective one in accent, the other four in recessive grey, direct
+labels with the value and the stage name. Two discreet vertical marks indicate the effective and the
+average stage. This is where the value is read precisely, and where the weakest link jumps out.
 
-**Embaixo, a barra horizontal com ênfase.** Uma barra por estágio, escala comum de 1 a 5, linha de
-base única. O estágio que define o efetivo em acento, os outros quatro em cinza de recessão, rótulo
-direto com valor e nome do estágio. Duas marcas verticais discretas indicam o estágio efetivo e o
-médio. É aqui que o valor se lê com precisão, e é aqui que o elo mais fraco salta.
+The scale ruler is aligned to the same reference as the bars: the mark for value `v` at `v / 5` of
+the track width, **not** distributed evenly across the width. Check this in the rendering — it is an
+easy mistake and it goes unnoticed.
 
-A régua de escala fica alinhada ao mesmo referencial das barras: a marca do valor `v` em
-`v / 5` da largura da trilha, **não** distribuída igualmente pela largura. Conferir na
-renderização — é erro fácil de cometer e passa despercebido.
+**Clicking a stage opens the indicator summary.** Both the radar vertex and the bar are clickable,
+with a target larger than the mark. The click opens a compact panel with **only the essentials**:
 
-**Clique no estágio abre o resumo dos indicadores.** Tanto o vértice do radar quanto a barra são
-clicáveis, com alvo maior que a marca. O clique abre um painel compacto com **só o essencial**:
-
-| Coluna | Conteúdo |
+| Column | Content |
 |---|---|
-| Indicador | ID e nome curto |
-| Valor | valor bruto medido |
-| Estágio | o estágio que aquele indicador atingiu |
+| Indicator | ID and short name |
+| Value | the raw measured value |
+| Stage | the stage that indicator reached |
 
-Nada mais nesse painel — sem fórmula, sem filtro, sem N, sem origem do limiar. No pé dele, um único
-link **"ver detalhe"** que leva à aba de Indicadores já filtrada naquele estágio, onde estão as
-colunas completas. Indicadores informativos aparecem no painel marcados como `informativo, não
-pontua`, e os em lacuna como `lacuna declarada` — importa o operador ver que existem, mesmo sem
-pontuar.
+Nothing else in that panel — no formula, no filter, no N, no threshold origin. At its foot, a single
+**"see detail"** link leading to the Indicators tab already filtered to that stage, where the full
+columns live. Informational indicators appear in the panel marked `informational, not scored`, and
+gaps as `declared gap` — the operator needs to see they exist, even when they do not score.
 
-**Os 19 indicadores são tabela, não gráfico.** Mais de sete classes que todas carregam significado
-pedem tabela. Uma linha por indicador, com valor, N, estágio atingido, corte seguinte, distância e
-origem do limiar.
+**The 19 indicators are a table, not a chart.** More than seven classes that all carry meaning call
+for a table. One row per indicator, with value, N, stage reached, next cutoff, distance and threshold
+origin.
 
-### Paleta — validada, não escolhida por gosto
+### Palette — validated, not chosen by taste
 
-Superfície `#44494B`, texto `#FFFFFF` e `rgba(255,255,255,.72)`. Fonte Inter ou system-ui.
+Surface `#44494B`, text `#FFFFFF` and `rgba(255,255,255,.72)`. Font Inter or system-ui.
 
-`#E7FF00` é **acento**, nunca cor de série. Use para o estágio bloqueante e o número em destaque.
+`#E7FF00` is an **accent**, never a series colour. Use it for the blocking stage and the highlighted
+number.
 
-Estágio é escala ordinal, então rampa sequencial de um matiz, validada contra `#44494B`:
+Stage is an ordinal scale, so a sequential ramp of one hue, validated against `#44494B`:
 
-| Estágio | Hex |
+| Stage | Hex |
 |---|---|
 | Ad Hoc | `#FFF0DC` |
 | Defined | `#FFC894` |
 | Standardized | `#FF9A45` |
 | Advanced / Optimized | `#EE7000` |
 
-Cinza de recessão `#7E8688`, usado nas quatro barras que não são o estágio bloqueante e no polígono
-da medição anterior na reavaliação. Neutro de ausência de dado `#9AA3A6`, **sempre com hachura a 45°
-e rótulo** — lacuna não pode parecer um nível de maturidade.
+Recessive grey `#7E8688`, used on the four bars that are not the blocking stage and on the previous
+measurement's polygon at reassessment. Neutral for absent data `#9AA3A6`, **always with 45° hatching
+and a label** — a gap must not look like a maturity level.
 
-No radar: contorno do polígono em `#FF9A45` com preenchimento `rgba(255,154,69,.30)`, vértices em
-`#FF9A45` e o vértice do estágio bloqueante em `#E7FF00`. Anéis de grade em
-`rgba(255,255,255,.10)`, o anel externo em `rgba(255,255,255,.22)`.
+On the radar: polygon outline in `#FF9A45` with `rgba(255,154,69,.30)` fill, vertices in `#FF9A45`
+and the blocking stage's vertex in `#E7FF00`. Grid rings in `rgba(255,255,255,.10)`, the outer ring
+in `rgba(255,255,255,.22)`.
 
-> **Não usar a dupla azul `#4EA5FF` + roxo `#BB8FF2` na mesma série.** Verificado com validador:
-> ΔE de 2,5 em protanopia e 13,4 em visão normal, abaixo do piso de 15. São indistinguíveis para
-> parte dos leitores.
+> **Do not use the blue `#4EA5FF` + purple `#BB8FF2` pair in the same series.** Verified with a
+> validator: ΔE of 2.5 under protanopia and 13.4 under normal vision, below the floor of 15. They are
+> indistinguishable for some readers.
 
-Barras finas, extremidade arredondada de 4px na linha de base, gap de 2px entre segmentos, grid e
-eixos recessivos, texto em cor de texto e nunca na cor da série, tooltip por marca no hover,
-**uma escala por eixo e nunca eixo duplo**, e visão de tabela em toda aba com gráfico.
+Thin bars, 4px rounded end at the baseline, 2px gap between segments, recessive grid and axes, text
+in the text colour and never in the series colour, a tooltip per mark on hover, **one scale per axis
+and never a dual axis**, and a table view on every tab with a chart.
 
-### Controles no cabeçalho — obrigatórios
+### Header controls — mandatory
 
-**Seletor de idioma PT-BR / EN / ES.** Três botões no canto superior direito, o ativo marcado com
-`aria-pressed="true"` e fundo de acento. A troca **re-renderiza tudo sem recarregar a página**:
-KPIs, abas, gráficos, tabelas, roadmap e a aba de metodologia. Nada de recarregar nem de perder a
-aba em que o leitor estava.
+**Language selector EN / PT-BR / ES.** Three buttons in the top right corner, the active one marked
+with `aria-pressed="true"` and an accent background. The switch **re-renders everything without
+reloading the page**: KPIs, tabs, charts, tables, roadmap and the methodology tab. No reload, and no
+losing the tab the reader was on.
 
-Implementação: um dicionário `L` com as três línguas para os rótulos e um dicionário `D` com os
-dados que mudam de idioma — nomes de indicador, itens do roadmap, limitações, fórmulas. Uma função
-`render()` que reconstrói o documento a partir de `L[LANG]` e `D[LANG]`, e uma `applySections()` que
-reaplica a aba corrente. `setLang()` só troca `LANG` e chama `render()`.
+The dashboard opens in the language chosen at Step 0; the selector is for the reader who receives
+the file.
 
-**Botão "Exportar HTML".** Gera um arquivo único, autocontido e **com todas as funções do artefato
-preservadas** — abas, cliques no radar e nas barras, drill-down, troca de idioma e a própria
-exportação. Serve para o parceiro mandar ao cliente e o cliente abrir offline, sem depender de nada.
+Implementation: a dictionary `L` with the three languages for the labels and a dictionary `D` with
+the data that changes by language — indicator names, roadmap items, limitations, formulas. A
+`render()` function that rebuilds the document from `L[LANG]` and `D[LANG]`, and an
+`applySections()` that reapplies the current tab. `setLang()` only swaps `LANG` and calls `render()`.
 
-Implementação, e cada detalhe abaixo veio de um defeito encontrado em teste:
+**An "Export HTML" button.** It generates a single, self-contained file **with every function of the
+artefact preserved** — tabs, radar and bar clicks, drill-down, language switching and the export
+itself. It lets the partner send it to the customer and the customer open it offline, depending on
+nothing.
+
+Implementation, and every detail below came from a defect found in testing:
 
 ```javascript
 function exportHTML(){
   const clone = document.documentElement.cloneNode(true);
-  clone.setAttribute('data-lang', LANG);          // o exportado abre no idioma exportado
+  clone.setAttribute('data-lang', LANG);          // the exported file opens in the exported language
   const html = '<!DOCTYPE html>\n' + clone.outerHTML;
   const blob = new Blob([html], {type:'text/html;charset=utf-8'});
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = 'maturidade-ctem-' + LANG + '-<data>.html';
+  a.download = 'ctem-maturity-' + LANG + '-<date>.html';
   document.body.appendChild(a); a.click(); a.remove();
 }
 ```
 
-E na inicialização:
+And at initialisation:
 
 ```javascript
-let LANG = document.documentElement.getAttribute('data-lang') || 'pt-br';
+let LANG = document.documentElement.getAttribute('data-lang') || 'en';
 ```
 
-**Três armadilhas, todas encontradas em teste e todas obrigatórias de evitar:**
+**Three traps, all found in testing and all mandatory to avoid:**
 
-1. **Não mexer no atributo `hidden` das seções no clone.** A primeira versão removia `hidden` de
-   todas as seções para "garantir que aparecessem", e o arquivo exportado abria com as cinco abas
-   empilhadas de uma vez. A visibilidade tem de ser aplicada por `applySections()` na carga, não
-   gravada no HTML.
-2. **Passar o idioma pelo `data-lang` do `<html>`.** Sem isso o `let LANG` volta ao default e o
-   arquivo exportado do inglês abre em português — exatamente o oposto do que o parceiro quer ao
-   mandar para um cliente estrangeiro.
-3. **Nada de recurso externo.** Sem CDN, sem fonte remota, sem imagem por URL. CSS e JS embutidos e
-   imagens em `data:` URI. O arquivo tem de funcionar com o notebook desconectado.
+1. **Do not touch the sections' `hidden` attribute in the clone.** The first version removed `hidden`
+   from every section "to make sure they showed up", and the exported file opened with all five tabs
+   stacked at once. Visibility has to be applied by `applySections()` on load, not written into the
+   HTML.
+2. **Pass the language through the `<html>` element's `data-lang`.** Without it the `let LANG` falls
+   back to the default and the file exported from Spanish opens in English — exactly the opposite of
+   what the partner wants when sending it to a customer abroad.
+3. **No external resources.** No CDN, no remote font, no image by URL. CSS and JS embedded and images
+   as `data:` URIs. The file has to work on a disconnected laptop.
 
-Confirmar em teste, abrindo o arquivo exportado: uma só aba visível na carga, idioma correto,
-troca de aba, drill-down, troca de idioma e re-exportação a partir do próprio exportado.
+Confirm in testing, by opening the exported file: a single visible tab on load, the right language,
+tab switching, drill-down, language switching, and re-exporting from the exported file itself.
 
-### Estrutura
+### Structure
 
 ```
-header (título + seletor de idioma + exportar) → barra de KPIs → abas 1..5 → rodapé com fontes
+header (title + language selector + export) → KPI bar → tabs 1..5 → footer with sources
 ```
 
-**Barra de KPIs (5):** estágio efetivo · estágio médio · estágio que limita o conjunto ·
-indicadores com dado, sobre os pontuáveis daquela run (17 com M4, 16 sem) ·
-dias desde a última avaliação.
+**KPI bar (5):** effective stage · average stage · the stage that limits the whole · indicators with
+data, over that run's scoring total (17 with M4, 16 without) · days since the last assessment.
 
-**Aba 1 — Panorama.** O radar dos cinco estágios, e abaixo dele a barra com ênfase. Depois, em
-texto, a frase que nomeia o estágio bloqueante e o indicador responsável. Por último a tabela dos
-cinco estágios com o estágio atingido e **quantos indicadores sustentaram cada um**.
+**Tab 1 — Overview.** The radar of the five stages, and below it the bar with emphasis. Then, in
+prose, the sentence naming the blocking stage and the indicator responsible. Last, the table of the
+five stages with the stage reached and **how many indicators supported each one**.
 
-Na **reavaliação**, quando o operador informa o resultado de uma execução anterior, o radar passa a
-mostrar os dois polígonos sobrepostos — medição anterior em cinza de recessão, atual em laranja —
-com legenda e as datas. É o caso em que o radar é claramente melhor que a barra, e o motivo de ele
-estar aqui.
+At **reassessment**, when the operator supplies a previous run's result, the radar shows the two
+polygons overlaid — the previous measurement in recessive grey, the current one in orange — with a
+legend and the dates. It is the case where the radar is clearly better than the bar, and the reason
+it is here.
 
-**Aba 2 — Indicadores.** A tabela dos 19, agrupada por estágio CTEM, com a coluna de origem do
-limiar visível. Indicadores informativos e em lacuna marcados como tal. P3 mostra as duas partes que o compõem: o critério declarado e a oportunidade medida.
+**Tab 2 — Indicators.** The table of all 19, grouped by CTEM stage, with the threshold-origin column
+visible. Informational and gap indicators marked as such. P3 shows the two parts that compose it: the
+declared criterion and the measured opportunity.
 
-**Aba 3 — Critérios oficiais Tenable.** Os oito critérios, cada um com os indicadores da skill que
-o compõem e o estágio resultante. É a aba que permite comparar com uma avaliação oficial que o
-cliente já tenha respondido.
+**Tab 3 — Official Tenable criteria.** The eight criteria, each with the skill's indicators that
+compose it and the resulting stage. It is the tab that allows comparison with an official assessment
+the customer may already have answered.
 
-**Aba 4 — Roadmap.** Três quarters, itens ordenados, com esforço, impacto e o que fazer. O item que
-destrava o estágio efetivo em destaque no Q1.
+**Tab 4 — Roadmap.** Three quarters, ordered items, with effort, impact and what to do. The item that
+unblocks the effective stage highlighted in Q1.
 
-**Aba 5 — Metodologia e limitações.** Aba de primeira classe. Contém, nesta ordem: a tabela
-`PREFLIGHT` completa; a declaração de cobertura e ponderação da amostra de plugins com os
-intervalos de confiança; as fórmulas; as lacunas declaradas, cada uma com a causa nomeada e a
-evidência que a sustenta; a **tabela de proposta confirmada do Passo 0**, com a coluna "como
-cheguei nele" preservada; e a **tabela dos quatro perfis de limiar**, para o leitor saber qual
-régua foi usada e o que as outras mudariam.
+**Tab 5 — Methodology and limitations.** A first-class tab. It contains, in this order: the complete
+`PREFLIGHT` table; the plugin set's coverage and weighting declaration with the confidence intervals;
+the formulas; the declared gaps, each with its named cause and the evidence supporting it; the
+**confirmed proposal table from Step 0**, with the "how I got there" column preserved; and the
+**table of the four threshold profiles**, so the reader knows which ruler was used and what the
+others would change.
 
-**São cinco abas, e só cinco.** Pré-voo e evidência **não** são abas próprias: eles vivem dentro
-da Metodologia, porque o leitor que quer o número vai ao Panorama e o leitor que quer auditar vai
-a um lugar só. Abrir aba para cada um deles espalha a auditoria e faz o relatório parecer um
-relatório de ferramenta, não de assessment.
+**There are five tabs, and only five.** Preflight and evidence are **not** tabs of their own: they
+live inside Methodology, because the reader who wants the number goes to Overview and the reader who
+wants to audit goes to one place. Opening a tab for each of them scatters the audit and makes the
+report look like a tool report, not an assessment.
 
 ---
 
-## Bloco de configuração
+## Configuration block
 
-Vai no SKILL.md e é sobrescrevível na execução. Os perfis `conservador` e `agressivo` deslocam
-todos os cortes em bloco; `custom` substitui indicador por indicador.
+It lives in SKILL.md and is overridable at run time. The `conservative` and `aggressive` profiles
+shift all cutoffs as a block; `custom` replaces them indicator by indicator.
 
 ```yaml
 maturity_config:
-  perfil: default              # default | conservador | agressivo | custom
-  classificar_estagio: true    # false = modo indicador puro, Passo 4
-  arredondamento: baixo        # sempre para baixo; maturidade se demonstra
-  agregacao: ambos             # ambos = efetivo e médio lado a lado (recomendado)
-                               # minimo = só o elo mais fraco | media = só a média
-  minimo_indicadores_por_estagio: 2
-  portao_de_confianca:
-    modo: proporcional         # proporcional (recomendado) | absoluto
-    coef_normal: 0.8125        # teto(coef × pontuáveis). Em 16 dá 13; em 17 dá 14
-    coef_com_aviso: 0.6250     # em 16 dá 10; em 17 dá 11
+  language: en                 # en | pt-br | es. Governs report, dialogue and dashboard default
+  profile: default             # default | conservative | aggressive | custom
+  classify_stage: true         # false = pure indicator mode, Step 4
+  rounding: down               # always down; maturity is demonstrated
+  aggregation: both            # both = effective and average side by side (recommended)
+                               # minimum = weakest link only | mean = average only
+  min_indicators_per_stage: 2
+  confidence_gate:
+    mode: proportional         # proportional (recommended) | absolute
+    coef_normal: 0.8125        # ceil(coef × scoring). At 16 gives 13; at 17 gives 14
+    coef_with_note: 0.6250     # at 16 gives 10; at 17 gives 11
   mttr:
-    dias: 180                  # janela do POST /vulns/export
-    severidades: [critical, high]   # M4 pontua pelo menor estágio das duas
-    max_wait_s: 240            # ao estourar, M4 vira lacuna RECUPERÁVEL com export_uuid
-    n_minimo_por_severidade: 5 # abaixo disso a severidade não pontua em M4
-    max_derivado_pct: 30       # acima disso M4 pontua com ⚠️ de composição
-    pct_em_lote_max: 40        # acima disso M4 vira lacuna (guarda de cadência)
-    lote_minimo_por_janela: 2  # findings na mesma janela para contar como lote. Ver nota abaixo
-    metodo_percentil: interpolado   # interpolado | posicao_mais_proxima — precisa bater com o coletor
-  amostra_plugins:
-    n: 30                      # subiu de 20 em 2026-09-03: com N=10 o IC tem 50 pontos de largura
-    n_teto: 60                 # limite da ampliação adaptativa
-    alocacao: proporcional     # proporcional à fatia real de cada estrato na população
-    piso_estrato_b: 4          # o estrato B existe para achar casos, não para estimar taxa
-    ponderar: por_deteccao     # por_deteccao | por_plugin — base dos pesos ao combinar estratos
-    portao_ic: true            # amplia em blocos de 10 enquanto o IC 95% atravessar um corte
-    modo_plugins: auto         # auto | censo | amostra. SUBSTITUI censo_d4_m3.
-                               # O censo passou a ser alcançável: plugins_search_plugins não aceita
-                               # lista de IDs, mas plugin_details_batch aceita. Medido em
-                               # 2026-09-04: 121 plugins críticos em 64 s e ~5.400 tokens.
-                               # No censo não há IC, ponderação nem alocação — a taxa é a contagem.
-    limite_censo: 300          # acima disso volta a amostra estratificada
-  corte_priorizacao_cliente:
-    metrica: vpr               # vpr | cvss3. Default: vpr
-    valor: 7.0                 # default VPR >= 7.0
-    confirmado: false          # true só quando o operador responde a Pergunta 10 ativamente.
-                               # false = default aceito sem verificação com o cliente; P3 pontua,
-                               # e o relatório é obrigado a escrever que o critério foi assumido
-  referencia_prazo: cisa_bod_26_04   # cisa_bod_26_04 | sla_do_cliente | nenhum
-  sla_do_cliente:
-    critical_dias: null
-    high_dias: null
-  superficies_licenciadas: [VM]
-  mapeamento_cliente:           # respostas da Fase B do Passo 0, reusar na reavaliação
-    categoria_criticidade: null
-    valores_maior_criticidade: []
-    categoria_owner: null
-    categoria_ambiente: null
-    categoria_localidade: null      # só agrupa o roadmap; não filtra escopo
-    valores_producao: []
-    scans_recorrentes: []
-    excluir: null
-    usa_excecoes: nao_sei       # nao_usa | usa_pouco | usa_muito | nao_sei
-  cortes:
+    days: 180                  # window of POST /vulns/export
+    severities: [critical, high]    # M4 scores by the lower stage of the two
+    max_wait_s: 240            # on timeout, M4 becomes a RECOVERABLE gap with export_uuid
+    min_n_per_severity: 5      # below this the severity does not score in M4
+    max_derived_pct: 30        # above this M4 scores with a composition ⚠️
+    max_batch_pct: 40          # above this M4 becomes a gap (cadence guard)
+    min_batch_per_window: 2    # findings in the same window to count as a batch
+    percentile_method: interpolated   # interpolated | nearest_position — must match the server
+  sample_plugins:
+    n: 30                      # raised from 20 on 2026-09-03: with N=10 the CI is 50 points wide
+    n_ceiling: 60              # limit of the adaptive widening
+    allocation: proportional   # proportional to each stratum's real share of the population
+    stratum_b_floor: 4         # stratum B exists to find cases, not to estimate a rate
+    weight_by: by_detection    # by_detection | by_plugin — weight base when combining strata
+    ci_gate: true              # widen in blocks of 10 while the 95% CI crosses a cutoff
+    plugin_mode: auto          # auto | census | sample. REPLACES census_d4_m3.
+                               # The census became reachable: plugins_search_plugins does not accept
+                               # a list of IDs, but plugin_details_batch does. Measured 2026-09-04:
+                               # 121 critical plugins in 64 s and ~5,400 tokens.
+                               # Under a census there is no CI, no weighting and no allocation.
+    census_limit: 300          # above this it falls back to the stratified sample
+  customer_priority_cutoff:
+    metric: vpr                # vpr | cvss3. Default: vpr
+    value: 7.0                 # default VPR >= 7.0
+    confirmed: false           # true only when the operator actively answers Question 10.
+                               # false = default accepted without checking with the customer; P3
+                               # scores, and the report must state the criterion was assumed
+  deadline_reference: cisa_bod_26_04   # cisa_bod_26_04 | customer_sla | none
+  customer_sla:
+    critical_days: null
+    high_days: null
+  licensed_surfaces: [VM]
+  customer_mapping:             # answers from Phase B of Step 0, reuse at reassessment
+    criticality_category: null
+    highest_criticality_values: []
+    owner_category: null
+    locality_category: null         # only groups the roadmap; does not filter scope
+    recurring_scans: []
+    uses_exceptions: unknown    # does_not_use | uses_a_little | uses_a_lot | unknown
+  cutoffs:
     S1: [20, 50, 80, 95]
     S2: [10, 40, 70, 90]
     S3: [10, 40, 70, 90]
-    D1: [90, 45, 14, 7]        # invertido
-    D2: [25, 50, 75, 90]    # percentual das superficies licenciadas, nao contagem
+    D1: [90, 45, 14, 7]        # inverted
+    D2: [25, 50, 75, 90]       # percentage of licensed surfaces, not a count
     D3: [20, 50, 75, 90]
     D4: [25, 50, 75, 90]
-    P1: [10, 40, 70, 90]     # redefinido em 2026-09-02: contexto de negocio no backlog critico
+    P1: [10, 40, 70, 90]       # redefined 2026-09-02: business context in the critical backlog
     P2: [40, 70, 90, 98]
-    P3: composto             # critério declarado + oportunidade medida; tabela própria
-    P3_oportunidade: [0.50, 0.20]   # cortes usados quando o cliente prioriza por CVSS
-    V2: [180, 90, 30, 14]      # invertido, ancorado na CISA BOD 26-04
-    V3: [25, 15, 8, 3]         # invertido. PERCENTUAL, como todo corte de taxa aqui
-    V4: [30, 15, 7, 2]         # invertido
-    M1: [90, 45, 14, 7]        # invertido. Intervalos entre DIAS distintos de avaliação
-    colapsar_runs_do_mesmo_dia: true   # ver a nota de M1 abaixo. Nunca desligar sem declarar
-    M2: [180, 90, 30, 14]      # invertido
-    M3: [180, 90, 30, 14]      # invertido
-    M4_critical: [90, 30, 15, 7]   # invertido. p50 de dias_para_corrigir, severidade Critical
-    M4_high: [180, 60, 30, 14]     # invertido. p50 de dias_para_corrigir, severidade High
-  invertidos: [D1, V2, V3, V4, M1, M2, M3, M4]
-  informativos: [S4, V1]       # não pontuam estágio
-  # P3 tem tabela de estágio própria e depende de P2 — ver references/indicadores-maturidade.md
+    P3: composite              # declared criterion + measured opportunity; its own table
+    P3_opportunity: [0.50, 0.20]    # a 0..1 RATIO, not a rate - the one fractional cutoff here
+    V2: [180, 90, 30, 14]      # inverted, anchored in CISA BOD 26-04
+    V3: [25, 15, 8, 3]         # inverted. A PERCENTAGE, like every rate cutoff here
+    V4: [30, 15, 7, 2]         # inverted
+    M1: [90, 45, 14, 7]        # inverted. Intervals between DISTINCT assessment DAYS
+    collapse_same_day_runs: true    # see the M1 note below. Never disable without declaring it
+    M2: [180, 90, 30, 14]      # inverted
+    M3: [180, 90, 30, 14]      # inverted
+    M4_critical: [90, 30, 15, 7]    # inverted. p50 of days_to_fix, Critical severity
+    M4_high: [180, 60, 30, 14]      # inverted. p50 of days_to_fix, High severity
+  inverted: [D1, V2, V3, V4, M1, M2, M3, M4]
+  informational: [S4, V1]      # do not score a stage
+  # P3 has its own stage table and depends on P2 — see references/maturity-indicators.md
 ```
 
-**Perfis, aplicados sobre os cortes default:**
+**Profiles, applied over the default cutoffs:**
 
-| Perfil | Efeito nos cortes | Quando usar |
+| Profile | Effect on the cutoffs | When to use |
 |---|---|---|
-| `default` | os cortes acima, como estão | assessment padrão. É o único perfil já rodado contra um tenant real |
-| `conservador` | cortes percentuais **+10 pontos** · cortes de dias **−30%** | cliente regulado, ou quando o assessment precisa ser defensável em auditoria. O mesmo tenant tende a pontuar um estágio abaixo |
-| `agressivo` | cortes percentuais **−10 pontos** · cortes de dias **+30%** | conversa inicial de adoção, para não travar tudo em Ad Hoc e perder o valor do diagnóstico. Declarar o perfil é obrigatório aqui: sem isso o número parece melhor do que a régua padrão diria |
-| `custom` | carrega um bloco `maturity_config` próprio, corte por corte | cliente com SLA interno definido, ou parceiro que padronizou a própria régua entre contas. Todo corte sobrescrito aparece marcado como `sobrescrito pelo operador` na tabela de indicadores |
+| `default` | the cutoffs above, as they are | standard assessment. The only profile ever run against a real tenant |
+| `conservative` | percentage cutoffs **+10 points** · day cutoffs **−30%** | a regulated customer, or when the assessment has to be defensible in an audit. The same tenant tends to score one stage lower |
+| `aggressive` | percentage cutoffs **−10 points** · day cutoffs **+30%** | an initial adoption conversation, so as not to pin everything at Ad Hoc and lose the value of the diagnosis. Declaring the profile is mandatory here: without it the number looks better than the standard ruler would say |
+| `custom` | loads its own `maturity_config` block, cutoff by cutoff | a customer with a defined internal SLA, or a partner who standardised its own ruler across accounts. Every overridden cutoff appears marked as `operator override` in the indicators table |
 
-**O perfil desloca a régua, nunca a fórmula nem a fonte de dado.** Escolher perfil é escolher com
-que severidade se lê o mesmo número. Por isso ele é uma das respostas da tela de confirmação do
-Passo 0, e por isso o relatório precisa mostrar as quatro opções — o leitor tem de saber que o
-resultado que está vendo depende de uma régua escolhida, e qual.
+**The profile shifts the ruler, never the formula nor the data source.** Choosing a profile is
+choosing how severely the same number is read. That is why it is one of the answers on the Step 0
+confirmation screen, and why the report has to show the four options — the reader has to know the
+result they are seeing depends on a chosen ruler, and which one.
 
-O perfil escolhido vai declarado no relatório. Trocar de perfil entre reavaliações **invalida a
-comparação** — a skill deve avisar em destaque se o perfil da execução atual for diferente do
-registrado numa execução anterior informada pelo operador.
+The chosen profile goes declared in the report. Changing profiles between reassessments **invalidates
+the comparison** — the skill must warn prominently if the current run's profile differs from the one
+recorded in a previous run supplied by the operator.
 
 ---
 
-## ACR e AES em ativo novo — pendente não é lacuna
+## ACR and AES on a new asset — pending is not a gap
 
-**Ativo visto pela primeira vez ainda não tem ACR nem AES.** A Tenable calcula esses valores em até
-24 horas do primeiro scan. Antes disso as propriedades vêm nulas, e isso **não** é lacuna de
-maturidade nem valor zero — é cálculo em andamento.
+**An asset seen for the first time does not have an ACR or an AES yet.** Tenable computes these
+values within 24 hours of the first scan. Before that the properties come back null, and that is
+**not** a maturity gap and not a zero — it is a calculation in progress.
 
-Verificação obrigatória, antes de qualquer indicador que toque ACR ou AES:
+Mandatory check, before any indicator that touches ACR or AES:
 
 ```
-pendentes = assets(asset_class = DEVICE) com acr ausente
+pending = assets(asset_class = DEVICE) with acr absent
 ```
 
-Comportamento:
+Behaviour:
 
-| Situação | Comportamento |
+| Situation | Behaviour |
 |---|---|
-| Nenhum ativo pendente | Seguir normalmente |
-| Alguns pendentes | Calcular o indicador **excluindo os pendentes do denominador** e declarar quantos ficaram de fora e por quê |
-| Todos pendentes | O indicador vira `pendente de cálculo`, **não** `lacuna` e **nunca** zero. O relatório informa que a reexecução após 24 horas do primeiro scan terá o valor |
+| No pending asset | Proceed normally |
+| Some pending | Compute the indicator **excluding the pending ones from the denominator** and declare how many were left out and why |
+| All pending | The indicator becomes `pending calculation`, **not** a `gap` and **never** zero. The report states that re-running after 24 hours from the first scan will have the value |
 
-**Aviso obrigatório no topo do relatório** quando houver qualquer pendente, no idioma escolhido:
+**A mandatory warning at the top of the report** whenever anything is pending, in the chosen language:
 
-> PT: *"ACR e AES pendentes de cálculo em N de M ativos DEVICE. Esses ativos foram vistos pela
-> primeira vez no scan mais recente e a Tenable calcula os valores em até 24 horas. Reexecutar depois
-> desse prazo para ter a leitura completa."*
+> *"ACR and AES pending calculation on N of M DEVICE assets. Those assets were seen for the first
+> time in the most recent scan and Tenable computes the values within 24 hours. Re-run after that
+> window for the complete reading."*
 
-**Nota de desenho que reduz o impacto disso:** nesta skill o contexto de negócio é medido por **tag
-de criticidade**, não por ACR — justamente porque o ACR é automático e o MCP não revela se foi
-ajustado por humano. Por isso, num tenant recém-escaneado, o único indicador sem base é o S4, que é
-informativo e não pontua. Um assessment que dependesse de ACR para pontuar ficaria inutilizável nas
-primeiras 24 horas de um ambiente novo.
+**A design note that reduces the impact:** in this skill business context is measured by the
+**criticality tag**, not by ACR — precisely because the ACR is automatic and the API does not reveal
+whether it was human-adjusted. So in a freshly scanned tenant the only indicator without a base is
+S4, which is informational and does not score. An assessment that depended on ACR to score would be
+unusable in the first 24 hours of a new environment.
 
 ---
 
-## Tratamento de lacunas
+## Gap handling
 
-| Situação | Comportamento |
+| Situation | Behaviour |
 |---|---|
-| Consulta vazia ou com falha | Indicador vira `lacuna`. **Nunca zero** — zero é um valor, lacuna é ausência |
-| Filtro reprovado no pré-voo | Indicador vira `lacuna`, e o relatório mostra o filtro e os dois totais |
-| Operador respondeu "Nenhuma" num mapeamento | O indicador vira **lacuna com causa nomeada** — "o cliente não tem categoria de tag de owner" — que é achado de Scoping e item de roadmap, não falha de ferramenta |
-| Cliente usa regras de exceção | Nenhum cálculo muda, porque o MCP não expõe o campo. A ressalva da Pergunta 8 entra no relatório |
-| Estágio com menos de 2 indicadores | Estágio vira `lacuna` e sai do cálculo do efetivo e do médio |
-| `medidos < teto(0,625 × P)` pontuáveis com dado | Não classificar. Entregar indicadores e o que habilitar |
-| Export de MTTR falhou ou estourou o tempo | M4 vira lacuna com causa nomeada, `P` cai para 16 e o portão se ajusta. Se houver `export_uuid` na causa, a lacuna é **recuperável**: retomar. **Nunca** estimar MTTR |
-| `filtros_divergiram = true` | O servidor devolve **erro estruturado**, não número: o recorte não é o pedido. M4 vira lacuna |
-| Guarda de cadência disparou | M4 vira lacuna. O número mediria cadência, que M1 e M2 já medem. O achado vai escrito no relatório — é resultado, não falha |
-| Retorno sem corte de lote, estados ou método de percentil declarados | Não deve acontecer: o servidor declara os três. Se faltar, tratar como lacuna. Defaults da skill (lote ≥ 2, só `FIXED`, percentil interpolado) e declarar o recálculo. **Nunca** aceitar o número do resumo sem saber o método |
-| `severidade_modificada_diferente_de_none > 0` | Contar por severidade e declarar. Sem esse campo o assessment é cego a recast e aceitação — com ele, a ressalva é obrigatória em S3, P1, P2 e M4 |
-| Superfície não licenciada | Mensagem clara de superfície não licenciada. Nunca falhar, nunca reportar zero |
-| Tenant sem histórico de scan | D1, M1 e M2 viram lacuna. Declarar que o estágio Mobilization ficou sem base |
-| Última avaliação há mais de 30 dias | Abrir o relatório com aviso de dado defasado e a data |
-| ACR ou AES ausente em ativo novo | `pendente de cálculo`, nunca lacuna e nunca zero. Excluir do denominador e declarar |
-| Detalhe de plugin indisponível | Contar à parte. **Nunca** tratar ausência de dado como ausência de exploit |
-| IC 95% da amostra atravessa um corte no teto de N | **Não classificar** aquele indicador. Reportar a faixa e dizer que a amostra não separa os dois estágios |
-| Ativos com nome repetido | Achado de padronização de nomenclatura, **não** duplicidade de inventário. Se cada um tem agente próprio, são ativos distintos e o denominador está correto |
+| Empty or failed query | The indicator becomes a `gap`. **Never zero** — zero is a value, a gap is an absence |
+| Filter rejected in the preflight | The indicator becomes a `gap`, and the report shows the filter and both totals |
+| The operator answered "None" to a mapping | The indicator becomes a **gap with a named cause** — "the customer has no owner tag category" — which is a Scoping finding and a roadmap item, not a tool failure |
+| The customer uses exception rules | No calculation changes, because the Exposure Management API does not expose the field. The Question 8 caveat enters the report |
+| A stage with fewer than 2 indicators | The stage becomes a `gap` and leaves the effective and average calculation |
+| `measured < ceil(0.625 × P)` scoring indicators with data | Do not classify. Deliver the indicators and what to enable |
+| The MTTR export failed or timed out | M4 becomes a gap with a named cause, `P` drops to 16 and the gate adjusts. If there is an `export_uuid` in the cause, the gap is **recoverable**: resume. **Never** estimate an MTTR |
+| `filters_diverged = true` | The server returns a **structured error**, not a number: the slice is not the request. M4 becomes a gap |
+| The cadence guard fired | M4 becomes a gap. The number would measure cadence, which M1 and M2 already measure. The finding goes written into the report — it is a result, not a failure |
+| A return without a declared batch cutoff, states or percentile method | Should not happen: the server declares all three. If one is missing, treat it as a gap. **Never** accept the summary's number without knowing the method |
+| `modified_severity_other_than_none > 0` | Count per severity and declare it. Without that field the assessment is blind to recast and acceptance — with it, the caveat is mandatory in S3, P1, P2 and M4 |
+| An unlicensed surface | A clear "surface not licensed" message. Never fail, never report zero |
+| A tenant with no scan history | D1, M1 and M2 become gaps. Declare that the Mobilization stage was left without a base |
+| Last assessment more than 30 days ago | Open the report with a stale-data warning and the date |
+| ACR or AES absent on a new asset | `pending calculation`, never a gap and never zero. Exclude from the denominator and declare it |
+| Plugin detail unavailable | Count it separately. **Never** treat absence of data as absence of an exploit |
+| The sample's 95% CI crosses a cutoff at the N ceiling | **Do not classify** that indicator. Report the band and say the sample does not separate the two stages |
+| Assets with repeated names | A naming-standard finding, **not** an inventory duplicate. If each has its own agent, they are distinct assets and the denominator is correct |
 
 ---
 
-## Rótulos por idioma
+## Labels by language
 
-| Elemento | PT-BR | EN | ES |
+| Element | EN | PT-BR | ES |
 |---|---|---|---|
-| Título | Avaliação de Maturidade CTEM | CTEM Maturity Assessment | Evaluación de Madurez CTEM |
-| Estágio efetivo | Estágio efetivo | Effective stage | Etapa efectiva |
-| Estágio médio | Estágio médio | Average stage | Etapa promedio |
-| Estágio que limita | Estágio que limita o conjunto | Limiting stage | Etapa limitante |
-| Aba 1 | Panorama | Overview | Panorama |
-| Aba 2 | Indicadores | Indicators | Indicadores |
-| Aba 3 | Critérios oficiais Tenable | Official Tenable criteria | Criterios oficiales de Tenable |
-| Aba 4 | Roadmap | Roadmap | Hoja de ruta |
-| Aba 5 | Metodologia e limitações | Methodology and limitations | Metodología y limitaciones |
-| Estágios | Ad Hoc · Definido · Padronizado · Avançado · Otimizado | Ad Hoc · Defined · Standardized · Advanced · Optimized | Ad Hoc · Definido · Estandarizado · Avanzado · Optimizado |
-| Scoping | Escopo | Scoping | Alcance |
-| Discovery | Descoberta | Discovery | Descubrimiento |
-| Prioritization | Priorização | Prioritization | Priorización |
-| Validation | Validação | Validation | Validación |
-| Mobilization | Mobilização | Mobilization | Movilización |
-| Lacuna declarada | Lacuna declarada | Declared gap | Brecha declarada |
-| Informativo | Informativo, não pontua | Informational, not scored | Informativo, no puntúa |
-| Origem do limiar | Origem do limiar | Threshold source | Origen del umbral |
-| Exportar | Exportar HTML | Export HTML | Exportar HTML |
-| Arquivo gerado | Arquivo gerado | File generated | Archivo generado |
-| Pendente de cálculo | Pendente de cálculo | Pending calculation | Pendiente de cálculo |
-| Critério da skill | Critério da skill, não da Tenable | Skill criterion, not Tenable's | Criterio de la skill, no de Tenable |
-| Distância até o próximo | Falta para o próximo estágio | Gap to next stage | Falta para la próxima etapa |
-| Esforço | Baixo · Médio · Alto | Low · Medium · High | Bajo · Medio · Alto |
+| Title | CTEM Maturity Assessment | Avaliação de Maturidade CTEM | Evaluación de Madurez CTEM |
+| Effective stage | Effective stage | Estágio efetivo | Etapa efectiva |
+| Average stage | Average stage | Estágio médio | Etapa promedio |
+| Limiting stage | Limiting stage | Estágio que limita o conjunto | Etapa limitante |
+| Tab 1 | Overview | Panorama | Panorama |
+| Tab 2 | Indicators | Indicadores | Indicadores |
+| Tab 3 | Official Tenable criteria | Critérios oficiais Tenable | Criterios oficiales de Tenable |
+| Tab 4 | Roadmap | Roadmap | Hoja de ruta |
+| Tab 5 | Methodology and limitations | Metodologia e limitações | Metodología y limitaciones |
+| Stages | Ad Hoc · Defined · Standardized · Advanced · Optimized | Ad Hoc · Definido · Padronizado · Avançado · Otimizado | Ad Hoc · Definido · Estandarizado · Avanzado · Optimizado |
+| Scoping | Scoping | Escopo | Alcance |
+| Discovery | Discovery | Descoberta | Descubrimiento |
+| Prioritization | Prioritization | Priorização | Priorización |
+| Validation | Validation | Validação | Validación |
+| Mobilization | Mobilization | Mobilização | Movilización |
+| Declared gap | Declared gap | Lacuna declarada | Brecha declarada |
+| Informational | Informational, not scored | Informativo, não pontua | Informativo, no puntúa |
+| Threshold source | Threshold source | Origem do limiar | Origen del umbral |
+| Export | Export HTML | Exportar HTML | Exportar HTML |
+| File generated | File generated | Arquivo gerado | Archivo generado |
+| Pending calculation | Pending calculation | Pendente de cálculo | Pendiente de cálculo |
+| Skill criterion | Skill criterion, not Tenable's | Critério da skill, não da Tenable | Criterio de la skill, no de Tenable |
+| Gap to next stage | Gap to next stage | Falta para o próximo estágio | Falta para la próxima etapa |
+| Effort | Low · Medium · High | Baixo · Médio · Alto | Bajo · Medio · Alto |
 
 ---
 
-## Notas de precisão
+## Precision notes
 
-1. **Separar fato de interpretação.** O relatório distingue dado do tenant, cálculo da skill e
-   recomendação. O indicador é dado; o estágio é cálculo; o roadmap é recomendação.
-2. **Nenhum limiar por estágio é oficial da Tenable.** Rotular indicador por indicador.
-3. **Lacuna não é zero.** Um indicador sem dado nunca vira zero, nem entra em média.
-4. **Arredondar estágio para baixo.** Maturidade se demonstra.
-5. **A BOD 26-04 é referência**, não obrigação do cliente, salvo se ele for agência federal dos EUA.
-6. **MTTR vem de fora do MCP, e a origem vai escrita.** O MCP não expõe `last_fixed` nem
-   `time_taken_to_fix` — os dois vivem na API de Vulnerability Management, em `POST /vulns/export`.
-   M4 só pontua quando a guarda de cadência libera; do contrário é lacuna declarada, nunca
-   estimativa. Quando pontua,
-   o relatório mostra a composição nativo/derivado e o `n` de cada severidade. Cadência de
-   avaliação (M1, M2) continua medindo outra coisa e medindo bem: **MTTR pergunta quanto tempo se
-   leva para fechar; cadência pergunta se se está olhando.**
-7. **Percentual de amostra não é percentual de backlog.** Declarar a cobertura.
-8. **Não converter maturidade em número financeiro** sem premissa do cliente.
-
----
-
-## Gancho de serviço para o parceiro
-
-1. **Assessment inicial pago.** O diagnóstico é o produto: dezenove indicadores medidos, estágio
-   efetivo e médio, e o estágio bloqueante nomeado.
-2. **Execução das lacunas.** O roadmap de três quarters já vem ordenado por esforço e impacto, e o
-   Q1 é a proposta de trabalho imediata.
-3. **Reavaliação trimestral.** Rodar de novo mostra movimento de estágio com a mesma régua. É o que
-   transforma o assessment em contrato recorrente em vez de entrega única.
-
-O argumento mais forte é a diferença entre estágio médio e efetivo: mostra ao cliente que ele já
-pagou por capacidade que não está convertendo em resultado, e aponta exatamente onde.
+1. **Separate fact from interpretation.** The report distinguishes tenant data, skill calculation and
+   recommendation. The indicator is data; the stage is a calculation; the roadmap is a recommendation.
+2. **No per-stage threshold is official Tenable.** Label it indicator by indicator.
+3. **A gap is not a zero.** An indicator without data never becomes zero, and never enters a mean.
+4. **Round the stage down.** Maturity is demonstrated.
+5. **BOD 26-04 is a reference**, not an obligation of the customer, unless they are a US federal
+   agency.
+6. **MTTR comes from outside the Exposure Management API, and the origin goes written.** That API
+   exposes neither `last_fixed` nor `time_taken_to_fix` — both live in the Vulnerability Management
+   API, in `POST /vulns/export`. M4 only scores when the cadence guard clears; otherwise it is a
+   declared gap, never an estimate. When it scores, the report shows the native/derived composition
+   and the `n` of each severity. Assessment cadence (M1, M2) continues to measure something else, and
+   measures it well: **MTTR asks how long it takes to close; cadence asks whether anyone is looking.**
+7. **A sample percentage is not a backlog percentage.** Declare the coverage.
+8. **Do not convert maturity into a financial number** without a customer premise.
 
 ---
 
-## Fontes citáveis no relatório
+## Service hook for the partner
+
+1. **A paid initial assessment.** The diagnosis is the product: nineteen measured indicators, the
+   effective and average stage, and the blocking stage named.
+2. **Execution of the gaps.** The three-quarter roadmap already comes ordered by effort and impact,
+   and Q1 is the immediate statement of work.
+3. **Quarterly reassessment.** Running it again shows stage movement against the same ruler. It is
+   what turns the assessment into a recurring contract rather than a one-off delivery.
+
+The strongest argument is the difference between the average and the effective stage: it shows the
+customer they have already paid for capability they are not converting into results, and points at
+exactly where.
+
+---
+
+## Sources citable in the report
 
 - Tenable — Exploring the Exposure Management Maturity Model: https://www.tenable.com/blog/exploring-the-exposure-management-maturity-model
-- Tenable — Exposure Management Maturity Assessment, os oito critérios: https://assess.tenable.com/exposure-management-maturity-assessment
+- Tenable — Exposure Management Maturity Assessment, the eight criteria: https://assess.tenable.com/exposure-management-maturity-assessment
 - Tenable — How to chart a path to exposure management maturity: https://www.tenable.com/guides/how-to-chart-a-path-to-exposure-management-maturity
-- Tenable Docs — Exposure Management Metrics, faixas de CES, AES, ACR e VPR: https://docs.tenable.com/exposure-management/Content/getting-started/metrics.htm
+- Tenable Docs — Exposure Management Metrics, the CES, AES, ACR and VPR bands: https://docs.tenable.com/exposure-management/Content/getting-started/metrics.htm
 - Tenable — CISO's guide to CISA BOD 26-04: https://www.tenable.com/blog/bod-26-04-ciso-reporting-risk-metrics
 - Tenable — VPR Drivers: https://developer.tenable.com/docs/vpr-drivers-tio

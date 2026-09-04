@@ -1,429 +1,369 @@
-# Contrato das tools
+# Tool contract
 
-Onze tools no total. Este arquivo cresce a cada marco; hoje documenta o que existe.
+Thirteen tools in total: five per CTEM stage, two for discovery and preflight, five primitives, and
+one diagnostic.
 
-## Envelope de retorno
+| Group | Tools |
+|---|---|
+| Discovery and preflight | `ctem_discover_tenant`, `ctem_preflight` |
+| Indicators by stage | `ctem_scoping`, `ctem_discovery`, `ctem_prioritization`, `ctem_validation`, `ctem_mobilization` |
+| Primitives | `plugin_details_batch`, `plugin_census`, `scan_cadence`, `mttr_collect`, `mttr_cadence_guard` |
+| Diagnostic | `ctem_diagnostics` |
 
-Todo indicador, em toda tool, devolve este envelope. Nunca desvia.
+## Return envelope
+
+Every indicator, in every tool, returns this envelope. It never deviates.
 
 ```json
 {
-  "indicador": "M1",
-  "valor": 21.0,
+  "indicator": "M1",
+  "value": 21.0,
   "n": 12,
-  "filtro_literal": "scan_ids=['abc','def'], runs colapsados em 5 dias distintos",
-  "coletado_em_utc": "2026-09-03T14:22:00Z",
-  "veredito_preflight": "ok"
+  "literal_filter": "scan_ids=['abc','def'], runs collapsed into 5 distinct days",
+  "collected_at_utc": "2026-09-03T14:22:00Z",
+  "preflight_verdict": "ok"
 }
 ```
 
-Se a consulta falhar, `valor` é `null`, `lacuna` é `true` e `causa` vem preenchida.
-**Número parcial silencioso é proibido.**
+If the query fails, `value` is `null`, `gap` is `true` and `cause` is filled in.
+**A silent partial number is forbidden.**
 
-`veredito_preflight` assume: `ok`, `aplicado`, `ignorado`, `indeterminado`, `corpus_vazio`,
-`nao_aplicavel`.
+`preflight_verdict` takes: `ok`, `applied`, `ignored`, `undetermined`, `empty_corpus`,
+`not_applicable`.
 
-## Erros
+The stage tools return `{"indicators": [ <envelope>, ... ]}`.
 
-Erro nunca é stack trace nem exceção crua. Formato:
+## Errors
 
-```json
-{"erro": "falha_de_coleta", "causa": "credencial_invalida",
- "detalhe": "...", "lacuna": true, "coletado_em_utc": "..."}
-```
-
-Filtro negado pela deny-list:
+An error is never a stack trace nor a raw exception. Format:
 
 ```json
-{"erro": "filtro_negado", "regra": "filters_precisa_ser_array_json",
- "detalhe": "...", "prova": "...", "lacuna": true}
+{"error": "collection_failure", "cause": "credential_invalid",
+ "detail": "...", "gap": true, "collected_at_utc": "..."}
 ```
 
-A `prova` é a medição que sustenta a regra — quem lê o erro vê por que o filtro foi recusado.
-
----
-
-## `ctem_discover_tenant(usar_cache: bool = True)`  — M0
-
-Retrato do tenant numa chamada. Substitui ~10 chamadas da Fase A do Passo 0 da skill.
-
-**Devolve:**
-
-| Campo | Conteúdo |
-|---|---|
-| `tags` | `quantidade` de categorias e, em `categorias`, os valores de cada uma |
-| `ativos` | `total` e `por_asset_class` |
-| `exposure_classes` | total por classe: `VM`, `WAS`, `CLOUD`, `IDENTITY`, `OT`, `AI`, `CODE` |
-| `scans` | `total_scans`, `com_historico`, e por scan: `runs` e `runs_completed` |
-| `agentes` | `total`, `ativos`, `por_status` |
-| `servido_do_cache` | `true` quando veio do cache de TTL curto |
-
-**Atenção:** `asset_class` **não** é `exposure_classes`. Um tenant pode ter ativos com
-`asset_class = IDENTITY` e `exposure_classes = IDENTITY` em zero — os ativos de identidade estão no
-inventário sem carregar achados de Identity Exposure. D2 usa `exposure_classes`.
-
-**Cache:** obrigatório, TTL curto. `usar_cache=False` força coleta nova.
-
-**Não colapsa runs.** O colapso em dias distintos de avaliação é trabalho de `scan_cadence` (M4), e
-é o que separa mediana de 1,42 dia de mediana de 21 dias em M1.
-
-## `ctem_diagnostico()`  — M0
-
-Diz se o servidor fala com o tenant, sem coletar indicador. Separa três causas que se parecem no
-cliente: **credencial ausente**, **credencial inválida** e **TLS interceptado por proxy**.
-Nunca imprime a chave, nem parte dela.
-
----
-
-## `ctem_preflight(severity_workbenches="critical")`  — M3
-
-A tabela PREFLIGHT pronta: cada filtro que a skill usa, **testado ao vivo**. Nenhum veredito é
-herdado de documento.
-
-Três formas de prova, e a escolha depende do filtro:
-
-| Tipo | O que exige | Por que |
-|---|---|---|
-| `par_exclusivo` | duas consultas mutuamente exclusivas cujos totais **somam o corpus** | "reduziu" não basta — um filtro pode reduzir por acaso |
-| `booleano` | `true` e `false` com totais diferentes | totais iguais significam parâmetro ignorado |
-| `monotonico` | escada de cortes estritamente decrescente | prova que o corte está sendo aplicado |
-
-Devolve também `deny_list`: os filtros que o servidor rejeita **antes de a requisição sair**, cada um
-com a regra e a prova medida.
-
-Resultado no sandbox: **8 aplicados, 5 ignorados, 0 indeterminados**.
-
-### As quatro correções que este pré-voo encontrou
-
-Os vereditos de `_docs/matriz-confianca-filtros-mcp.md` foram medidos **através do MCP oficial**.
-Contra a API REST direta, quatro deles mudam. A matriz não está errada — ela descreve o outro
-caminho.
-
-| # | O que a matriz diz | O que a API direta faz | Prova |
-|---|---|---|---|
-| 1 | filtro de data em findings é ignorado, em todo operador | só os operadores **relativos** são ignorados; os de **comparação** funcionam | `older than 3650d` → 50 e `within last 1d` → 50 (mutuamente exclusivos, ambos o corpus). Mas `< 2020-01-01` → 0 e `>= 2020-01-01` → 50, que **somam** 50 |
-| 2 | `exists` não funciona em `finding_vpr_score` (HTTP 400) | funciona; o 400 vem de `value` **vazio** | `exists` → 4.462 e `not exists` → 1.024, que somam os 5.486 do corpus. A mensagem da API é literalmente *"Missing value in filter"* |
-| 3 | `resolvable` — "presumir ignorado até prova" | **provado** ignorado | `true` → 121 e `false` → 121 |
-| 4 | `age` é aplicado em workbenches | `age` **não é parâmetro** desta API; o nome real é `date_range`, e esse funciona | `age=1` → 121 (o corpus). `date_range`: 1 → 17, 30 → 118, 90 → 121 |
-
-A correção 2 é a mais instrutiva: um HTTP 400 foi lido como *"a propriedade não suporta o
-operador"*, quando a causa era o valor ausente. A regra certa é mais ampla e mais útil — **todo
-operador exige `value` não vazio**.
-
-A semântica de `date_range` continua sendo a que a matriz descreve: **recência da última
-observação**, não idade do finding. Quem usar como "dias em aberto" produz número errado.
-
-## `ctem_scoping(mapeamento, indicadores=None)`  — M1
-
-Estágio 1: **S1, S2, S3, S4**.
-
-`mapeamento` é obrigatório e explícito — o servidor **não adivinha** o nome da categoria de tag:
+A filter denied by the deny-list:
 
 ```json
-{"categoria_criticidade": "Criticidade", "categoria_owner": "Owner"}
+{"error": "filter_denied", "rule": "filters_must_be_json_array",
+ "detail": "...", "proof": "...", "gap": true}
 ```
 
-Sem ele, S2 e S3 viram lacuna e a causa lista as categorias que existem, para o consultor apontar a
-certa. `sugerir_categorias()` propõe candidatas por pista de nome, mas **não decide** — no sandbox
-sugere `Owner` e `Team` para owner, e a escolha continua do operador.
-
-| ID | Fórmula | Filtro literal |
-|---|---|---|
-| S1 | `assets(tag_count ≥ 1) / assets(total)` | `[{"property":"tag_count","operator":">=","value":["1"]}]` |
-| S2 | assets com valor da categoria de criticidade / total | `[{"property":"tag_names","operator":"=","value":[<valores>]}]` |
-| S3 | idem, categoria de owner | idem |
-| S4 | existe categoria de criticidade **e** ≥1 ativo com `acr ≥ 9` | `[{"property":"acr","operator":">=","value":["9"]}]` |
-
-**S4 é informativo e não pontua estágio.** A API não expõe se o ACR foi ajustado por humano ou se é
-o valor automático da Tenable: S4 mede *declaração* de contexto, não *curadoria*. A lacuna
-estrutural vai declarada no `contexto`.
-
-> **Achado da validação de 2026-09-03.** `tag_names` guarda o **valor** da tag, não `Categoria:Valor`.
-> `contains "Criticidade"` devolve **0**; `= ["Alta","Baixa","Crown Jewel","Média"]` devolve **8**.
-> Um array de valores tem semântica de OU e já deduplica o ativo que carrega duas tags da mesma
-> categoria — no sandbox, 1+0+2+6 = 9 tags mas **8** ativos distintos.
-
-## `ctem_discovery(indicadores=None, superficies_licenciadas=None, corte_vpr_amostra=7.0, n_amostra=30)`  — M1
-
-Estágio 2: **D1, D2, D3, D4**.
-
-| ID | Fórmula | Nota |
-|---|---|---|
-| D1 | `hoje − time_start do run mais recente` · invertido | fonte é `scan_history`. **Nunca** filtro de data em findings (ignorado) nem `age` (é recência, não idade) |
-| D2 | superfícies licenciadas cobertas / licenciadas | **razão percentual**, não contagem. `asset_class` não é `exposure_classes` |
-| D3 | agentes ativos / `assets(asset_class = DEVICE)` | denominador é DEVICE — IDENTITY, ACCOUNT e GROUP não têm software instalado |
-| D4 | plugins com `Scan Type = local` / conjunto | **censo por default**; amostra estratificada com IC de Wilson acima do limite |
-
-`indicadores=["D1","D3"]` evita as chamadas de plugin que D4 exigiria — é o que torna o custo de uma
-reavaliação parcial proporcional ao pedido.
-
-**D4 é proxy declarado:** plugin de tipo `local` só retorna resultado com credencial válida ou
-agente. Não é leitura de status de credencial — e o parâmetro `authenticated` de workbenches é
-comprovadamente ignorado.
-
-## `ctem_prioritization(mapeamento, indicadores=None, corte_priorizacao_cliente=None, p2_valor=None)`  — M2
-
-Estágio 3: **P1, P2, P3**, mais as três filas comparadas.
-
-| ID | Fórmula | Nota |
-|---|---|---|
-| P1 | `findings(VPR ≥ 9 ∧ ativo com tag de criticidade) / findings(VPR ≥ 9)` | **não** é a concordância entre modelos de score |
-| P2 | `findings(ACTIVE ∧ VPR ≥ 0,1) / findings(ACTIVE)` | denominador é ACTIVE, não o corpus |
-| P3 | composto: critério declarado + oportunidade medida | depende de P2 |
-
-**P1 foi redefinido em 2026-09-02.** A versão anterior, `findings(VPR ≥ 9) / findings(CRITICAL)`,
-mede a concordância entre dois modelos de score e não tem direção de maturidade defensável —
-classificaria como Ad Hoc um tenant onde os dois modelos simplesmente concordam.
-
-**P1 é diferente de S2, e a diferença é informativa.** S2 mede cobertura de tag sobre o inventário
-todo; P1 mede cobertura ponderada por onde o risco crítico está. No sandbox: S2 26,7% e P1 100% — o
-cliente **tagueou os ativos certos**, o que é mais maduro que o inverso.
-
-**O denominador de P2 é `ACTIVE`.** Medido no sandbox: 81,6% com ACTIVE, 81,3% com o corpus inteiro
-e 82,2% contando VPR em todos os estados. Só o primeiro reproduz o valor do assessment.
-
-**P3 sem critério declarado é lacuna, não número.** "O cliente não sabe qual critério usa" é o
-próprio estágio Ad Hoc, e classificar é da skill — o servidor não inventa um corte.
-
-O `contexto` de P3 traz as filas:
-
-| Fila | Sandbox |
-|---|---|
-| `CVSS3 ≥ 7` | 3.377 |
-| `VPR ≥ 7` | 1.261 |
-| interseção | 1.210 |
-| só CVSS (sai ao trocar) | 2.167 |
-| só VPR (entra ao trocar) | 51 |
-| **cobertura de VPR na fatia alta** | **98,1%** |
-
-A última linha é a que sustenta uma recomendação de troca de critério — não a cobertura do backlog
-inteiro (P2 = 81,6%). O VPR que falta está concentrado no backlog de baixa severidade, que nenhum
-dos dois critérios põe na fila imediata.
-
-## `ctem_validation(mapeamento=None, indicadores=None, corte_vpr_amostra=7.0, n_amostra=30, ponderar="por_deteccao")`  — M2
-
-Estágio 4: **V1, V2, V3, V4**.
-
-| ID | Fórmula | Nota |
-|---|---|---|
-| V1 | plugins com exploit disponível / conjunto | **informativo**, não pontua estágio |
-| V2 | `mediana(agora − menor data CISA-KNOWN-EXPLOITED)` · invertido | cortes ancorados na CISA BOD 26-04 |
-| V3 | `RESURFACED / (RESURFACED + FIXED)` · invertido | dado direto, não cálculo |
-| V4 | DEVICE com finding de EOL / DEVICE · invertido | denominador é DEVICE |
-
-**V1 e V2 saem da MESMA amostra de D4** — senão o relatório descreve três amostras diferentes com um
-único tamanho declarado, e o intervalo de confiança publicado não vale para nenhuma delas.
-
-**`ponderar` muda o número e vai declarado.** Na amostra de n=20 do sandbox, V1 dá **59,3%** por
-detecção e **54,6%** por plugin. Taxa ponderada sem base declarada não é verificável.
-
-**V4 usa busca textual** em `finding_name contains`, com união de `"Unsupported Version Detection"`
-e `"SEoL"`, deduplicando por `asset_id`. `unsupported_by_vendor` existe na API mas não é alcançável.
-O denominador é DEVICE: no sandbox, 7/30 daria 23% e 7/8 dá 87,5% — dois estágios de distância.
-
-## `ctem_mobilization(mapeamento=None, indicadores=None, ...)`  — M5
-
-Estágio 5: **M1, M2, M3, M4**.
-
-| ID | Fórmula | Nota |
-|---|---|---|
-| M1 | mediana do intervalo entre **dias distintos** de avaliação · invertido | colapso no servidor, sempre |
-| M2 | maior intervalo · invertido | **não muda** com o colapso |
-| M3 | `mediana(agora − Published)` na amostra · invertido | `Published` é proxy declarado |
-| M4 | MTTR, via `mttr_collect`, **com a guarda de cadência aplicada** | vira lacuna quando a guarda dispara |
-
-**`mapeamento["scans_recorrentes"]` é obrigatório para M1 e M2.** O servidor não escolhe quais scans
-representam a cadência de avaliação, e a razão está medida:
-
-| Seleção | Mediana | Máximo |
-|---|---|---|
-| só o scan recorrente | **21,0 d** | **140 d** |
-| todos os scans com histórico | 1,0 d | 89 d |
-
-Um dos scans do sandbox roda quase todo dia e não representa a avaliação dos ativos em escopo. Dois
-estágios de diferença saindo de uma escolha que ninguém declarou é o pior tipo de número. Sem o
-parâmetro, M1 e M2 viram lacuna e a causa lista os scans com histórico.
-
-**M1 traz `mediana_sem_colapso_dias` no contexto, sempre** — 1,42 dia contra os 21 — para o leitor
-ver o que o colapso muda.
-
-**M4 vira lacuna quando a guarda dispara, e isso é resultado correto.** No sandbox as 7 datas que
-formam as 9 janelas são 7 de 7 datas de execução de scan: com cadência dominante, M4 mediria a mesma
-coisa que M1 e M2 — contaria cadência duas vezes chamando de maturidade de remediação o que é
-maturidade de avaliação. Os dois `p50` continuam visíveis no contexto, porque a skill precisa deles
-no texto do relatório.
-
-**M4 não pontua sozinho.** O valor é `{"p50_critical", "p50_high"}` e o estágio é o **menor dos
-dois** — mobilização madura fecha as duas severidades, não compensa uma com a outra. O cálculo do
-estágio é da skill; o servidor entrega os dois números e os cortes.
-
-Se o export estourar `mttr_max_wait_s`, M4 vira **lacuna recuperável** com o `export_uuid` na causa.
-
-## `plugin_details_batch(plugin_ids)`  — M1
-
-**O maior ganho de token do projeto.** Devolve exatamente cinco campos por plugin: `scan_type`,
-`published`, `exploit_available`, `exploitability`, `cisa_known_exploited`.
-
-Medido no sandbox com 20 plugins da amostra:
-
-| | chars | ~tokens |
-|---|---|---|
-| detalhe completo (97 atributos por plugin) | 127.812 | ~31.900 |
-| `plugin_details_batch` | 3.615 | ~900 |
-| **redução** | | **97,2%** |
-
-**Não exponha campos extras aqui.** A economia depende disso, e é regra fechada.
-
-Plugin que falhar entra em `lacunas` com a causa, e os outros continuam: resultado parcial
-**declarado** é legítimo, parcial silencioso não é.
-
-## `plugin_census(severity="critical")`  — M1
-
-Quadro de amostragem numa chamada: plugin, contagem de detecções, VPR e família. Em cache por TTL
-curto. É o denominador de D4, M3, V1 e V2. No sandbox: **121 plugins críticos, 706 detecções**.
-
-Não existe censo por busca — `plugins_search_plugins` aceita palavra-chave e CVE, não lista de IDs.
-
-### Censo ou amostra — `modo_plugins`
-
-**O censo é o default desde que `plugin_details_batch` existe.** A amostragem existia porque
-`plugins_search_plugins` aceita palavra-chave e CVE, **não lista de IDs de plugin** — foi por isso
-que `censo_d4_m3` virou `false` em 2026-09-03. `plugin_details_batch` aceita lista de IDs, então a
-restrição caiu.
-
-| `modo_plugins` | Comportamento |
-|---|---|
-| `auto` *(default)* | censo se a população couber em `limite_censo` (300); amostra acima disso |
-| `censo` | força o censo, custe o que custar |
-| `amostra` | força a amostra estratificada |
-
-**O que o censo custa e o que ele elimina.** Medido nos 121 plugins críticos do sandbox:
-
-| | Amostra n=30 | Censo |
-|---|---|---|
-| Chamadas · tempo | 30 · 16 s | 121 · **64 s** |
-| Tokens de saída | ~1.400 | **~5.400** |
-| D4 | 100,0% ± IC | **100,0% exato** |
-| V1 | 62,7% ± 20 pontos | **61,2% exato** |
-| Proporção com KEV | 40,0% ± 18 pontos | **40,5% exato** |
-
-Quatro fontes de imprecisão somem de uma vez: o portão de Wilson, a base de ponderação
-(`por_deteccao` × `por_plugin` movia V1 em 5 pontos sozinha), o viés de alocação entre estratos, e a
-irreprodutibilidade que impedia V1, V2 e M3 de terem golden test. No censo, `base_dos_pesos` vem
-`nao_se_aplica` e o IC vem `null` — não há inferência, a taxa é a contagem.
-
-E os ~5.400 tokens continuam **três vezes menores** que os ~15.000 que o MCP oficial gastava para
-**vinte** plugins.
-
-**Onde o censo não serve.** Todas as severidades somam 936 plugins no sandbox ≈ 8 min e ~42.000
-tokens — e os indicadores são definidos sobre os críticos. Um tenant grande pode ter milhares de
-plugins críticos: a 528 ms cada, mil plugins são nove minutos. Daí o `limite_censo`, e daí a
-amostragem continuar existindo. **Paralelizar as chamadas é a alavanca para subir o limite.**
-
-O modo usado vai no `filtro_literal` e no `contexto.modo` de cada indicador.
-
-### Amostragem, quando a população passa do limite
-
-Três regras, e a ordem importa:
-
-1. **Alocação proporcional à população**, medida antes de amostrar. O erro a não repetir: na
-   primeira execução real a amostra foi 60/40 por decisão de desenho enquanto a população era 65/35.
-2. **Piso de 4 no estrato B.** Ele não existe para estimar taxa, existe para *encontrar casos*.
-   Quando o piso é acionado o estrato fica sobre-representado de propósito.
-3. **Ponderação por população** em toda taxa, com base declarada (`por_deteccao` ou `por_plugin`).
-   Nunca calcular sobre a amostra inteira misturada.
-
-O IC 95% de Wilson vai no `contexto` por estrato e para a amostra inteira. Larguras medidas:
-n=10 → 53 pontos · n=20 → 40 · n=30 → 34 · n=50 → 27. **Com n=10 o intervalo não separa estágios.**
-
-A amostra usa semente fixa (`20260903`): sem reprodutibilidade não existe golden test.
+The `proof` is the measurement that supports the rule — whoever reads the error sees why the filter
+was refused.
 
 ---
 
-## `scan_cadence(scan_ids, colapsar_runs_do_mesmo_dia=True, apenas_completed=True)`  — M4
+## `ctem_discover_tenant(use_cache: bool = True)`
 
-Colapsa runs do mesmo dia em **dias distintos de avaliação** e devolve intervalos, mediana e máximo.
+A snapshot of the tenant in one call. Replaces ~10 calls of Phase A of the skill's Step 0.
 
-**Por que existe.** Um scan relançado minutos depois é a *mesma* avaliação, não um novo ciclo de
-cadência. No sandbox, os 12 runs do scan recorrente caem em **9 dias distintos**:
+**Returns:**
 
-| | |
+| Field | Content |
 |---|---|
-| intervalos colapsados | 140, 40, 2, 89, 1, 1, 85, 1 |
-| **mediana com colapso** | **21,0 dias** |
-| mediana sem colapso | 1,42 dia |
-| máximo (M2) | 140 dias — não muda com o colapso |
+| `tags` | the `count` of categories and, in `categories`, the values of each |
+| `assets` | `total` and `by_asset_class` |
+| `exposure_classes` | the total per class: `VM`, `WAS`, `CLOUD`, `IDENTITY`, `OT`, `AI`, `CODE` |
+| `scans` | `total_scans`, `with_history`, and per scan: `runs` and `runs_completed` |
+| `agents` | `total`, `active`, `by_status` |
+| `served_from_cache` | `true` when it came from the short-TTL cache |
 
-Vinte e um dias contra 1,42 é *Standardized* em vez de *Optimized* — **dois estágios de diferença**.
-O colapso acontece no servidor, sempre; foi por estar no cliente que o erro sobreviveu a uma
-execução inteira. `mediana_sem_colapso_dias` vai na resposta sempre, para o contraste ficar visível.
+**CAUTION:** `asset_class` is not `exposure_classes`. A tenant may have assets with
+`asset_class = IDENTITY` and `exposure_classes = IDENTITY` at zero. D2 uses `exposure_classes`.
 
-## `mttr_collect(days=180, severities=None, tags=None, max_wait_s=240, export_uuid=None, ...)`  — M4
-
-MTTR por `POST /vulns/export`, com polling e download em chunks. **É o único caminho:**
-`last_fixed`, `time_taken_to_fix` e `severity_modification_type` não estão entre as 44 propriedades
-de findings da API de Exposure Management — não é wrapper faltando.
-
-### As três travas obrigatórias
-
-| # | Situação | Comportamento |
-|---|---|---|
-| 1 | estoura `max_wait_s` | devolve `{status: "pendente", export_uuid}` — **sem exceção e sem número parcial**. Chame de novo com esse `export_uuid`; abrir outro export responderia **409** |
-| 2 | `filtros_divergiram` | **erro estruturado, nunca número** — o recorte não é a pergunta |
-| 3 | falha de TLS | causa diagnosticada ("proxy corporativo interceptando TLS"), nunca exceção crua. O servidor **não oferece** desligar a verificação |
-
-### O que o resumo declara, e por quê
-
-- **`metodo_percentil`** — interpolado (tipo 7 do R). Com n=10 o p90 de critical dá **101,43**
-  interpolado e **92,91** por posição mais próxima: 9% de diferença. Os dois vão na resposta.
-- **`estados_incluidos_no_mttr`** — só `FIXED`. Incluindo `REOPENED`, a média de high cai de
-  **60,39** para **49,66** dias, e a de medium de 95,95 para 64,08. A exclusão é defensável — um
-  finding reaberto não foi corrigido — mas tem de estar escrita, com o número que ela muda.
-- **`cadencia_de_scan`** — `pct_em_lote`, o corte usado, a `sensibilidade_ao_corte` e as
-  `datas_que_formam_as_janelas`.
-- **`severidade_modificada_diferente_de_none`** — a única medição direta de recast e aceitação que
-  o assessment alcança. Vale para S3, P1 e P2, não só para M4.
-
-**Leia `cadencia_de_scan` junto do MTTR, sempre**, e passe `cadencia_de_scan.janelas` para
-`mttr_cadence_guard` — não `lotes`, que já vem filtrado pelo corte.
-
-## `mttr_cadence_guard(janelas, datas_de_scan=None, corte_alerta_pct=40.0)`  — M4
-
-Diz se o MTTR está medindo **cadência de scan** em vez de tempo de correção. Dois portões:
-
-1. `pct_em_lote` acima do corte de alerta → M4 é lacuna;
-2. janelas formadas **só** por datas de scan → M4 é lacuna, **mesmo com `pct_em_lote` baixo**.
-
-**O portão 2 é o mais forte**, e é o que a validação de 2026-09-03 mostrou: o percentual depende do
-corte de lote escolhido — o mesmo dado dá 93,5% com corte 2 e **38,7% com corte 5**, e o corte 5
-passaria pela guarda de 40%. A composição das datas não depende de escolha nenhuma.
-
-No sandbox: `pct_em_lote` **93,5%**, sensibilidade **93,5 / 74,2 / 64,5 / 38,7**, e as **7** datas
-que formam as 9 janelas são **7 de 7** datas de execução de scan. M4 é lacuna ali — e isso é
-resultado correto, não defeito.
+The scan history is paginated internally. Without that, a recurring scan with many runs comes back
+truncated at the page size — measured in the sandbox, scan 13 has 242 runs and a single `limit=200`
+call reported 200.
 
 ---
 
-## Endpoints usados
+## `ctem_diagnostics()`
 
-Confirmados em developer.tenable.com em 2026-09-03.
+Says whether the server can talk to the tenant, without collecting a single indicator. It separates
+three causes that look identical from the client: credential missing, credential invalid, and TLS
+intercepted by a corporate proxy.
 
-| Uso | Endpoint |
+It never prints the key, nor any part of it. Returns `version`, `tio_url`,
+`credentials_in_environment`, `tls_ca_origin` and `verdict`.
+
+---
+
+## `ctem_preflight(workbenches_severity="critical")`
+
+The finished PREFLIGHT table: every filter the skill uses, tested **live** against the tenant. No
+verdict is inherited from a document.
+
+Three forms of proof:
+
+| Kind | What it does |
 |---|---|
-| buscar ativos | `POST /api/v1/t1/inventory/assets/search` *(beta)* |
-| buscar findings | `POST /api/v1/t1/inventory/findings/search` *(beta)* |
-| buscar tags | `POST /api/v1/t1/tags/search` *(beta)* |
-| propriedades de filtro | `GET /api/v1/t1/inventory/assets/properties` *(beta)* |
-| censo de plugins | `GET /workbenches/vulnerabilities` com `filter.0.*` |
-| detalhe de plugin | `GET /plugins/plugin/{id}` |
-| categorias e valores de tag | `GET /tags/categories` · `GET /tags/values` |
-| scans e histórico | `GET /scans` · `GET /scans/{scan_id}/history` |
-| agentes | `GET /scanners/null/agents` |
-| export de MTTR | `POST /vulns/export` · `GET /vulns/export/{uuid}/status` · `GET /vulns/export/{uuid}/chunks/{id}` |
+| `exclusive_pair` | two mutually exclusive queries whose totals must sum to the corpus. The strongest form — "it reduced" is not enough, a filter can reduce by accident |
+| `boolean` | `true` and `false`; equal totals mean the parameter is ignored |
+| `monotonic` | a ladder of cutoffs that must be strictly decreasing |
 
-Os endpoints de Exposure Management estão marcados como **beta** na documentação da Tenable: a
-estrutura da resposta pode mudar. A leitura no servidor é defensiva e não presume formato.
+Returns `checks` (one row per filter, with `verdict`, `detail` and `use`), `deny_list` (what the
+server rejects before the request leaves, with rule and proof) and `summary`.
 
-O corpo de `/api/v1/t1/inventory/assets/search` é `{"query": {...}, "filters": [...]}`, com
-paginação em `limit` e `offset` de query string — **nunca exposta ao chamador**. Cada cláusula de
-`filters` é `{"property", "operator", "value": [...]}`, com `value` sempre array de strings.
+### The four corrections this preflight found
+
+The trust matrix was measured through Tenable's **official MCP**. This server talks straight to the
+REST API, and on four points the behaviour differs. The matrix is not wrong — it describes its own
+path.
+
+1. **A date filter on findings is not ignored wholesale.** The relative operators (`within last`,
+   `older than`, `newer than`) are ignored; the comparison ones (`<`, `>=`) are applied.
+   *Proof:* `older than 3650d` → 50 and `within last 1d` → 50, mutually exclusive and both with the
+   whole corpus; but `< 2020-01-01` → 0 and `>= 2020-01-01` → 50, which sum to 50.
+2. **`exists` on `finding_vpr_score` works.** The HTTP 400 comes from an empty `value`, and the
+   message is *"Missing value in filter"*. *Proof:* `exists` → 4,462 and `not exists` → 1,024,
+   summing to 5,486.
+3. **`resolvable` is proven ignored**, not merely presumed: `true` → 121, `false` → 121.
+4. **`age` is not a parameter of this API.** The real name is `date_range`, and it is applied
+   (1 → 17, 30 → 118, 90 → 121). `age` is silently discarded — the worst case.
+
+---
+
+## `ctem_scoping(mapping, indicators=None)`
+
+Stage 1: S1, S2, S3, S4.
+
+`mapping` is mandatory and explicit:
+
+```json
+{"criticality_category": "Criticidade", "owner_category": "Owner"}
+```
+
+Without it, S2 and S3 become gaps and the cause lists the categories that exist in the tenant. The
+server does not guess the name — a customer may call it `Tier`, `BIA` or `Business Impact`.
+
+| ID | What it measures | Note |
+|---|---|---|
+| S1 | % of assets with at least one tag | |
+| S2 | % with a criticality tag | needs `criticality_category` |
+| S3 | % with an owner tag | needs `owner_category` |
+| S4 | declared Crown Jewels | **informational**, does not score a stage |
+
+`tag_names` holds the tag VALUE, not "Category:Value". An array of values has OR semantics and
+already deduplicates an asset carrying two tags of the same category.
+
+---
+
+## `ctem_discovery(indicators=None, licensed_surfaces=None, sample_vpr_cutoff=7.0, sample_n=30, plugin_mode="auto", census_limit=300)`
+
+Stage 2: D1, D2, D3, D4.
+
+| ID | What it measures | Note |
+|---|---|---|
+| D1 | days since the last assessment | inverted. Source: scan history, never a date filter on findings |
+| D2 | % of licensed surfaces covered | pass `licensed_surfaces` (default `["VM"]`). A percentage ratio, not a count |
+| D3 | % of DEVICE assets with an agent | the denominator is DEVICE, not the total |
+| D4 | % of the set detected by a local plugin | uses `plugin_details_batch` internally |
+
+`indicators=["D1","D3"]` avoids the plugin calls D4 would require.
+
+---
+
+## `ctem_prioritization(mapping, indicators=None, customer_priority_cutoff=None, p2_value=None)`
+
+Stage 3: P1, P2, P3, plus the three compared queues.
+
+| ID | What it measures | Note |
+|---|---|---|
+| P1 | % of the VPR >= 9 backlog on assets with declared criticality | NOT the agreement between score models |
+| P2 | % of the ACTIVE backlog with VPR available | `>= 0.1`; `exists` needs a non-empty value |
+| P3 | fitness of the prioritisation criterion | composite; depends on P2 |
+
+`customer_priority_cutoff = {"metric": "vpr"|"cvss3", "value": 7.0, "confirmed": bool}`.
+With no declared metric, **P3 is a gap, not a number**: "the customer does not know which criterion
+they use" is the Ad Hoc stage itself, and classifying that is the skill's job.
+
+P3's context carries `queues` with `cvss3_gte_cutoff`, `vpr_gte_cutoff`, `overlap`, `cvss_only`,
+`vpr_only` and `vpr_coverage_in_high_slice_pct` — which is the coverage that supports a
+recommendation to change criterion, not that of the whole backlog.
+
+---
+
+## `ctem_validation(mapping=None, indicators=None, sample_vpr_cutoff=7.0, sample_n=30, weight_by="by_detection", plugin_mode="auto", census_limit=300)`
+
+Stage 4: V1, V2, V3, V4.
+
+| ID | What it measures | Note |
+|---|---|---|
+| V1 | % of the set with an available exploit | **informational**, does not score |
+| V2 | median days in the CISA KEV | inverted; cutoffs anchored in CISA BOD 26-04 |
+| V3 | recurrence rate RESURFACED/(RESURFACED+FIXED) | inverted. Returned as a **percentage** — the skill's cutoffs are `[25, 15, 8, 3]` |
+| V4 | % of DEVICE with out-of-support software | inverted; the denominator is DEVICE |
+
+V1 and V2 come from the **same set** as D4, so the report does not describe three different sets
+under a single declared size.
+
+---
+
+## `ctem_mobilization(mapping=None, indicators=None, ..., mttr_days=180, mttr_max_wait_s=240, mttr_export_uuid=None, batch_cutoff=2, max_batch_pct=40.0)`
+
+Stage 5: M1, M2, M3, M4.
+
+| ID | What it measures | Note |
+|---|---|---|
+| M1 | median assessment cadence | inverted. Runs **collapsed** into distinct days, on the server |
+| M2 | largest assessment gap | inverted. Does not change with the collapse |
+| M3 | median age of the available fix | inverted. `published` is a declared proxy |
+| M4 | MTTR | through `mttr_collect`, WITH the cadence guard applied |
+
+`mapping["recurring_scans"]` is **mandatory** for M1 and M2. The server does not choose which scans
+represent the cadence, and the reason is measured: in the sandbox, the recurring scan alone gives a
+median of 21 days and a maximum of 140; adding every scan with history gives a median of 1.0 and a
+maximum of 89, because one of them runs almost daily.
+
+M4 becomes a **gap** when the cadence guard fires — that is a correct result, not a defect. If the
+export exceeds `mttr_max_wait_s`, M4 becomes a **recoverable** gap with the `export_uuid` in the
+cause; call again passing `mttr_export_uuid`. Never open a new export while one is open: the API
+answers 409.
+
+M4's context carries `by_severity` with the full per-severity evidence — `n`, the native/derived
+origin and the reopened count — because the skill has to declare the method in the report.
+
+---
+
+## `plugin_details_batch(plugin_ids)`
+
+**Five fields per plugin, never more:** `scan_type`, `published`, `exploit_available`,
+`exploitability`, `cisa_known_exploited`.
+
+The full detail of one plugin is ~8,200 characters and 97 attributes. Twenty plugins the full way
+are ~15,000 tokens; this way, ~1,500. **The project's token saving depends on this, and adding a
+field is a regression.**
+
+A plugin that fails goes into `gaps` with its cause, and the others continue. A DECLARED partial
+result is legitimate; a silent partial one is not.
+
+---
+
+## `plugin_census(severity="critical")`
+
+The sampling frame: plugin, detection count, VPR and family. One call, cached with a short TTL. It
+is the denominator of D4, M3, V1 and V2.
+
+There is no census by search: `plugins_search_plugins` accepts a keyword and a CVE, not a list of
+plugin IDs.
+
+### Census or sample — `plugin_mode`
+
+`auto` (the default) runs a **census** of every plugin of the severity when the population fits
+within `census_limit` (300), and falls back to a stratified sample above that. `census` and `sample`
+force the choice. The mode used goes into `literal_filter` and into `context.mode`.
+
+The census eliminates four sources of imprecision the sample forced us to manage: the Wilson gate,
+the weighting base (`by_detection` versus `by_plugin` moved V1 by 5 points on its own), the
+allocation bias between strata, and the irreproducibility that kept V1, V2 and M3 from having a
+golden test.
+
+Measured on the sandbox's 121 critical plugins: the n=30 sample gave V1 62.7% and the census gave
+61.2% — the sample was right, but you only know that by HAVING the census. Cost: 64 s and ~5,400
+tokens, still three times less than the ~15,000 the official MCP spent on twenty plugins.
+
+Under a census, `weight_base` comes back as `not_applicable` and `ci95_whole_sample` as `null` —
+rather than a label suggesting a method choice was made where none was.
+
+### Sampling, when the population exceeds the limit
+
+Proportional allocation to each stratum's real share, a stratum B floor of 4, weighting by the
+population weights, and a Wilson 95% interval per stratum and for the whole set. The seed is fixed
+(`20260903`) so the sample is reproducible — without that the same tenant scores differently every
+round and a golden test cannot exist.
+
+---
+
+## `scan_cadence(scan_ids, collapse_same_day_runs=True, completed_only=True)`
+
+Collapses same-day runs into **DISTINCT ASSESSMENT DAYS**.
+
+A scan relaunched minutes later is the SAME assessment, not a new cycle. In the sandbox the
+recurring scan's 12 runs fall on 9 distinct days; the raw median gives **1.42 days** and the
+collapsed one gives **21** — Standardized instead of Optimized, two stages apart.
+
+The collapse happens **on the server, always**. It was exactly because it lived on the client that
+the error survived a whole run.
+
+Returns `intervals_days`, `median_days`, `max_days`, and per scan
+`median_without_collapse_days` plus `raw_intervals_days` — always, so the contrast stays visible and
+auditable.
+
+`collapse_same_day_runs=False` exists so the report can SHOW the difference, never to be the
+default; it carries a `warning` saying so. M2 (largest gap) does not change with the collapse.
+
+---
+
+## `mttr_collect(days=180, severities=None, tags=None, max_wait_s=240, export_uuid=None, states=None, num_assets=100, batch_cutoff=2)`
+
+MTTR through `POST /vulns/export`, with polling and chunked download.
+
+It is the **only** path to MTTR: `last_fixed`, `time_taken_to_fix` and
+`severity_modification_type` are not among the 44 findings properties of the Exposure Management
+API. It is not a missing wrapper.
+
+### The three mandatory locks
+
+1. **`max_wait_s` exceeded** → `{status: "pending", export_uuid}`. It does not raise and does not
+   return a partial number: it returns the ticket for the next call to resume. Opening another
+   export would answer 409.
+2. **`filters_diverged`** → a structured error, never a number. The slice is not the request, so the
+   number does not answer the question.
+3. **A TLS failure** → a diagnosed cause ("corporate proxy intercepting TLS"), never a raw
+   exception. The server **never** offers to disable certificate verification; `TIO_CA_BUNDLE` is
+   the mechanism for networks that inspect TLS.
+
+### What the summary declares, and why
+
+Three method choices, all of which change the number and none of which change the verdict in the
+sandbox — and layer 3 of the model requires the reader to be able to redo the arithmetic:
+
+| Field | Why it matters |
+|---|---|
+| `min_batch_per_window` + `sensitivity_to_cutoff` | the same slice gives 93.5% with cutoff 2 and 38.7% with cutoff 5, and cutoff 5 would pass a 40% guard |
+| `states_included_in_mttr` | computed over `FIXED` only; including `REOPENED` the High mean goes from 60.39 to 49.66 days |
+| `percentile_method` | Critical's p90 is 101.43 interpolated and 92.91 by nearest position — with n=10, a 9% difference |
+
+Always read `scan_cadence` alongside the MTTR, and pass its **`windows`** to `mttr_cadence_guard`.
+
+---
+
+## `mttr_cadence_guard(windows, scan_dates=None, alert_cutoff_pct=40.0)`
+
+Says whether the MTTR is measuring scan cadence instead of time to fix.
+
+Pass `windows` = `scan_cadence.windows` from `mttr_collect` — **not `batches`**: that one already
+comes filtered by the cutoff, and without the singleton windows the denominator shrinks and the
+percentage inflates. Measured: it gave 100% against the real 93.5%, and one of the 7 dates
+disappeared.
+
+Two gates, and the second matters more:
+
+1. `pct_in_batch` above the alert cutoff → M4 is a gap;
+2. windows formed **only** by scan dates → M4 is a gap, even with `pct_in_batch` below the cutoff.
+
+Gate 2 exists because the percentage depends on the chosen batch cutoff. The composition of the
+dates depends on no choice at all.
+
+---
+
+## Endpoints used
+
+| Purpose | Endpoint |
+|---|---|
+| assets search | `POST /api/v1/t1/inventory/assets/search` (Exposure Management, **BETA**) |
+| findings search | `POST /api/v1/t1/inventory/findings/search` (Exposure Management, **BETA**) |
+| tag categories and values | `GET /tags/categories`, `GET /tags/values` |
+| scans and history | `GET /scans`, `GET /scans/{id}/history` |
+| agents | `GET /scanners/null/agents` |
+| plugin detail | `GET /plugins/plugin/{id}` |
+| workbenches | `GET /workbenches/vulnerabilities` |
+| MTTR export | `POST /vulns/export`, `GET /vulns/export/{uuid}/status`, `GET /vulns/export/{uuid}/chunks/{n}` |
+
+The Exposure Management endpoints are in **BETA** in Tenable's documentation; the response structure
+may change, which is why every read is defensive and no shape is presumed.
+
+**Rate limiting is dynamic** — the platform computes how many requests it accepts per minute
+according to load and returns `retry-after` in seconds on a 429. The client reads that header rather
+than hard-coding a number. See https://developer.tenable.com/docs/rate-limiting

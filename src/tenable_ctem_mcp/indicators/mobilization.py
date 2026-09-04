@@ -178,7 +178,7 @@ def compute(mapping: dict | None = None, indicators: list[str] | None = None,
                             "`patch_publication_date` is reachable through the direct "
                             "API, but plugin_details_batch exposes five fields by a "
                             "closed rule; swapping the proxy for the real datum is "
-                            "the skill's decision. See docs/limitacoes.md."),
+                            "the skill's decision. See docs/limitations.md."),
                     }))
         except (ApiError, ValueError) as e:
             out.append(Indicator.declared_gap(
