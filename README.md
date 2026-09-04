@@ -7,6 +7,10 @@ aggregated, plus MTTR — which the Exposure Management API does not reach direc
 > Validated in a laboratory. Test it in your own environment before using it in production.
 > GitHub issues are the channel, with no promised SLA.
 
+> **New here?** [`OVERVIEW.md`](OVERVIEW.md) is the complete description: what the server and the
+> skill are, how to install and run them, the points of attention before showing a report to a
+> customer, the 13 tools and the 19 indicators. This README is the quick start.
+
 ## What it is
 
 A local server that moves the aggregation to the server and returns finished numbers. Every
