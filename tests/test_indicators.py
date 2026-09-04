@@ -273,3 +273,155 @@ def test_wilson_reproduz_o_ic_publicado(sandbox):
     lo, hi = wilson(9, 20)
     assert round(lo * 100, 1) == 25.8
     assert round(hi * 100, 1) == 65.8
+
+
+# --- Prioritization: P1, P2, P3 --------------------------------------------
+
+def test_corpus_de_findings_bate_com_o_medido(sandbox):
+    """5.486 findings: 5.425 ACTIVE, 11 RESURFACED, 50 FIXED."""
+    from tenable_ctem_mcp.indicators.prioritization import _contar, _estado
+    assert _contar(None) == 5486
+    assert _contar([_estado("ACTIVE")]) == 5425
+    assert _contar([_estado("RESURFACED")]) == 11
+    assert _contar([_estado("FIXED")]) == 50
+
+
+def test_p1_todo_backlog_critico_esta_em_ativo_com_criticidade(sandbox):
+    """O achado da execucao de aceitacao: 100% do backlog VPR >= 9 esta em ativo
+    com criticidade, contra 26,7% de cobertura no inventario. O cliente tagueou
+    os ativos certos - e isso e mais maduro que o inverso."""
+    from tenable_ctem_mcp.indicators.prioritization import calcular
+    p1 = _por_id(calcular(MAPEAMENTO, indicadores=["P1"]))["P1"]
+    assert p1["valor"] == 100.0
+    ctx = p1["contexto"]
+    # a soma por valor de tag nao pode passar do total: um ativo pode ter duas
+    assert ctx["em_ativo_com_criticidade"] == ctx["backlog_vpr_maior_igual_9"]
+
+
+def test_p2_cobertura_de_vpr_no_backlog_ativo(sandbox):
+    """81,6% - o denominador e ACTIVE, nao o corpus inteiro.
+    Com o corpus (5.486) daria 81,3%, e com VPR sobre todos os estados, 82,2%."""
+    from tenable_ctem_mcp.indicators.prioritization import calcular
+    p2 = _por_id(calcular(MAPEAMENTO, indicadores=["P2"]))["P2"]
+    assert p2["valor"] == 81.6
+    assert p2["n"] == 5425
+
+
+def test_p3_sem_criterio_declarado_e_lacuna_e_nao_numero(sandbox):
+    """"O cliente nao sabe qual criterio usa" e o proprio estagio Ad Hoc.
+    Cabe a skill classificar; o servidor nao inventa um corte."""
+    from tenable_ctem_mcp.indicators.prioritization import calcular
+    p3 = _por_id(calcular(MAPEAMENTO, indicadores=["P3"]))["P3"]
+    assert p3["valor"] is None and p3["lacuna"] is True
+
+
+def test_p3_oportunidade_e_filas_com_criterio_cvss(sandbox):
+    """Trocar CVSS >= 7 por VPR >= 7 encolhe a fila em ~63%."""
+    from tenable_ctem_mcp.indicators.prioritization import calcular
+    p3 = _por_id(calcular(MAPEAMENTO, indicadores=["P3"],
+                          corte_priorizacao_cliente={"metrica": "cvss3", "valor": 7.0}))["P3"]
+    q = p3["contexto"]["filas"]
+    assert q["cvss3_maior_igual_corte"] == 3377
+    assert q["cobertura_de_vpr_na_fatia_alta_pct"] == 98.1   # 3.314 de 3.377
+    assert 0.62 <= p3["valor"] <= 0.64
+
+
+def test_filas_de_vpr_sao_monotonicas(sandbox):
+    """0,1 -> 7,0 -> 9,0 tem de ser decrescente. E o que prova que o filtro de
+    VPR e aplicado, e nao ignorado."""
+    from tenable_ctem_mcp.indicators.prioritization import _contar, _vpr
+    n01 = _contar([_vpr(">=", "0.1")])
+    n7 = _contar([_vpr(">=", "7")])
+    n9 = _contar([_vpr(">=", "9")])
+    assert n01 == 4462
+    assert n01 > n7 > n9 > 0
+
+
+# --- Validation: V1, V2, V3, V4 --------------------------------------------
+
+def test_v3_taxa_de_reincidencia(sandbox):
+    """18,0% = 11 RESURFACED sobre 11 + 50 FIXED. Dado direto, nao calculo."""
+    from tenable_ctem_mcp.indicators.validation import calcular
+    v3 = _por_id(calcular(indicadores=["V3"]))["V3"]
+    assert v3["valor"] == 18.0
+    assert v3["n"] == 61
+    assert v3["contexto"]["invertido"] is True
+
+
+def test_v4_device_com_software_fora_de_suporte(sandbox):
+    """87,5% = 7 de 8 DEVICE. Com o total de ativos daria 23% - dois estagios
+    de distancia. O denominador e DEVICE."""
+    from tenable_ctem_mcp.indicators.validation import calcular
+    v4 = _por_id(calcular(indicadores=["V4"]))["V4"]
+    assert v4["valor"] == 87.5
+    assert v4["n"] == 8
+    assert v4["contexto"]["devices_com_eol"] == 7
+
+
+def test_v1_e_informativo_e_declara_a_base_dos_pesos(sandbox):
+    """Taxa ponderada sem base declarada nao e verificavel: a mesma amostra da
+    59,3% por deteccao e 54,6% por plugin com n=20."""
+    from tenable_ctem_mcp.indicators.validation import calcular
+    for base, esperado in (("por_deteccao", 59.3), ("por_plugin", 54.6)):
+        v1 = _por_id(calcular(indicadores=["V1"], n_amostra=20, ponderar=base))["V1"]
+        assert v1["contexto"]["informativo"] is True
+        assert v1["contexto"]["base_dos_pesos"] == base
+        assert v1["valor"] == esperado
+
+
+def test_v2_mediana_de_dias_no_kev_com_relogio_congelado(sandbox):
+    """V2 e uma diferenca contra o instante da coleta e cresce sozinha a cada
+    dia. Sem relogio fixo nao existe regressao."""
+    from tenable_ctem_mcp.indicators.validation import calcular
+    v2 = _por_id(calcular(indicadores=["V2"], agora=INSTANTE_DA_MEDICAO))["V2"]
+    assert v2["valor"] == 1357.0
+    assert v2["contexto"]["invertido"] is True
+    assert v2["contexto"]["plugins_com_kev"] == 12
+    assert "BOD 26-04" in v2["contexto"]["origem_do_limiar"]
+
+
+def test_v1_e_v2_saem_da_mesma_amostra_que_d4(sandbox):
+    """Senao o relatorio descreve tres amostras diferentes com um unico tamanho
+    declarado, e o IC publicado nao vale para nenhuma delas."""
+    from tenable_ctem_mcp.indicators.discovery import calcular as disc
+    from tenable_ctem_mcp.indicators.validation import calcular as val
+    d4 = _por_id(disc(indicadores=["D4"]))["D4"]
+    v1 = _por_id(val(indicadores=["V1"]))["V1"]
+    assert d4["n"] == v1["n"]
+    assert d4["contexto"]["estratos"]["A"]["amostra"] == \
+        v1["contexto"]["por_estrato"]["A"]["n"]
+
+
+def test_divergencia_de_v1_tem_causa_identificada(sandbox):
+    """O documento publica V1 = 59,6% com a amostra dele (A 11/12, B 1/8).
+
+    Esse numero NAO se reconstroi com os 65/35 de populacao que o proprio
+    documento afirma - da 64,0%. Reconstroi exatamente com share_A = 0,595
+    (a fatia por plugin medida hoje) e ponderacao POR PLUGIN, nao por deteccao.
+
+    Duas conclusoes, e as duas importam:
+      1. a base de pesos usada la foi `por_plugin`, nao o `por_deteccao` que a
+         config da skill traz como default;
+      2. a fatia de populacao narrada no documento nao e a que sustenta o
+         numero publicado nele.
+
+    Por isso V1 e V2 NAO tem golden test contra o valor do documento: eles
+    dependem de quais plugins foram sorteados, e a amostra de la nao e
+    recuperavel. O que se testa e o metodo, sobre a fixture, com semente fixa.
+    """
+    def reconstruir(share_a):
+        return round(100 * ((11 / 12) * share_a + (1 / 8) * (1 - share_a)), 1)
+
+    assert reconstruir(0.65) == 64.0            # o que o documento narra
+    assert reconstruir(0.5950413223140496) == 59.6   # o que o documento publica
+
+
+def test_amostra_e_reproduzivel_entre_execucoes(sandbox):
+    """Semente fixa. Sem reprodutibilidade o mesmo tenant pontua diferente a
+    cada rodada, e golden test nao existe."""
+    from tenable_ctem_mcp.client import CACHE
+    from tenable_ctem_mcp.plugins import amostra_com_detalhes
+    a = [p["plugin_id"] for p in amostra_com_detalhes()["amostra"]["amostra"]]
+    CACHE.limpar()
+    b = [p["plugin_id"] for p in amostra_com_detalhes()["amostra"]["amostra"]]
+    assert a == b and len(a) == 30

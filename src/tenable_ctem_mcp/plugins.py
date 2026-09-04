@@ -248,3 +248,30 @@ def taxa_ponderada(amostra: list[dict], detalhes: dict[int, dict],
         "ic95_amostra_inteira": wilson(suc_total, n_total),
         "base_dos_pesos": base,
     }
+
+
+def amostra_com_detalhes(n: int = 30, corte_vpr: float = 7.0,
+                         severity: str = "critical") -> dict[str, Any]:
+    """Censo + amostra + detalhe dos cinco campos, em cache.
+
+    Existe para que D4, V1, V2 e M3 falem da MESMA amostra. Se cada indicador
+    sorteasse a sua, o relatorio descreveria quatro amostras diferentes com um
+    unico tamanho declarado - e o intervalo de confianca publicado nao valeria
+    para nenhuma delas.
+    """
+    chave = f"amostra/{severity}/{n}/{corte_vpr}"
+    achou, valor = CACHE.get(chave)
+    if achou:
+        return valor
+
+    censo = plugin_census(severity)
+    am = amostrar_estratificado(censo["plugins"], n=n, corte_vpr=corte_vpr)
+    lote = plugin_details_batch([p["plugin_id"] for p in am["amostra"]])
+    pacote = {
+        "censo": censo,
+        "amostra": am,
+        "detalhes": {d["plugin_id"]: d for d in lote["plugins"]},
+        "lacunas": lote["lacunas"],
+    }
+    CACHE.set(chave, pacote)
+    return pacote

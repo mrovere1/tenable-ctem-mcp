@@ -123,6 +123,66 @@ reavaliação parcial proporcional ao pedido.
 agente. Não é leitura de status de credencial — e o parâmetro `authenticated` de workbenches é
 comprovadamente ignorado.
 
+## `ctem_prioritization(mapeamento, indicadores=None, corte_priorizacao_cliente=None, p2_valor=None)`  — M2
+
+Estágio 3: **P1, P2, P3**, mais as três filas comparadas.
+
+| ID | Fórmula | Nota |
+|---|---|---|
+| P1 | `findings(VPR ≥ 9 ∧ ativo com tag de criticidade) / findings(VPR ≥ 9)` | **não** é a concordância entre modelos de score |
+| P2 | `findings(ACTIVE ∧ VPR ≥ 0,1) / findings(ACTIVE)` | denominador é ACTIVE, não o corpus |
+| P3 | composto: critério declarado + oportunidade medida | depende de P2 |
+
+**P1 foi redefinido em 2026-09-02.** A versão anterior, `findings(VPR ≥ 9) / findings(CRITICAL)`,
+mede a concordância entre dois modelos de score e não tem direção de maturidade defensável —
+classificaria como Ad Hoc um tenant onde os dois modelos simplesmente concordam.
+
+**P1 é diferente de S2, e a diferença é informativa.** S2 mede cobertura de tag sobre o inventário
+todo; P1 mede cobertura ponderada por onde o risco crítico está. No sandbox: S2 26,7% e P1 100% — o
+cliente **tagueou os ativos certos**, o que é mais maduro que o inverso.
+
+**O denominador de P2 é `ACTIVE`.** Medido no sandbox: 81,6% com ACTIVE, 81,3% com o corpus inteiro
+e 82,2% contando VPR em todos os estados. Só o primeiro reproduz o valor do assessment.
+
+**P3 sem critério declarado é lacuna, não número.** "O cliente não sabe qual critério usa" é o
+próprio estágio Ad Hoc, e classificar é da skill — o servidor não inventa um corte.
+
+O `contexto` de P3 traz as filas:
+
+| Fila | Sandbox |
+|---|---|
+| `CVSS3 ≥ 7` | 3.377 |
+| `VPR ≥ 7` | 1.261 |
+| interseção | 1.210 |
+| só CVSS (sai ao trocar) | 2.167 |
+| só VPR (entra ao trocar) | 51 |
+| **cobertura de VPR na fatia alta** | **98,1%** |
+
+A última linha é a que sustenta uma recomendação de troca de critério — não a cobertura do backlog
+inteiro (P2 = 81,6%). O VPR que falta está concentrado no backlog de baixa severidade, que nenhum
+dos dois critérios põe na fila imediata.
+
+## `ctem_validation(mapeamento=None, indicadores=None, corte_vpr_amostra=7.0, n_amostra=30, ponderar="por_deteccao")`  — M2
+
+Estágio 4: **V1, V2, V3, V4**.
+
+| ID | Fórmula | Nota |
+|---|---|---|
+| V1 | plugins com exploit disponível / amostra | **informativo**, não pontua estágio |
+| V2 | `mediana(agora − menor data CISA-KNOWN-EXPLOITED)` · invertido | cortes ancorados na CISA BOD 26-04 |
+| V3 | `RESURFACED / (RESURFACED + FIXED)` · invertido | dado direto, não cálculo |
+| V4 | DEVICE com finding de EOL / DEVICE · invertido | denominador é DEVICE |
+
+**V1 e V2 saem da MESMA amostra de D4** — senão o relatório descreve três amostras diferentes com um
+único tamanho declarado, e o intervalo de confiança publicado não vale para nenhuma delas.
+
+**`ponderar` muda o número e vai declarado.** Na amostra de n=20 do sandbox, V1 dá **59,3%** por
+detecção e **54,6%** por plugin. Taxa ponderada sem base declarada não é verificável.
+
+**V4 usa busca textual** em `finding_name contains`, com união de `"Unsupported Version Detection"`
+e `"SEoL"`, deduplicando por `asset_id`. `unsupported_by_vendor` existe na API mas não é alcançável.
+O denominador é DEVICE: no sandbox, 7/30 daria 23% e 7/8 dá 87,5% — dois estágios de distância.
+
 ## `plugin_details_batch(plugin_ids)`  — M1
 
 **O maior ganho de token do projeto.** Devolve exatamente cinco campos por plugin: `scan_type`,

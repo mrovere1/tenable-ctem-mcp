@@ -3,9 +3,8 @@
 Transporte: stdio. Nenhum HTTP, nenhuma hospedagem, nenhuma autenticacao de
 rede - decisao fechada.
 
-Estado do marco M1: ctem_discover_tenant, ctem_scoping, ctem_discovery,
-plugin_details_batch, plugin_census. Faltam:
-  M2  ctem_prioritization, ctem_validation
+Estado do marco M2: os quatro tools de estagio de S a V, mais as primitivas
+de plugin. Faltam:
   M3  ctem_preflight
   M4  mttr_collect, mttr_cadence_guard, scan_cadence
   M5  ctem_mobilization
@@ -24,7 +23,7 @@ from mcp.server.mcpserver import MCPServer
 
 from . import __version__, agora_utc
 from .client import ErroApi, origem_tls
-from .indicators import discovery, scoping
+from .indicators import discovery, prioritization, scoping, validation
 from .indicators.discovery import descobrir_tenant
 from .plugins import plugin_census as _plugin_census
 from .plugins import plugin_details_batch as _plugin_details_batch
@@ -121,6 +120,59 @@ def ctem_discovery(indicadores: list[str] | None = None,
     try:
         return {"indicadores": discovery.calcular(
             indicadores, superficies_licenciadas, corte_vpr_amostra, n_amostra)}
+    except Exception as e:  # noqa: BLE001
+        return _erro(e)
+
+
+@mcp.tool()
+def ctem_prioritization(mapeamento: dict[str, Any],
+                        indicadores: list[str] | None = None,
+                        corte_priorizacao_cliente: dict[str, Any] | None = None,
+                        p2_valor: float | None = None) -> dict[str, Any]:
+    """Estagio 3 - Prioritization: P1, P2, P3. Devolve tambem as filas comparadas.
+
+    P1 % do backlog VPR >= 9 em ativo com criticidade declarada. NAO e a
+       concordancia entre modelos de score - essa nao tem direcao de maturidade
+    P2 % do backlog ACTIVE com VPR disponivel (>= 0.1; `exists` responde 400)
+    P3 composto: criterio declarado + oportunidade medida. Depende de P2
+
+    `corte_priorizacao_cliente` = {"metrica": "vpr"|"cvss3", "valor": 7.0,
+    "confirmado": bool}. Sem metrica declarada P3 e LACUNA, nao numero: "o
+    cliente nao sabe qual criterio usa" e o proprio estagio Ad Hoc.
+
+    O contexto de P3 traz as tres filas (CVSS >= corte, VPR >= corte,
+    intersecao) e a cobertura de VPR na fatia alta - que e a cobertura que
+    sustenta uma recomendacao de troca de criterio, nao a do backlog inteiro.
+    """
+    try:
+        return {"indicadores": prioritization.calcular(
+            mapeamento, indicadores, corte_priorizacao_cliente, p2_valor)}
+    except Exception as e:  # noqa: BLE001
+        return _erro(e)
+
+
+@mcp.tool()
+def ctem_validation(mapeamento: dict[str, Any] | None = None,
+                    indicadores: list[str] | None = None,
+                    corte_vpr_amostra: float = 7.0,
+                    n_amostra: int = 30,
+                    ponderar: str = "por_deteccao") -> dict[str, Any]:
+    """Estagio 4 - Validation: V1, V2, V3, V4.
+
+    V1 % da amostra com exploit disponivel - INFORMATIVO, nao pontua estagio
+    V2 mediana de dias no CISA KEV (invertido; cortes ancorados na CISA BOD 26-04)
+    V3 taxa de reincidencia: RESURFACED / (RESURFACED + FIXED). Dado direto
+    V4 % de DEVICE com software fora de suporte - denominador e DEVICE
+
+    V1 e V2 saem da MESMA amostra de D4, para o relatorio nao descrever tres
+    amostras diferentes com um unico tamanho declarado.
+
+    `ponderar` e "por_deteccao" (default) ou "por_plugin" - a escolha muda o
+    numero e vai declarada no contexto.
+    """
+    try:
+        return {"indicadores": validation.calcular(
+            mapeamento, indicadores, corte_vpr_amostra, n_amostra, ponderar)}
     except Exception as e:  # noqa: BLE001
         return _erro(e)
 

@@ -78,3 +78,58 @@ No sandbox as duas datas coincidem na maioria dos plugins da amostra, mas não e
 **Não foi aplicado.** `plugin_details_batch` expõe cinco campos, e isso é regra fechada do projeto
 por causa da economia de token. Trocar o proxy de M3 pelo dado real é uma decisão da skill, e custa
 um campo a mais no lote.
+
+---
+
+## Indicadores que dependem da amostra não podem ser reproduzidos por número
+
+**V1 e V2 não têm golden test contra o valor publicado no documento de execução**, e a razão é do
+método, não do servidor: os dois são estimados sobre uma amostra estratificada, e a amostra daquela
+execução não é recuperável.
+
+Investigando a divergência, apareceu uma inconsistência no próprio documento. Ele publica
+**V1 = 59,6%** com a amostra dele (estrato A 11/12, estrato B 1/8) e narra que a população era
+**65/35**. Esses dois fatos não fecham:
+
+| Reconstrução | Resultado |
+|---|---|
+| `share_A = 0,65`, ponderado por plugin | **64,0%** |
+| `share_A = 0,595`, ponderado por plugin | **59,6%** ✅ |
+| `share_A = 0,595`, ponderado por detecção | 62,7% |
+
+O número publicado só se reconstrói com **ponderação por plugin** e a fatia de população de 0,595 —
+que é a medida hoje, não a narrada. Duas consequências:
+
+1. **A base de pesos daquela execução foi `por_plugin`**, e não o `por_deteccao` que o bloco de
+   configuração da skill traz como default. A escolha muda o número: na mesma amostra de n=20 do
+   sandbox, V1 dá **59,3%** por detecção e **54,6%** por plugin.
+2. **Taxa ponderada sem base declarada não é verificável.** Por isso `ctem_validation` e
+   `ctem_discovery` aceitam `ponderar` e devolvem `base_dos_pesos` no contexto.
+
+O que o repositório testa é o **método**, sobre a fixture, com semente fixa — reprodutível entre
+execuções e auditável.
+
+## Contagens de VPR flutuam; as de CVSS e de estado não
+
+Comparando a coleta de 2026-09-03 com a do mesmo dia registrada no documento:
+
+| Medida | Documento | Medido | |
+|---|---|---|---|
+| corpus · ACTIVE · RESURFACED · FIXED | 5.486 · 5.425 · 11 · 50 | idênticos | estável |
+| CVSS3 ≥ 7 | 3.377 | 3.377 | estável |
+| CVSS3 ≥ 7 **e** VPR ≥ 0,1 | 3.314 | 3.314 | estável |
+| VPR ≥ 0,1 | 4.462 | 4.462 | estável |
+| **VPR ≥ 9** | 586 | **579** | flutua |
+| **VPR ≥ 7** | 1.254 | **1.261** | flutua |
+| **interseção CVSS≥7 ∧ VPR≥7** | 1.209 | **1.210** | flutua |
+
+**Causa:** o VPR é recalculado pela Tenable a partir de atividade de ameaça, e findings atravessam
+o corte nos dois sentidos. Tudo que não depende de um limiar de VPR bateu exato.
+
+**Consequência para os testes:** contagem de VPR num limiar não serve de golden test contra dado ao
+vivo — só contra a fixture. O que se testa ao vivo é a **monotonicidade** (0,1 > 7,0 > 9,0), que é
+o que prova que o filtro está sendo aplicado.
+
+**Consequência para o assessment:** P1 continuou 100% e a identidade de soma continuou fechando
+(87 + 492 = 579), então o indicador não mudou. Vale declarar a data da coleta junto do número de
+backlog crítico, porque ele não é reproduzível uma semana depois.

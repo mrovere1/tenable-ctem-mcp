@@ -28,7 +28,7 @@ from datetime import datetime, timezone
 
 from .. import Indicador, agora_utc
 from ..client import CACHE, ErroApi, chamar, paginar, total_de
-from ..plugins import amostrar_estratificado, plugin_census, plugin_details_batch, taxa_ponderada
+from ..plugins import amostra_com_detalhes, taxa_ponderada
 from ..preflight import validar_filters, veredito
 
 # Valores possiveis de exposure_classes. ATENCAO: asset_class NAO e
@@ -215,6 +215,7 @@ def calcular(indicadores: list[str] | None = None,
              superficies_licenciadas: list[str] | None = None,
              corte_vpr_amostra: float = 7.0,
              n_amostra: int = 30,
+             ponderar: str = "por_deteccao",
              retrato: dict | None = None,
              agora: datetime | None = None) -> list[dict]:
     """D1 a D4. `indicadores=None` calcula os quatro.
@@ -285,15 +286,11 @@ def calcular(indicadores: list[str] | None = None,
     # --- D4: % da amostra detectada por plugin local --------------------
     if "D4" in pedidos:
         try:
-            censo = plugin_census("critical")
-            am = amostrar_estratificado(censo["plugins"], n=n_amostra,
-                                        corte_vpr=corte_vpr_amostra)
-            ids = [p["plugin_id"] for p in am["amostra"]]
-            lote = plugin_details_batch(ids)
-            detalhes = {d["plugin_id"]: d for d in lote["plugins"]}
+            pac = amostra_com_detalhes(n=n_amostra, corte_vpr=corte_vpr_amostra)
+            censo, am, detalhes = pac["censo"], pac["amostra"], pac["detalhes"]
             r = taxa_ponderada(am["amostra"], detalhes,
                                lambda d: str(d.get("scan_type", "")).lower() == "local",
-                               am["estratos"], base="por_deteccao")
+                               am["estratos"], base=ponderar)
             saida.append(Indicador.ok(
                 "D4", round(100.0 * r["taxa_ponderada"], 1), n=r["n"],
                 filtro_literal=(f"amostra estratificada de {am['n']} sobre "
@@ -303,9 +300,10 @@ def calcular(indicadores: list[str] | None = None,
                 veredito_preflight="ok",
                 contexto={
                     "estratos": am["estratos"], "por_estrato": r["por_estrato"],
+                    "base_dos_pesos": r["base_dos_pesos"],
                     "ic95_amostra_inteira": r["ic95_amostra_inteira"],
                     "piso_estrato_b_acionado": am["piso_estrato_b_acionado"],
-                    "plugins_sem_detalhe": lote["lacunas"],
+                    "plugins_sem_detalhe": pac["lacunas"],
                     "proxy_declarado": ("plugin de tipo `local` so retorna resultado "
                                         "com credencial valida ou agente. Nao e leitura "
                                         "de status de credencial. O parametro "

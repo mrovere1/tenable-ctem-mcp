@@ -1066,7 +1066,7 @@
     "default_tag": 0
    }
   ],
-  "timestamp": 1788484403
+  "timestamp": 1788485936
  },
  "[\"GET\", \"/scans/31/history\", null, {\"limit\": 200, \"offset\": 0}]": {
   "history": [],
@@ -4371,7 +4371,7 @@
     "core_build": "9",
     "core_version": "11.2.2",
     "linked_on": 1772977818,
-    "last_connect": 1788483974,
+    "last_connect": 1788485506,
     "status": "on",
     "groups": [
      {
@@ -4406,7 +4406,7 @@
     "core_build": "9",
     "core_version": "11.2.2",
     "linked_on": 1788358319,
-    "last_connect": 1788484007,
+    "last_connect": 1788485537,
     "status": "on",
     "groups": [
      {
@@ -4441,7 +4441,7 @@
     "core_build": "9",
     "core_version": "11.2.2",
     "linked_on": 1788359276,
-    "last_connect": 1788484328,
+    "last_connect": 1788485858,
     "status": "on",
     "groups": [
      {
@@ -4476,7 +4476,7 @@
     "core_build": "9",
     "core_version": "11.2.2",
     "linked_on": 1788359896,
-    "last_connect": 1788484229,
+    "last_connect": 1788485759,
     "status": "on",
     "groups": [
      {
@@ -4511,7 +4511,7 @@
     "core_build": "9",
     "core_version": "11.2.2",
     "linked_on": 1788362312,
-    "last_connect": 1788484031,
+    "last_connect": 1788485562,
     "status": "on",
     "groups": [
      {
@@ -4546,7 +4546,7 @@
     "core_build": "9",
     "core_version": "11.2.2",
     "linked_on": 1788360333,
-    "last_connect": 1788483949,
+    "last_connect": 1788485480,
     "status": "on",
     "groups": [
      {
@@ -4581,7 +4581,7 @@
     "core_build": "9",
     "core_version": "11.2.2",
     "linked_on": 1788362134,
-    "last_connect": 1788484127,
+    "last_connect": 1788485658,
     "status": "on",
     "groups": [
      {
@@ -16197,6 +16197,1489 @@
     "product_coverage": "VERY_HIGH"
    },
    "updated": "2026-06-15T14:42:57Z"
+  }
+ },
+ "[\"POST\", \"/api/v1/t1/inventory/findings/search\", {\"filters\": [{\"operator\": \">=\", \"property\": \"finding_vpr_score\", \"value\": [\"9\"]}]}, {\"limit\": 1}]": {
+  "data": [
+   {
+    "id": "00000000-0000-0000-0000-000000000309",
+    "name": "macOS 26.x < 26.6.1 (148170)",
+    "asset_id": "00000000-0000-0000-0000-000000000297",
+    "state": "ACTIVE",
+    "severity": "CRITICAL",
+    "extra_properties": {}
+   }
+  ],
+  "pagination": {
+   "total": 579,
+   "offset": 0,
+   "limit": 1,
+   "sort": {
+    "name": "finding_severity",
+    "order": "desc"
+   }
+  }
+ },
+ "[\"POST\", \"/api/v1/t1/inventory/findings/search\", {\"filters\": [{\"operator\": \">=\", \"property\": \"finding_vpr_score\", \"value\": [\"9\"]}, {\"operator\": \"=\", \"property\": \"tag_names\", \"value\": [\"Alta\", \"Baixa\", \"Crown Jewel\", \"Média\"]}]}, {\"limit\": 1}]": {
+  "data": [
+   {
+    "id": "00000000-0000-0000-0000-000000000309",
+    "name": "macOS 26.x < 26.6.1 (148170)",
+    "asset_id": "00000000-0000-0000-0000-000000000297",
+    "state": "ACTIVE",
+    "severity": "CRITICAL",
+    "extra_properties": {}
+   }
+  ],
+  "pagination": {
+   "total": 579,
+   "offset": 0,
+   "limit": 1,
+   "sort": {
+    "name": "finding_severity",
+    "order": "desc"
+   }
+  }
+ },
+ "[\"POST\", \"/api/v1/t1/inventory/findings/search\", {\"filters\": [{\"operator\": \">=\", \"property\": \"finding_vpr_score\", \"value\": [\"9\"]}, {\"operator\": \"=\", \"property\": \"tag_names\", \"value\": [\"Alta\"]}]}, {\"limit\": 1}]": {
+  "data": [
+   {
+    "id": "00000000-0000-0000-0000-000000000310",
+    "name": "KB4471331: Security update for Adobe Flash Player (December 2018)",
+    "asset_id": "00000000-0000-0000-0000-000000000311",
+    "state": "ACTIVE",
+    "severity": "CRITICAL",
+    "extra_properties": {}
+   }
+  ],
+  "pagination": {
+   "total": 85,
+   "offset": 0,
+   "limit": 1,
+   "sort": {
+    "name": "finding_severity",
+    "order": "desc"
+   }
+  }
+ },
+ "[\"POST\", \"/api/v1/t1/inventory/findings/search\", {\"filters\": [{\"operator\": \">=\", \"property\": \"finding_vpr_score\", \"value\": [\"9\"]}, {\"operator\": \"=\", \"property\": \"tag_names\", \"value\": [\"Baixa\"]}]}, {\"limit\": 1}]": {
+  "data": [],
+  "pagination": {
+   "total": 0,
+   "offset": 0,
+   "limit": 1,
+   "sort": {
+    "name": "finding_severity",
+    "order": "desc"
+   }
+  }
+ },
+ "[\"POST\", \"/api/v1/t1/inventory/findings/search\", {\"filters\": [{\"operator\": \">=\", \"property\": \"finding_vpr_score\", \"value\": [\"9\"]}, {\"operator\": \"=\", \"property\": \"tag_names\", \"value\": [\"Crown Jewel\"]}]}, {\"limit\": 1}]": {
+  "data": [
+   {
+    "id": "00000000-0000-0000-0000-000000000309",
+    "name": "macOS 26.x < 26.6.1 (148170)",
+    "asset_id": "00000000-0000-0000-0000-000000000297",
+    "state": "ACTIVE",
+    "severity": "CRITICAL",
+    "extra_properties": {}
+   }
+  ],
+  "pagination": {
+   "total": 87,
+   "offset": 0,
+   "limit": 1,
+   "sort": {
+    "name": "finding_severity",
+    "order": "desc"
+   }
+  }
+ },
+ "[\"POST\", \"/api/v1/t1/inventory/findings/search\", {\"filters\": [{\"operator\": \">=\", \"property\": \"finding_vpr_score\", \"value\": [\"9\"]}, {\"operator\": \"=\", \"property\": \"tag_names\", \"value\": [\"Média\"]}]}, {\"limit\": 1}]": {
+  "data": [
+   {
+    "id": "00000000-0000-0000-0000-000000000310",
+    "name": "KB4471331: Security update for Adobe Flash Player (December 2018)",
+    "asset_id": "00000000-0000-0000-0000-000000000311",
+    "state": "ACTIVE",
+    "severity": "CRITICAL",
+    "extra_properties": {}
+   }
+  ],
+  "pagination": {
+   "total": 492,
+   "offset": 0,
+   "limit": 1,
+   "sort": {
+    "name": "finding_severity",
+    "order": "desc"
+   }
+  }
+ },
+ "[\"POST\", \"/api/v1/t1/inventory/findings/search\", {\"filters\": [{\"operator\": \"=\", \"property\": \"state\", \"value\": [\"ACTIVE\"]}]}, {\"limit\": 1}]": {
+  "data": [
+   {
+    "id": "00000000-0000-0000-0000-000000000309",
+    "name": "macOS 26.x < 26.6.1 (148170)",
+    "asset_id": "00000000-0000-0000-0000-000000000297",
+    "state": "ACTIVE",
+    "severity": "CRITICAL",
+    "extra_properties": {}
+   }
+  ],
+  "pagination": {
+   "total": 5425,
+   "offset": 0,
+   "limit": 1,
+   "sort": {
+    "name": "finding_severity",
+    "order": "desc"
+   }
+  }
+ },
+ "[\"POST\", \"/api/v1/t1/inventory/findings/search\", {\"filters\": [{\"operator\": \"=\", \"property\": \"state\", \"value\": [\"ACTIVE\"]}, {\"operator\": \">=\", \"property\": \"finding_vpr_score\", \"value\": [\"0.1\"]}]}, {\"limit\": 1}]": {
+  "data": [
+   {
+    "id": "00000000-0000-0000-0000-000000000309",
+    "name": "macOS 26.x < 26.6.1 (148170)",
+    "asset_id": "00000000-0000-0000-0000-000000000297",
+    "state": "ACTIVE",
+    "severity": "CRITICAL",
+    "extra_properties": {}
+   }
+  ],
+  "pagination": {
+   "total": 4425,
+   "offset": 0,
+   "limit": 1,
+   "sort": {
+    "name": "finding_severity",
+    "order": "desc"
+   }
+  }
+ },
+ "[\"POST\", \"/api/v1/t1/inventory/findings/search\", {\"filters\": [{\"operator\": \">=\", \"property\": \"finding_cvss3_base_score\", \"value\": [\"7.0\"]}]}, {\"limit\": 1}]": {
+  "data": [
+   {
+    "id": "00000000-0000-0000-0000-000000000309",
+    "name": "macOS 26.x < 26.6.1 (148170)",
+    "asset_id": "00000000-0000-0000-0000-000000000297",
+    "state": "ACTIVE",
+    "severity": "CRITICAL",
+    "extra_properties": {}
+   }
+  ],
+  "pagination": {
+   "total": 3377,
+   "offset": 0,
+   "limit": 1,
+   "sort": {
+    "name": "finding_severity",
+    "order": "desc"
+   }
+  }
+ },
+ "[\"POST\", \"/api/v1/t1/inventory/findings/search\", {\"filters\": [{\"operator\": \">=\", \"property\": \"finding_vpr_score\", \"value\": [\"7.0\"]}]}, {\"limit\": 1}]": {
+  "data": [
+   {
+    "id": "00000000-0000-0000-0000-000000000309",
+    "name": "macOS 26.x < 26.6.1 (148170)",
+    "asset_id": "00000000-0000-0000-0000-000000000297",
+    "state": "ACTIVE",
+    "severity": "CRITICAL",
+    "extra_properties": {}
+   }
+  ],
+  "pagination": {
+   "total": 1261,
+   "offset": 0,
+   "limit": 1,
+   "sort": {
+    "name": "finding_severity",
+    "order": "desc"
+   }
+  }
+ },
+ "[\"POST\", \"/api/v1/t1/inventory/findings/search\", {\"filters\": [{\"operator\": \">=\", \"property\": \"finding_cvss3_base_score\", \"value\": [\"7.0\"]}, {\"operator\": \">=\", \"property\": \"finding_vpr_score\", \"value\": [\"7.0\"]}]}, {\"limit\": 1}]": {
+  "data": [
+   {
+    "id": "00000000-0000-0000-0000-000000000309",
+    "name": "macOS 26.x < 26.6.1 (148170)",
+    "asset_id": "00000000-0000-0000-0000-000000000297",
+    "state": "ACTIVE",
+    "severity": "CRITICAL",
+    "extra_properties": {}
+   }
+  ],
+  "pagination": {
+   "total": 1210,
+   "offset": 0,
+   "limit": 1,
+   "sort": {
+    "name": "finding_severity",
+    "order": "desc"
+   }
+  }
+ },
+ "[\"POST\", \"/api/v1/t1/inventory/findings/search\", {\"filters\": [{\"operator\": \">=\", \"property\": \"finding_cvss3_base_score\", \"value\": [\"7.0\"]}, {\"operator\": \">=\", \"property\": \"finding_vpr_score\", \"value\": [\"0.1\"]}]}, {\"limit\": 1}]": {
+  "data": [
+   {
+    "id": "00000000-0000-0000-0000-000000000309",
+    "name": "macOS 26.x < 26.6.1 (148170)",
+    "asset_id": "00000000-0000-0000-0000-000000000297",
+    "state": "ACTIVE",
+    "severity": "CRITICAL",
+    "extra_properties": {}
+   }
+  ],
+  "pagination": {
+   "total": 3314,
+   "offset": 0,
+   "limit": 1,
+   "sort": {
+    "name": "finding_severity",
+    "order": "desc"
+   }
+  }
+ },
+ "[\"POST\", \"/api/v1/t1/inventory/findings/search\", {\"filters\": [{\"operator\": \"=\", \"property\": \"state\", \"value\": [\"RESURFACED\"]}]}, {\"limit\": 1}]": {
+  "data": [
+   {
+    "id": "00000000-0000-0000-0000-000000000312",
+    "name": "Security Updates for Windows Defender (April 2026)",
+    "asset_id": "00000000-0000-0000-0000-000000000299",
+    "state": "RESURFACED",
+    "severity": "CRITICAL",
+    "extra_properties": {}
+   }
+  ],
+  "pagination": {
+   "total": 11,
+   "offset": 0,
+   "limit": 1,
+   "sort": {
+    "name": "finding_severity",
+    "order": "desc"
+   }
+  }
+ },
+ "[\"POST\", \"/api/v1/t1/inventory/findings/search\", {\"filters\": [{\"operator\": \"=\", \"property\": \"state\", \"value\": [\"FIXED\"]}]}, {\"limit\": 1}]": {
+  "data": [
+   {
+    "id": "00000000-0000-0000-0000-000000000313",
+    "name": "macOS 26.x < 26.5 Multiple Vulnerabilities (127115)",
+    "asset_id": "00000000-0000-0000-0000-000000000297",
+    "state": "FIXED",
+    "severity": "HIGH",
+    "extra_properties": {}
+   }
+  ],
+  "pagination": {
+   "total": 50,
+   "offset": 0,
+   "limit": 1,
+   "sort": {
+    "name": "finding_severity",
+    "order": "desc"
+   }
+  }
+ },
+ "[\"POST\", \"/api/v1/t1/inventory/findings/search\", {\"filters\": [{\"operator\": \"contains\", \"property\": \"finding_name\", \"value\": [\"Unsupported Version Detection\"]}, {\"operator\": \"=\", \"property\": \"asset_class\", \"value\": [\"DEVICE\"]}]}, {\"limit\": 500}]": {
+  "data": [
+   {
+    "id": "00000000-0000-0000-0000-000000000314",
+    "name": "Microsoft Office Unsupported Version Detection",
+    "asset_id": "00000000-0000-0000-0000-000000000311",
+    "state": "ACTIVE",
+    "severity": "CRITICAL",
+    "extra_properties": {}
+   },
+   {
+    "id": "00000000-0000-0000-0000-000000000315",
+    "name": "Adobe Flash Player Unsupported Version Detection",
+    "asset_id": "00000000-0000-0000-0000-000000000311",
+    "state": "ACTIVE",
+    "severity": "CRITICAL",
+    "extra_properties": {}
+   },
+   {
+    "id": "00000000-0000-0000-0000-000000000316",
+    "name": "Microsoft Internet Explorer Unsupported Version Detection",
+    "asset_id": "00000000-0000-0000-0000-000000000311",
+    "state": "ACTIVE",
+    "severity": "CRITICAL",
+    "extra_properties": {}
+   },
+   {
+    "id": "00000000-0000-0000-0000-000000000317",
+    "name": "Microsoft Internet Explorer Unsupported Version Detection",
+    "asset_id": "00000000-0000-0000-0000-000000000303",
+    "state": "ACTIVE",
+    "severity": "CRITICAL",
+    "extra_properties": {}
+   },
+   {
+    "id": "00000000-0000-0000-0000-000000000318",
+    "name": "Microsoft Office Unsupported Version Detection",
+    "asset_id": "00000000-0000-0000-0000-000000000303",
+    "state": "ACTIVE",
+    "severity": "CRITICAL",
+    "extra_properties": {}
+   },
+   {
+    "id": "00000000-0000-0000-0000-000000000319",
+    "name": "Adobe Flash Player Unsupported Version Detection",
+    "asset_id": "00000000-0000-0000-0000-000000000303",
+    "state": "ACTIVE",
+    "severity": "CRITICAL",
+    "extra_properties": {}
+   },
+   {
+    "id": "00000000-0000-0000-0000-000000000320",
+    "name": "Adobe Flash Player Unsupported Version Detection",
+    "asset_id": "00000000-0000-0000-0000-000000000002",
+    "state": "ACTIVE",
+    "severity": "CRITICAL",
+    "extra_properties": {}
+   },
+   {
+    "id": "00000000-0000-0000-0000-000000000321",
+    "name": "Microsoft Office Unsupported Version Detection",
+    "asset_id": "00000000-0000-0000-0000-000000000299",
+    "state": "ACTIVE",
+    "severity": "CRITICAL",
+    "extra_properties": {}
+   },
+   {
+    "id": "00000000-0000-0000-0000-000000000322",
+    "name": "Adobe Flash Player Unsupported Version Detection",
+    "asset_id": "00000000-0000-0000-0000-000000000299",
+    "state": "ACTIVE",
+    "severity": "CRITICAL",
+    "extra_properties": {}
+   },
+   {
+    "id": "00000000-0000-0000-0000-000000000323",
+    "name": "Microsoft Office Unsupported Version Detection",
+    "asset_id": "00000000-0000-0000-0000-000000000301",
+    "state": "ACTIVE",
+    "severity": "CRITICAL",
+    "extra_properties": {}
+   },
+   {
+    "id": "00000000-0000-0000-0000-000000000324",
+    "name": "Adobe Flash Player Unsupported Version Detection",
+    "asset_id": "00000000-0000-0000-0000-000000000301",
+    "state": "ACTIVE",
+    "severity": "CRITICAL",
+    "extra_properties": {}
+   },
+   {
+    "id": "00000000-0000-0000-0000-000000000325",
+    "name": "Microsoft Office Unsupported Version Detection",
+    "asset_id": "00000000-0000-0000-0000-000000000305",
+    "state": "ACTIVE",
+    "severity": "CRITICAL",
+    "extra_properties": {}
+   },
+   {
+    "id": "00000000-0000-0000-0000-000000000326",
+    "name": "Microsoft Internet Explorer Unsupported Version Detection",
+    "asset_id": "00000000-0000-0000-0000-000000000299",
+    "state": "ACTIVE",
+    "severity": "CRITICAL",
+    "extra_properties": {}
+   },
+   {
+    "id": "00000000-0000-0000-0000-000000000327",
+    "name": "Microsoft Internet Explorer Unsupported Version Detection",
+    "asset_id": "00000000-0000-0000-0000-000000000307",
+    "state": "ACTIVE",
+    "severity": "CRITICAL",
+    "extra_properties": {}
+   },
+   {
+    "id": "00000000-0000-0000-0000-000000000328",
+    "name": "Adobe Flash Player Unsupported Version Detection",
+    "asset_id": "00000000-0000-0000-0000-000000000305",
+    "state": "ACTIVE",
+    "severity": "CRITICAL",
+    "extra_properties": {}
+   },
+   {
+    "id": "00000000-0000-0000-0000-000000000329",
+    "name": "Adobe Flash Player Unsupported Version Detection",
+    "asset_id": "00000000-0000-0000-0000-000000000307",
+    "state": "ACTIVE",
+    "severity": "CRITICAL",
+    "extra_properties": {}
+   },
+   {
+    "id": "00000000-0000-0000-0000-000000000330",
+    "name": "Microsoft Internet Explorer Unsupported Version Detection",
+    "asset_id": "00000000-0000-0000-0000-000000000301",
+    "state": "ACTIVE",
+    "severity": "CRITICAL",
+    "extra_properties": {}
+   },
+   {
+    "id": "00000000-0000-0000-0000-000000000331",
+    "name": "Microsoft Internet Explorer Unsupported Version Detection",
+    "asset_id": "00000000-0000-0000-0000-000000000002",
+    "state": "ACTIVE",
+    "severity": "CRITICAL",
+    "extra_properties": {}
+   },
+   {
+    "id": "00000000-0000-0000-0000-000000000332",
+    "name": "Microsoft Office Unsupported Version Detection",
+    "asset_id": "00000000-0000-0000-0000-000000000002",
+    "state": "ACTIVE",
+    "severity": "CRITICAL",
+    "extra_properties": {}
+   },
+   {
+    "id": "00000000-0000-0000-0000-000000000333",
+    "name": "Microsoft Office Unsupported Version Detection",
+    "asset_id": "00000000-0000-0000-0000-000000000307",
+    "state": "ACTIVE",
+    "severity": "CRITICAL",
+    "extra_properties": {}
+   },
+   {
+    "id": "00000000-0000-0000-0000-000000000334",
+    "name": "Microsoft Internet Explorer Unsupported Version Detection",
+    "asset_id": "00000000-0000-0000-0000-000000000305",
+    "state": "ACTIVE",
+    "severity": "CRITICAL",
+    "extra_properties": {}
+   }
+  ],
+  "pagination": {
+   "total": 21,
+   "offset": 0,
+   "limit": 500,
+   "sort": {
+    "name": "finding_severity",
+    "order": "desc"
+   }
+  }
+ },
+ "[\"POST\", \"/api/v1/t1/inventory/findings/search\", {\"filters\": [{\"operator\": \"contains\", \"property\": \"finding_name\", \"value\": [\"SEoL\"]}, {\"operator\": \"=\", \"property\": \"asset_class\", \"value\": [\"DEVICE\"]}]}, {\"limit\": 500}]": {
+  "data": [
+   {
+    "id": "00000000-0000-0000-0000-000000000335",
+    "name": "Microsoft Windows 10 1607 Pro SEoL",
+    "asset_id": "00000000-0000-0000-0000-000000000311",
+    "state": "ACTIVE",
+    "severity": "CRITICAL",
+    "extra_properties": {}
+   },
+   {
+    "id": "00000000-0000-0000-0000-000000000336",
+    "name": "Microsoft Windows 10 1607 Pro SEoL",
+    "asset_id": "00000000-0000-0000-0000-000000000303",
+    "state": "ACTIVE",
+    "severity": "CRITICAL",
+    "extra_properties": {}
+   },
+   {
+    "id": "00000000-0000-0000-0000-000000000337",
+    "name": "Microsoft Windows 10 1607 Pro SEoL",
+    "asset_id": "00000000-0000-0000-0000-000000000305",
+    "state": "ACTIVE",
+    "severity": "CRITICAL",
+    "extra_properties": {}
+   },
+   {
+    "id": "00000000-0000-0000-0000-000000000338",
+    "name": "Microsoft Windows 10 1607 Pro SEoL",
+    "asset_id": "00000000-0000-0000-0000-000000000299",
+    "state": "ACTIVE",
+    "severity": "CRITICAL",
+    "extra_properties": {}
+   },
+   {
+    "id": "00000000-0000-0000-0000-000000000339",
+    "name": "Microsoft Windows 10 1607 Pro SEoL",
+    "asset_id": "00000000-0000-0000-0000-000000000301",
+    "state": "ACTIVE",
+    "severity": "CRITICAL",
+    "extra_properties": {}
+   },
+   {
+    "id": "00000000-0000-0000-0000-000000000340",
+    "name": "Microsoft Windows 10 1607 Pro SEoL",
+    "asset_id": "00000000-0000-0000-0000-000000000307",
+    "state": "ACTIVE",
+    "severity": "CRITICAL",
+    "extra_properties": {}
+   },
+   {
+    "id": "00000000-0000-0000-0000-000000000341",
+    "name": "Microsoft Windows 10 1607 Pro SEoL",
+    "asset_id": "00000000-0000-0000-0000-000000000002",
+    "state": "ACTIVE",
+    "severity": "CRITICAL",
+    "extra_properties": {}
+   },
+   {
+    "id": "00000000-0000-0000-0000-000000000342",
+    "name": "Mozilla Firefox SEoL (147.x)",
+    "asset_id": "00000000-0000-0000-0000-000000000311",
+    "state": "FIXED",
+    "severity": "LOW",
+    "extra_properties": {}
+   },
+   {
+    "id": "00000000-0000-0000-0000-000000000343",
+    "name": "Mozilla Firefox SEoL (147.x)",
+    "asset_id": "00000000-0000-0000-0000-000000000299",
+    "state": "FIXED",
+    "severity": "LOW",
+    "extra_properties": {}
+   }
+  ],
+  "pagination": {
+   "total": 9,
+   "offset": 0,
+   "limit": 500,
+   "sort": {
+    "name": "finding_severity",
+    "order": "desc"
+   }
+  }
+ },
+ "[\"POST\", \"/api/v1/t1/inventory/findings/search\", {}, {\"limit\": 1}]": {
+  "data": [
+   {
+    "id": "00000000-0000-0000-0000-000000000309",
+    "name": "macOS 26.x < 26.6.1 (148170)",
+    "asset_id": "00000000-0000-0000-0000-000000000297",
+    "state": "ACTIVE",
+    "severity": "CRITICAL",
+    "extra_properties": {}
+   }
+  ],
+  "pagination": {
+   "total": 5486,
+   "offset": 0,
+   "limit": 1,
+   "sort": {
+    "name": "finding_severity",
+    "order": "desc"
+   }
+  }
+ },
+ "[\"POST\", \"/api/v1/t1/inventory/findings/search\", {\"filters\": [{\"operator\": \">=\", \"property\": \"finding_vpr_score\", \"value\": [\"0.1\"]}]}, {\"limit\": 1}]": {
+  "data": [
+   {
+    "id": "00000000-0000-0000-0000-000000000309",
+    "name": "macOS 26.x < 26.6.1 (148170)",
+    "asset_id": "00000000-0000-0000-0000-000000000297",
+    "state": "ACTIVE",
+    "severity": "CRITICAL",
+    "extra_properties": {}
+   }
+  ],
+  "pagination": {
+   "total": 4462,
+   "offset": 0,
+   "limit": 1,
+   "sort": {
+    "name": "finding_severity",
+    "order": "desc"
+   }
+  }
+ },
+ "[\"POST\", \"/api/v1/t1/inventory/findings/search\", {\"filters\": [{\"operator\": \">=\", \"property\": \"finding_vpr_score\", \"value\": [\"7\"]}]}, {\"limit\": 1}]": {
+  "data": [
+   {
+    "id": "00000000-0000-0000-0000-000000000309",
+    "name": "macOS 26.x < 26.6.1 (148170)",
+    "asset_id": "00000000-0000-0000-0000-000000000297",
+    "state": "ACTIVE",
+    "severity": "CRITICAL",
+    "extra_properties": {}
+   }
+  ],
+  "pagination": {
+   "total": 1261,
+   "offset": 0,
+   "limit": 1,
+   "sort": {
+    "name": "finding_severity",
+    "order": "desc"
+   }
+  }
+ },
+ "[\"POST\", \"/api/v1/t1/inventory/findings/search\", {\"filters\": [{\"operator\": \">=\", \"property\": \"finding_cvss3_base_score\", \"value\": [\"7\"]}]}, {\"limit\": 1}]": {
+  "data": [
+   {
+    "id": "00000000-0000-0000-0000-000000000309",
+    "name": "macOS 26.x < 26.6.1 (148170)",
+    "asset_id": "00000000-0000-0000-0000-000000000297",
+    "state": "ACTIVE",
+    "severity": "CRITICAL",
+    "extra_properties": {}
+   }
+  ],
+  "pagination": {
+   "total": 3377,
+   "offset": 0,
+   "limit": 1,
+   "sort": {
+    "name": "finding_severity",
+    "order": "desc"
+   }
+  }
+ },
+ "[\"POST\", \"/api/v1/t1/inventory/findings/search\", {\"filters\": [{\"operator\": \">=\", \"property\": \"finding_cvss3_base_score\", \"value\": [\"9\"]}]}, {\"limit\": 1}]": {
+  "data": [
+   {
+    "id": "00000000-0000-0000-0000-000000000309",
+    "name": "macOS 26.x < 26.6.1 (148170)",
+    "asset_id": "00000000-0000-0000-0000-000000000297",
+    "state": "ACTIVE",
+    "severity": "CRITICAL",
+    "extra_properties": {}
+   }
+  ],
+  "pagination": {
+   "total": 642,
+   "offset": 0,
+   "limit": 1,
+   "sort": {
+    "name": "finding_severity",
+    "order": "desc"
+   }
+  }
+ },
+ "[\"POST\", \"/api/v1/t1/inventory/assets/search\", {\"filters\": [{\"operator\": \"=\", \"property\": \"tag_count\", \"value\": [\"0\"]}]}, {\"limit\": 1}]": {
+  "data": [
+   {
+    "id": "00000000-0000-0000-0000-000000000005",
+    "asset_class": "GROUP",
+    "name": "interactusers",
+    "extra_properties": {},
+    "connectors": {}
+   }
+  ],
+  "pagination": {
+   "total": 20,
+   "offset": 0,
+   "limit": 1,
+   "sort": {
+    "name": "aes",
+    "order": "desc"
+   }
+  }
+ },
+ "[\"GET\", \"/plugins/plugin/342204\", null, null]": {
+  "id": 342204,
+  "name": "Mozilla Firefox < 155.0",
+  "family_name": "Windows",
+  "attributes": [
+   {
+    "attribute_name": "cpe",
+    "attribute_value": "cpe:/a:mozilla:firefox"
+   },
+   {
+    "attribute_name": "fname",
+    "attribute_value": "mozilla_firefox_155_0.nasl"
+   },
+   {
+    "attribute_name": "cve",
+    "attribute_value": "CVE-2026-84118"
+   },
+   {
+    "attribute_name": "cve",
+    "attribute_value": "CVE-2026-84119"
+   },
+   {
+    "attribute_name": "cve",
+    "attribute_value": "CVE-2026-84120"
+   },
+   {
+    "attribute_name": "cve",
+    "attribute_value": "CVE-2026-84121"
+   },
+   {
+    "attribute_name": "cve",
+    "attribute_value": "CVE-2026-84122"
+   },
+   {
+    "attribute_name": "cve",
+    "attribute_value": "CVE-2026-84123"
+   },
+   {
+    "attribute_name": "cve",
+    "attribute_value": "CVE-2026-84124"
+   },
+   {
+    "attribute_name": "cve",
+    "attribute_value": "CVE-2026-84125"
+   },
+   {
+    "attribute_name": "cve",
+    "attribute_value": "CVE-2026-84126"
+   },
+   {
+    "attribute_name": "cve",
+    "attribute_value": "CVE-2026-84128"
+   },
+   {
+    "attribute_name": "cve",
+    "attribute_value": "CVE-2026-84129"
+   },
+   {
+    "attribute_name": "cve",
+    "attribute_value": "CVE-2026-84130"
+   },
+   {
+    "attribute_name": "cve",
+    "attribute_value": "CVE-2026-84131"
+   },
+   {
+    "attribute_name": "cve",
+    "attribute_value": "CVE-2026-84132"
+   },
+   {
+    "attribute_name": "cve",
+    "attribute_value": "CVE-2026-84133"
+   },
+   {
+    "attribute_name": "cve",
+    "attribute_value": "CVE-2026-84134"
+   },
+   {
+    "attribute_name": "cve",
+    "attribute_value": "CVE-2026-84136"
+   },
+   {
+    "attribute_name": "cve",
+    "attribute_value": "CVE-2026-84137"
+   },
+   {
+    "attribute_name": "cve",
+    "attribute_value": "CVE-2026-84138"
+   },
+   {
+    "attribute_name": "cve",
+    "attribute_value": "CVE-2026-84139"
+   },
+   {
+    "attribute_name": "cve",
+    "attribute_value": "CVE-2026-84140"
+   },
+   {
+    "attribute_name": "cve",
+    "attribute_value": "CVE-2026-84141"
+   },
+   {
+    "attribute_name": "cve",
+    "attribute_value": "CVE-2026-84142"
+   },
+   {
+    "attribute_name": "cve",
+    "attribute_value": "CVE-2026-84143"
+   },
+   {
+    "attribute_name": "cve",
+    "attribute_value": "CVE-2026-84144"
+   },
+   {
+    "attribute_name": "cve",
+    "attribute_value": "CVE-2026-84145"
+   },
+   {
+    "attribute_name": "see_also",
+    "attribute_value": "https://www.mozilla.org/en-US/security/advisories/mfsa2026-82/"
+   },
+   {
+    "attribute_name": "solution",
+    "attribute_value": "Upgrade to Mozilla Firefox version 155.0 or later."
+   },
+   {
+    "attribute_name": "synopsis",
+    "attribute_value": "A web browser installed on the remote Windows host is affected by multiple vulnerabilities."
+   },
+   {
+    "attribute_name": "has_patch",
+    "attribute_value": "true"
+   },
+   {
+    "attribute_name": "intel_type",
+    "attribute_value": "SENSOR"
+   },
+   {
+    "attribute_name": "cvss_vector",
+    "attribute_value": "CVSS2#AV:N/AC:L/Au:N/C:C/I:C/A:C"
+   },
+   {
+    "attribute_name": "description",
+    "attribute_value": "The version of Firefox installed on the remote Windows host is prior to 155.0. It is, therefore, affected by multiple vulnerabilities as referenced in the mfsa2026-82 advisory.\n\n  - Privilege escalation due to invalid pointer in the Graphics component. This vulnerability was fixed in     Firefox 155, Firefox ESR 115.40, Firefox ESR 140.15, and Firefox ESR 153.2. (CVE-2026-84131)\n\n  - Sandbox escape due to use-after-free in the DOM: Security component. This vulnerability was fixed in     Firefox 155, Firefox ESR 115.40, Firefox ESR 140.15, and Firefox ESR 153.2. (CVE-2026-84121)\n\n  - Use-after-free in the JavaScript: GC component. This vulnerability was fixed in Firefox 155 and Firefox     ESR 153.2. (CVE-2026-84118)\n\n  - Sandbox escape due to use-after-free in the DOM: Navigation component. This vulnerability was fixed in     Firefox 155, Firefox ESR 115.40, Firefox ESR 140.15, and Firefox ESR 153.2. (CVE-2026-84119)\n\n  - Use-after-free in the Audio/Video component. This vulnerability was fixed in Firefox 155, Firefox ESR     115.40, Firefox ESR 140.15, and Firefox ESR 153.2. (CVE-2026-84120)\n\nNote that Nessus has not tested for these issues but has instead relied only on the application's self-reported version number."
+   },
+   {
+    "attribute_name": "plugin_type",
+    "attribute_value": "local"
+   },
+   {
+    "attribute_name": "risk_factor",
+    "attribute_value": "Critical"
+   },
+   {
+    "attribute_name": "cvss3_vector",
+    "attribute_value": "CVSS:3.0/AV:N/AC:L/PR:N/UI:R/S:C/C:H/I:H/A:H"
+   },
+   {
+    "attribute_name": "dependency",
+    "attribute_value": "mozilla_org_installed.nasl"
+   },
+   {
+    "attribute_name": "required_key",
+    "attribute_value": "installed_sw/Mozilla Firefox"
+   },
+   {
+    "attribute_name": "script_version",
+    "attribute_value": "1.1"
+   },
+   {
+    "attribute_name": "cvss_base_score",
+    "attribute_value": "10.0"
+   },
+   {
+    "attribute_name": "cvss3_base_score",
+    "attribute_value": "9.6"
+   },
+   {
+    "attribute_name": "generated_plugin",
+    "attribute_value": "current"
+   },
+   {
+    "attribute_name": "script_copyright",
+    "attribute_value": "This script is Copyright (C) 2026 and is owned by Tenable, Inc. or an Affiliate thereof."
+   },
+   {
+    "attribute_name": "cvss_score_source",
+    "attribute_value": "CVE-2026-84131"
+   },
+   {
+    "attribute_name": "exploit_available",
+    "attribute_value": "false"
+   },
+   {
+    "attribute_name": "cvss3_score_source",
+    "attribute_value": "CVE-2026-84121"
+   },
+   {
+    "attribute_name": "cvss_temporal_score",
+    "attribute_value": "7.4"
+   },
+   {
+    "attribute_name": "exploitability_ease",
+    "attribute_value": "No known exploits are available"
+   },
+   {
+    "attribute_name": "cvss3_temporal_score",
+    "attribute_value": "8.3"
+   },
+   {
+    "attribute_name": "cvss_temporal_vector",
+    "attribute_value": "CVSS2#E:U/RL:OF/RC:C"
+   },
+   {
+    "attribute_name": "cvss3_temporal_vector",
+    "attribute_value": "CVSS:3.0/E:U/RL:O/RC:C"
+   },
+   {
+    "attribute_name": "vuln_publication_date",
+    "attribute_value": "2026/09/01"
+   },
+   {
+    "attribute_name": "patch_publication_date",
+    "attribute_value": "2026/09/01"
+   },
+   {
+    "attribute_name": "plugin_publication_date",
+    "attribute_value": "2026/09/01"
+   },
+   {
+    "attribute_name": "plugin_modification_date",
+    "attribute_value": "2026/09/01"
+   },
+   {
+    "attribute_name": "plugin_name",
+    "attribute_value": "Mozilla Firefox < 155.0"
+   }
+  ],
+  "vpr": {}
+ },
+ "[\"GET\", \"/plugins/plugin/328866\", null, null]": {
+  "id": 328866,
+  "name": "Google Chrome < 150.0.7871.181 Multiple Vulnerabilities",
+  "family_name": "MacOS X Local Security Checks",
+  "attributes": [
+   {
+    "attribute_name": "cpe",
+    "attribute_value": "cpe:/a:google:chrome"
+   },
+   {
+    "attribute_name": "fname",
+    "attribute_value": "macosx_google_chrome_150_0_7871_181.nasl"
+   },
+   {
+    "attribute_name": "cve",
+    "attribute_value": "CVE-2026-16413"
+   },
+   {
+    "attribute_name": "cve",
+    "attribute_value": "CVE-2026-16414"
+   },
+   {
+    "attribute_name": "cve",
+    "attribute_value": "CVE-2026-16415"
+   },
+   {
+    "attribute_name": "cve",
+    "attribute_value": "CVE-2026-16416"
+   },
+   {
+    "attribute_name": "cve",
+    "attribute_value": "CVE-2026-16417"
+   },
+   {
+    "attribute_name": "cve",
+    "attribute_value": "CVE-2026-16418"
+   },
+   {
+    "attribute_name": "cve",
+    "attribute_value": "CVE-2026-16419"
+   },
+   {
+    "attribute_name": "cve",
+    "attribute_value": "CVE-2026-16420"
+   },
+   {
+    "attribute_name": "cve",
+    "attribute_value": "CVE-2026-16421"
+   },
+   {
+    "attribute_name": "cve",
+    "attribute_value": "CVE-2026-16422"
+   },
+   {
+    "attribute_name": "cve",
+    "attribute_value": "CVE-2026-16423"
+   },
+   {
+    "attribute_name": "cve",
+    "attribute_value": "CVE-2026-16424"
+   },
+   {
+    "attribute_name": "see_also",
+    "attribute_value": "https://crbug.com/517359779\nhttps://crbug.com/517651910\nhttps://crbug.com/519244446\nhttps://crbug.com/520172356\nhttps://crbug.com/521491024\nhttps://crbug.com/522125255\nhttps://crbug.com/523435970\nhttps://crbug.com/527930356\nhttps://crbug.com/528276487\nhttps://crbug.com/533515002\nhttps://crbug.com/534582496\nhttps://crbug.com/534858939\nhttp://www.nessus.org/u?0b9e7f53"
+   },
+   {
+    "attribute_name": "solution",
+    "attribute_value": "Upgrade to Google Chrome version 150.0.7871.181 or later."
+   },
+   {
+    "attribute_name": "synopsis",
+    "attribute_value": "A web browser installed on the remote macOS host is affected by multiple vulnerabilities."
+   },
+   {
+    "attribute_name": "has_patch",
+    "attribute_value": "true"
+   },
+   {
+    "attribute_name": "intel_type",
+    "attribute_value": "SENSOR"
+   },
+   {
+    "attribute_name": "cvss_vector",
+    "attribute_value": "CVSS2#AV:N/AC:L/Au:N/C:C/I:C/A:C"
+   },
+   {
+    "attribute_name": "description",
+    "attribute_value": "The version of Google Chrome installed on the remote macOS host is prior to 150.0.7871.181. It is, therefore, affected by multiple vulnerabilities as referenced in the 2026_07_stable-channel-update-for-desktop_0256605430 advisory.\n\n  - Use after free in GPU in Google Chrome on Android prior to 150.0.7871.182 allowed a remote attacker who     had compromised the renderer process to potentially perform a sandbox escape via a crafted HTML page.\n    (Chromium security severity: High) (CVE-2026-16424)\n\n  - Type Confusion in WebAudio in Google Chrome prior to 150.0.7871.182 allowed a remote attacker to execute     arbitrary code inside a sandbox via a crafted HTML page. (Chromium security severity: High)     (CVE-2026-16420)\n\n  - Inappropriate implementation in WebAudio in Google Chrome prior to 150.0.7871.182 allowed a remote     attacker to execute arbitrary code inside a sandbox via a crafted HTML page. (Chromium security severity:\n    High) (CVE-2026-16421)\n\n  - Out of bounds write in ANGLE in Google Chrome prior to 150.0.7871.182 allowed a remote attacker who had     compromised the renderer process to potentially perform a sandbox escape via a crafted HTML page.\n    (Chromium security severity: High) (CVE-2026-16413)\n\n  - Insufficient validation of untrusted input in Chromecast in Google Chrome prior to 150.0.7871.182 allowed     a local attacker to potentially perform a sandbox escape via malicious network traffic. (Chromium security     severity: High) (CVE-2026-16414)\n\nNote that Nessus has not tested for these issues but has instead relied only on the application's self-reported version number."
+   },
+   {
+    "attribute_name": "plugin_type",
+    "attribute_value": "local"
+   },
+   {
+    "attribute_name": "risk_factor",
+    "attribute_value": "Critical"
+   },
+   {
+    "attribute_name": "cvss3_vector",
+    "attribute_value": "CVSS:3.0/AV:L/AC:L/PR:L/UI:N/S:U/C:H/I:H/A:H"
+   },
+   {
+    "attribute_name": "dependency",
+    "attribute_value": "macosx_google_chrome_installed.nbin"
+   },
+   {
+    "attribute_name": "required_key",
+    "attribute_value": "installed_sw/Google Chrome"
+   },
+   {
+    "attribute_name": "script_version",
+    "attribute_value": "1.3"
+   },
+   {
+    "attribute_name": "cvss_base_score",
+    "attribute_value": "10.0"
+   },
+   {
+    "attribute_name": "cvss3_base_score",
+    "attribute_value": "7.8"
+   },
+   {
+    "attribute_name": "generated_plugin",
+    "attribute_value": "current"
+   },
+   {
+    "attribute_name": "script_copyright",
+    "attribute_value": "This script is Copyright (C) 2026 and is owned by Tenable, Inc. or an Affiliate thereof."
+   },
+   {
+    "attribute_name": "cvss_score_source",
+    "attribute_value": "CVE-2026-16424"
+   },
+   {
+    "attribute_name": "exploit_available",
+    "attribute_value": "false"
+   },
+   {
+    "attribute_name": "cvss3_score_source",
+    "attribute_value": "CVE-2026-16414"
+   },
+   {
+    "attribute_name": "cvss_temporal_score",
+    "attribute_value": "7.4"
+   },
+   {
+    "attribute_name": "exploitability_ease",
+    "attribute_value": "No known exploits are available"
+   },
+   {
+    "attribute_name": "cvss3_temporal_score",
+    "attribute_value": "6.8"
+   },
+   {
+    "attribute_name": "cvss_temporal_vector",
+    "attribute_value": "CVSS2#E:U/RL:OF/RC:C"
+   },
+   {
+    "attribute_name": "cvss3_temporal_vector",
+    "attribute_value": "CVSS:3.0/E:U/RL:O/RC:C"
+   },
+   {
+    "attribute_name": "vuln_publication_date",
+    "attribute_value": "2026/07/21"
+   },
+   {
+    "attribute_name": "patch_publication_date",
+    "attribute_value": "2026/07/21"
+   },
+   {
+    "attribute_name": "plugin_publication_date",
+    "attribute_value": "2026/07/21"
+   },
+   {
+    "attribute_name": "plugin_modification_date",
+    "attribute_value": "2026/07/27"
+   },
+   {
+    "attribute_name": "plugin_name",
+    "attribute_value": "Google Chrome < 150.0.7871.181 Multiple Vulnerabilities"
+   }
+  ],
+  "vpr": {
+   "score": 5.0,
+   "drivers": {
+    "age_of_vuln": {
+     "lower_bound": 30,
+     "upper_bound": 60
+    },
+    "exploit_code_maturity": "UNPROVEN",
+    "cvss_impact_score_predicted": false,
+    "threat_intensity_last28": "VERY_LOW",
+    "threat_sources_last28": [
+     "No recorded events"
+    ],
+    "product_coverage": "MEDIUM"
+   },
+   "updated": "2026-08-20T00:30:11Z"
+  }
+ },
+ "[\"GET\", \"/plugins/plugin/137265\", null, null]": {
+  "id": 137265,
+  "name": "KB4561600: Security update for Adobe Flash Player (June 2020)",
+  "family_name": "Windows : Microsoft Bulletins",
+  "attributes": [
+   {
+    "attribute_name": "cpe",
+    "attribute_value": "cpe:/a:adobe:flash_player"
+   },
+   {
+    "attribute_name": "fname",
+    "attribute_value": "smb_nt_ms20_jun_flash.nasl"
+   },
+   {
+    "attribute_name": "msft",
+    "attribute_value": "MS20-4561600"
+   },
+   {
+    "attribute_name": "xref",
+    "attribute_value": "MSFT:MS20-4561600"
+   },
+   {
+    "attribute_name": "iava",
+    "attribute_value": "2020-A-0246-S"
+   },
+   {
+    "attribute_name": "xref",
+    "attribute_value": "IAVA:2020-A-0246-S"
+   },
+   {
+    "attribute_name": "mskb",
+    "attribute_value": "4561600"
+   },
+   {
+    "attribute_name": "xref",
+    "attribute_value": "MSKB:4561600"
+   },
+   {
+    "attribute_name": "cve",
+    "attribute_value": "CVE-2020-9633"
+   },
+   {
+    "attribute_name": "see_also",
+    "attribute_value": "https://helpx.adobe.com/security/products/flash-player/apsb20-30.html\nhttp://www.nessus.org/u?aed1c537"
+   },
+   {
+    "attribute_name": "solution",
+    "attribute_value": "Microsoft has released KB4561600 to address this issue."
+   },
+   {
+    "attribute_name": "synopsis",
+    "attribute_value": "The remote Windows host has a browser plugin installed that is affected by multiple vulnerabilities."
+   },
+   {
+    "attribute_name": "has_patch",
+    "attribute_value": "true"
+   },
+   {
+    "attribute_name": "intel_type",
+    "attribute_value": "SENSOR"
+   },
+   {
+    "attribute_name": "cvss_vector",
+    "attribute_value": "CVSS2#AV:N/AC:L/Au:N/C:C/I:C/A:C"
+   },
+   {
+    "attribute_name": "description",
+    "attribute_value": "The remote Windows host is missing security update KB4561600. It is, therefore, affected by an use after free vulnerability. An unauthenticated, remote attacker can exploit this, via a specially crafted file, to execute arbitrary code within the context of the user."
+   },
+   {
+    "attribute_name": "plugin_type",
+    "attribute_value": "local"
+   },
+   {
+    "attribute_name": "risk_factor",
+    "attribute_value": "Critical"
+   },
+   {
+    "attribute_name": "cvss3_vector",
+    "attribute_value": "CVSS:3.0/AV:N/AC:L/PR:N/UI:N/S:U/C:H/I:H/A:H"
+   },
+   {
+    "attribute_name": "dependency",
+    "attribute_value": "smb_hotfixes.nasl"
+   },
+   {
+    "attribute_name": "dependency",
+    "attribute_value": "ms_bulletin_checks_possible.nasl"
+   },
+   {
+    "attribute_name": "required_key",
+    "attribute_value": "SMB/MS_Bulletin_Checks/Possible"
+   },
+   {
+    "attribute_name": "stig_severity",
+    "attribute_value": "I"
+   },
+   {
+    "attribute_name": "script_version",
+    "attribute_value": "1.5"
+   },
+   {
+    "attribute_name": "required_port",
+    "attribute_value": "139"
+   },
+   {
+    "attribute_name": "required_port",
+    "attribute_value": "445"
+   },
+   {
+    "attribute_name": "required_port",
+    "attribute_value": "Host/patch_management_checks"
+   },
+   {
+    "attribute_name": "cvss_base_score",
+    "attribute_value": "10.0"
+   },
+   {
+    "attribute_name": "cvss3_base_score",
+    "attribute_value": "9.8"
+   },
+   {
+    "attribute_name": "script_copyright",
+    "attribute_value": "This script is Copyright (C) 2020 and is owned by Tenable, Inc. or an Affiliate thereof."
+   },
+   {
+    "attribute_name": "cvss_score_source",
+    "attribute_value": "CVE-2020-9633"
+   },
+   {
+    "attribute_name": "cvss_temporal_score",
+    "attribute_value": "7.4"
+   },
+   {
+    "attribute_name": "exploitability_ease",
+    "attribute_value": "No known exploits are available"
+   },
+   {
+    "attribute_name": "cvss3_temporal_score",
+    "attribute_value": "8.5"
+   },
+   {
+    "attribute_name": "cvss_temporal_vector",
+    "attribute_value": "CVSS2#E:U/RL:OF/RC:C"
+   },
+   {
+    "attribute_name": "cvss3_temporal_vector",
+    "attribute_value": "CVSS:3.0/E:U/RL:O/RC:C"
+   },
+   {
+    "attribute_name": "vuln_publication_date",
+    "attribute_value": "2020/06/09"
+   },
+   {
+    "attribute_name": "patch_publication_date",
+    "attribute_value": "2020/06/09"
+   },
+   {
+    "attribute_name": "plugin_publication_date",
+    "attribute_value": "2020/06/09"
+   },
+   {
+    "attribute_name": "plugin_modification_date",
+    "attribute_value": "2020/10/16"
+   },
+   {
+    "attribute_name": "plugin_name",
+    "attribute_value": "KB4561600: Security update for Adobe Flash Player (June 2020)"
+   }
+  ],
+  "vpr": {
+   "score": 4.9,
+   "drivers": {
+    "age_of_vuln": {
+     "lower_bound": 730
+    },
+    "exploit_code_maturity": "UNPROVEN",
+    "cvss_impact_score_predicted": false,
+    "threat_intensity_last28": "VERY_LOW",
+    "threat_sources_last28": [
+     "No recorded events"
+    ],
+    "product_coverage": "HIGH"
+   },
+   "updated": "2026-06-19T00:30:04Z"
+  }
+ },
+ "[\"GET\", \"/plugins/plugin/334632\", null, null]": {
+  "id": 334632,
+  "name": "Google Chrome < 151.0.7922.137 Multiple Vulnerabilities",
+  "family_name": "MacOS X Local Security Checks",
+  "attributes": [
+   {
+    "attribute_name": "cpe",
+    "attribute_value": "cpe:/a:google:chrome"
+   },
+   {
+    "attribute_name": "fname",
+    "attribute_value": "macosx_google_chrome_151_0_7922_137.nasl"
+   },
+   {
+    "attribute_name": "iava",
+    "attribute_value": "2026-A-0819"
+   },
+   {
+    "attribute_name": "xref",
+    "attribute_value": "IAVA:2026-A-0819"
+   },
+   {
+    "attribute_name": "cve",
+    "attribute_value": "CVE-2026-19556"
+   },
+   {
+    "attribute_name": "cve",
+    "attribute_value": "CVE-2026-19557"
+   },
+   {
+    "attribute_name": "cve",
+    "attribute_value": "CVE-2026-19558"
+   },
+   {
+    "attribute_name": "cve",
+    "attribute_value": "CVE-2026-19559"
+   },
+   {
+    "attribute_name": "cve",
+    "attribute_value": "CVE-2026-19560"
+   },
+   {
+    "attribute_name": "see_also",
+    "attribute_value": "https://crbug.com/534867485\nhttps://crbug.com/535000102\nhttps://crbug.com/536676756\nhttps://crbug.com/540100588\nhttps://crbug.com/540482895\nhttp://www.nessus.org/u?57d43302"
+   },
+   {
+    "attribute_name": "solution",
+    "attribute_value": "Upgrade to Google Chrome version 151.0.7922.137 or later."
+   },
+   {
+    "attribute_name": "synopsis",
+    "attribute_value": "A web browser installed on the remote macOS host is affected by multiple vulnerabilities."
+   },
+   {
+    "attribute_name": "has_patch",
+    "attribute_value": "true"
+   },
+   {
+    "attribute_name": "intel_type",
+    "attribute_value": "SENSOR"
+   },
+   {
+    "attribute_name": "cvss_vector",
+    "attribute_value": "CVSS2#AV:N/AC:L/Au:N/C:C/I:C/A:C"
+   },
+   {
+    "attribute_name": "description",
+    "attribute_value": "The version of Google Chrome installed on the remote macOS host is prior to 151.0.7922.137. It is, therefore, affected by multiple vulnerabilities as referenced in the 2026_08_stable-channel-update-for-desktop_01815628406 advisory.\n\n  - Use after free in Blink. (CVE-2026-19560)\n\n  - Use after free in V8. (CVE-2026-19556)\n\n  - Use after free in TabStrip. (CVE-2026-19557)\n\n  - Use after free in Extensions. (CVE-2026-19558)\n\n  - Use after free in HTML. (CVE-2026-19559)\n\nNote that Nessus has not tested for these issues but has instead relied only on the application's self-reported version number."
+   },
+   {
+    "attribute_name": "plugin_type",
+    "attribute_value": "local"
+   },
+   {
+    "attribute_name": "risk_factor",
+    "attribute_value": "Critical"
+   },
+   {
+    "attribute_name": "cvss3_vector",
+    "attribute_value": "CVSS:3.0/AV:N/AC:L/PR:N/UI:R/S:U/C:H/I:H/A:H"
+   },
+   {
+    "attribute_name": "dependency",
+    "attribute_value": "macosx_google_chrome_installed.nbin"
+   },
+   {
+    "attribute_name": "required_key",
+    "attribute_value": "installed_sw/Google Chrome"
+   },
+   {
+    "attribute_name": "stig_severity",
+    "attribute_value": "I"
+   },
+   {
+    "attribute_name": "script_version",
+    "attribute_value": "1.3"
+   },
+   {
+    "attribute_name": "cvss_base_score",
+    "attribute_value": "10.0"
+   },
+   {
+    "attribute_name": "cvss3_base_score",
+    "attribute_value": "8.8"
+   },
+   {
+    "attribute_name": "generated_plugin",
+    "attribute_value": "current"
+   },
+   {
+    "attribute_name": "script_copyright",
+    "attribute_value": "This script is Copyright (C) 2026 and is owned by Tenable, Inc. or an Affiliate thereof."
+   },
+   {
+    "attribute_name": "cvss_score_source",
+    "attribute_value": "CVE-2026-19560"
+   },
+   {
+    "attribute_name": "exploit_available",
+    "attribute_value": "false"
+   },
+   {
+    "attribute_name": "cvss_temporal_score",
+    "attribute_value": "7.4"
+   },
+   {
+    "attribute_name": "exploitability_ease",
+    "attribute_value": "No known exploits are available"
+   },
+   {
+    "attribute_name": "cvss3_temporal_score",
+    "attribute_value": "7.7"
+   },
+   {
+    "attribute_name": "cvss_temporal_vector",
+    "attribute_value": "CVSS2#E:U/RL:OF/RC:C"
+   },
+   {
+    "attribute_name": "cvss3_temporal_vector",
+    "attribute_value": "CVSS:3.0/E:U/RL:O/RC:C"
+   },
+   {
+    "attribute_name": "vuln_publication_date",
+    "attribute_value": "2026/08/11"
+   },
+   {
+    "attribute_name": "patch_publication_date",
+    "attribute_value": "2026/08/11"
+   },
+   {
+    "attribute_name": "plugin_publication_date",
+    "attribute_value": "2026/08/11"
+   },
+   {
+    "attribute_name": "plugin_modification_date",
+    "attribute_value": "2026/08/21"
+   },
+   {
+    "attribute_name": "plugin_name",
+    "attribute_value": "Google Chrome < 151.0.7922.137 Multiple Vulnerabilities"
+   }
+  ],
+  "vpr": {
+   "score": 5.0,
+   "drivers": {
+    "age_of_vuln": {
+     "lower_bound": 7,
+     "upper_bound": 30
+    },
+    "exploit_code_maturity": "UNPROVEN",
+    "cvss_impact_score_predicted": false,
+    "threat_intensity_last28": "VERY_LOW",
+    "threat_sources_last28": [
+     "No recorded events"
+    ],
+    "product_coverage": "MEDIUM"
+   },
+   "updated": "2026-08-18T00:30:07Z"
   }
  }
 }
