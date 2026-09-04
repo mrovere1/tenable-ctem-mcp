@@ -17,6 +17,7 @@ vira **lacuna declarada com causa** — número parcial silencioso é proibido.
 |---|---|---|
 | Chamadas para os 17 indicadores | ~40 | ~7 (**4 para os 15 de S a V**, medido) |
 | Detalhe de 20 plugins | 20 chamadas, ~31.900 tokens | 1 chamada, ~900 tokens (**−97,2%**, medido) |
+| Cobertura de plugins | amostra de 20, com IC de 37 pontos | **censo dos 121 críticos**, ~5.400 tokens, sem IC |
 | MTTR | impossível; exige script Python fora | 1 tool |
 | Cadência (M1) | 12 runs crus, colapsados no cliente | já colapsado: mediana **21 d**, não 1,42 |
 

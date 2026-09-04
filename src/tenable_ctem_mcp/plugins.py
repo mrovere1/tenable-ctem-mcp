@@ -250,28 +250,114 @@ def taxa_ponderada(amostra: list[dict], detalhes: dict[int, dict],
     }
 
 
-def amostra_com_detalhes(n: int = 30, corte_vpr: float = 7.0,
-                         severity: str = "critical") -> dict[str, Any]:
-    """Censo + amostra + detalhe dos cinco campos, em cache.
+# Acima deste numero de plugins, o censo sai caro demais e a amostra volta.
+# O numero vem de medicao: 121 plugins levam 64 s e ~5.400 tokens de saida
+# (528 ms por plugin, sequencial). 300 mantem o pior caso em ~2,6 min e
+# ~13.000 tokens - ainda abaixo dos ~15.000 que o MCP oficial gastava para
+# VINTE plugins. Paralelizar as chamadas e a alavanca para subir este limite.
+LIMITE_CENSO = 300
 
-    Existe para que D4, V1, V2 e M3 falem da MESMA amostra. Se cada indicador
-    sorteasse a sua, o relatorio descreveria quatro amostras diferentes com um
-    unico tamanho declarado - e o intervalo de confianca publicado nao valeria
-    para nenhuma delas.
+
+def amostra_com_detalhes(n: int = 30, corte_vpr: float = 7.0,
+                         severity: str = "critical",
+                         limite_censo: int = LIMITE_CENSO,
+                         modo: str = "auto") -> dict[str, Any]:
+    """Detalhe dos cinco campos para TODOS os plugins, ou para uma amostra.
+
+    Existe para que D4, V1, V2 e M3 falem do MESMO conjunto. Se cada indicador
+    sorteasse o seu, o relatorio descreveria quatro amostras diferentes com um
+    unico tamanho declarado - e o intervalo publicado nao valeria para nenhuma.
+
+    `modo`:
+      auto     censo se couber em `limite_censo`, senao amostra (default)
+      censo    forca o censo, custe o que custar
+      amostra  forca a amostra estratificada
+
+    POR QUE O CENSO E O DEFAULT AGORA. A amostragem existia porque
+    `plugins_search_plugins` aceita palavra-chave e CVE, nao lista de IDs - foi
+    por isso que `censo_d4_m3` virou false em 2026-09-03. `plugin_details_batch`
+    aceita lista de IDs, entao a restricao caiu.
+
+    O censo elimina de uma vez quatro fontes de imprecisao que a amostra
+    obrigava a administrar: o portao de Wilson, a base de ponderacao
+    (por_deteccao contra por_plugin movia V1 em 5 pontos sozinha), o vies de
+    alocacao entre estratos, e a irreprodutibilidade que impedia V1, V2 e M3 de
+    terem golden test. Medido nos 121 plugins criticos do sandbox: a amostra de
+    n=30 deu V1 62,7% e o censo deu 61,2% - a amostra estava certa, mas isso so
+    se sabe TENDO o censo.
     """
-    chave = f"amostra/{severity}/{n}/{corte_vpr}"
+    chave = f"conjunto/{severity}/{n}/{corte_vpr}/{modo}/{limite_censo}"
     achou, valor = CACHE.get(chave)
     if achou:
         return valor
 
     censo = plugin_census(severity)
-    am = amostrar_estratificado(censo["plugins"], n=n, corte_vpr=corte_vpr)
-    lote = plugin_details_batch([p["plugin_id"] for p in am["amostra"]])
+    todos = censo["plugins"]
+    fazer_censo = (modo == "censo"
+                   or (modo == "auto" and len(todos) <= limite_censo))
+
+    if fazer_censo:
+        for p in todos:
+            p["estrato"] = "censo"
+        conjunto = {
+            "modo": "censo",
+            "amostra": todos,
+            "n": len(todos),
+            "populacao": len(todos),
+            "estratos": {"censo": {"populacao": len(todos), "amostra": len(todos),
+                                   "share_por_plugin": 1.0,
+                                   "share_por_deteccao": 1.0}},
+            "corte_vpr": corte_vpr,
+            "piso_estrato_b_acionado": False,
+            "semente": None,
+            "nota": ("Censo: todos os plugins da severidade. Nao ha intervalo de "
+                     "confianca porque nao ha inferencia - a taxa e a taxa."),
+        }
+    else:
+        conjunto = amostrar_estratificado(todos, n=n, corte_vpr=corte_vpr)
+        conjunto["modo"] = "amostra"
+        conjunto["populacao"] = len(todos)
+        conjunto["nota"] = (
+            f"Amostra: a populacao tem {len(todos)} plugins, acima do limite de "
+            f"{limite_censo} para censo. Taxas sao estimativas, com intervalo de "
+            "Wilson por estrato e para o conjunto.")
+
+    lote = plugin_details_batch([p["plugin_id"] for p in conjunto["amostra"]])
     pacote = {
         "censo": censo,
-        "amostra": am,
+        "amostra": conjunto,
         "detalhes": {d["plugin_id"]: d for d in lote["plugins"]},
         "lacunas": lote["lacunas"],
     }
     CACHE.set(chave, pacote)
     return pacote
+
+
+def taxa(conjunto: dict, detalhes: dict, predicado, base: str = "por_deteccao"
+         ) -> dict[str, Any]:
+    """Taxa exata no censo; ponderada com IC de Wilson na amostra.
+
+    No censo nao ha o que ponderar nem o que inferir: a taxa e a contagem. O
+    campo `base_dos_pesos` vem `nao_se_aplica`, e nao um rotulo que sugira que
+    houve uma escolha de metodo onde nao houve.
+    """
+    if conjunto.get("modo") == "censo":
+        vistos = [detalhes[p["plugin_id"]] for p in conjunto["amostra"]
+                  if p["plugin_id"] in detalhes]
+        sucessos = sum(1 for d in vistos if predicado(d))
+        n = len(vistos)
+        return {
+            "modo": "censo",
+            "taxa_ponderada": (sucessos / n) if n else None,
+            "n": n, "sucessos": sucessos,
+            "por_estrato": {"censo": {"n": n, "sucessos": sucessos,
+                                      "taxa": (sucessos / n) if n else None,
+                                      "ic95": None, "peso": 1.0}},
+            "ic95_amostra_inteira": None,
+            "base_dos_pesos": "nao_se_aplica",
+            "nota": "Censo: taxa exata, sem intervalo de confianca.",
+        }
+    r = taxa_ponderada(conjunto["amostra"], detalhes, predicado,
+                       conjunto["estratos"], base=base)
+    r["modo"] = "amostra"
+    return r

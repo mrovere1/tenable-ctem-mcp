@@ -135,7 +135,9 @@ def ctem_scoping(mapeamento: dict[str, Any],
 def ctem_discovery(indicadores: list[str] | None = None,
                    superficies_licenciadas: list[str] | None = None,
                    corte_vpr_amostra: float = 7.0,
-                   n_amostra: int = 30) -> dict[str, Any]:
+                   n_amostra: int = 30,
+                   modo_plugins: str = "auto",
+                   limite_censo: int = 300) -> dict[str, Any]:
     """Estagio 2 - Discovery: D1, D2, D3, D4.
 
     D1 dias desde a ultima avaliacao (invertido; fonte: scan_history, nunca
@@ -143,14 +145,21 @@ def ctem_discovery(indicadores: list[str] | None = None,
     D2 % das superficies licenciadas cobertas - passe `superficies_licenciadas`
        (default ["VM"]). E razao percentual, nao contagem
     D3 % de ativos DEVICE com agente - denominador e DEVICE, nao o total
-    D4 % da amostra detectada por plugin local, com amostra estratificada de
-       alocacao proporcional e intervalo de Wilson no contexto
+    D4 % dos plugins detectados por plugin local
+
+    `modo_plugins`: "auto" (default) faz CENSO de todos os plugins criticos se
+    couberem em `limite_censo`, e cai para amostra estratificada acima disso;
+    "censo" e "amostra" forcam. O censo elimina o intervalo de confianca, a base
+    de ponderacao e o vies de alocacao - no sandbox, 121 plugins custam 64 s e
+    ~5.400 tokens, ainda tres vezes menos que os ~15.000 que o MCP oficial
+    gastava para VINTE plugins.
 
     `indicadores=["D1","D3"]` evita as chamadas de plugin que D4 exigiria.
     """
     try:
         return {"indicadores": discovery.calcular(
-            indicadores, superficies_licenciadas, corte_vpr_amostra, n_amostra)}
+            indicadores, superficies_licenciadas, corte_vpr_amostra, n_amostra,
+            "por_deteccao", modo_plugins, limite_censo)}
     except Exception as e:  # noqa: BLE001
         return _erro(e)
 
@@ -187,7 +196,9 @@ def ctem_validation(mapeamento: dict[str, Any] | None = None,
                     indicadores: list[str] | None = None,
                     corte_vpr_amostra: float = 7.0,
                     n_amostra: int = 30,
-                    ponderar: str = "por_deteccao") -> dict[str, Any]:
+                    ponderar: str = "por_deteccao",
+                    modo_plugins: str = "auto",
+                    limite_censo: int = 300) -> dict[str, Any]:
     """Estagio 4 - Validation: V1, V2, V3, V4.
 
     V1 % da amostra com exploit disponivel - INFORMATIVO, nao pontua estagio
@@ -195,15 +206,19 @@ def ctem_validation(mapeamento: dict[str, Any] | None = None,
     V3 taxa de reincidencia: RESURFACED / (RESURFACED + FIXED). Dado direto
     V4 % de DEVICE com software fora de suporte - denominador e DEVICE
 
-    V1 e V2 saem da MESMA amostra de D4, para o relatorio nao descrever tres
-    amostras diferentes com um unico tamanho declarado.
+    V1 e V2 saem do MESMO conjunto de D4, para o relatorio nao descrever tres
+    conjuntos diferentes com um unico tamanho declarado.
 
-    `ponderar` e "por_deteccao" (default) ou "por_plugin" - a escolha muda o
-    numero e vai declarada no contexto.
+    `modo_plugins`: "auto" (default) faz CENSO se couber em `limite_censo`.
+    No censo nao ha intervalo de confianca nem ponderacao - `ponderar` fica sem
+    efeito e o contexto diz `nao_se_aplica`. Na amostra, `ponderar` muda o
+    numero (59,3% por deteccao contra 54,6% por plugin no sandbox) e vai
+    declarado.
     """
     try:
         return {"indicadores": validation.calcular(
-            mapeamento, indicadores, corte_vpr_amostra, n_amostra, ponderar)}
+            mapeamento, indicadores, corte_vpr_amostra, n_amostra, ponderar,
+            modo_plugins, limite_censo)}
     except Exception as e:  # noqa: BLE001
         return _erro(e)
 
@@ -212,6 +227,7 @@ def ctem_validation(mapeamento: dict[str, Any] | None = None,
 def ctem_mobilization(mapeamento: dict[str, Any] | None = None,
                       indicadores: list[str] | None = None,
                       corte_vpr_amostra: float = 7.0, n_amostra: int = 30,
+                      modo_plugins: str = "auto", limite_censo: int = 300,
                       mttr_days: int = 180,
                       mttr_severities: list[str] | None = None,
                       mttr_max_wait_s: int = 240,
@@ -239,7 +255,8 @@ def ctem_mobilization(mapeamento: dict[str, Any] | None = None,
     """
     try:
         return {"indicadores": mobilization.calcular(
-            mapeamento, indicadores, corte_vpr_amostra, n_amostra, mttr_days,
+            mapeamento, indicadores, corte_vpr_amostra, n_amostra,
+            modo_plugins, limite_censo, mttr_days,
             mttr_severities, mttr_max_wait_s, mttr_export_uuid, corte_lote,
             pct_em_lote_max)}
     except Exception as e:  # noqa: BLE001

@@ -218,19 +218,26 @@ def test_d3_cobertura_de_agente_sobre_device(sandbox):
     assert d3["n"] == 8
 
 
-def test_d4_amostra_detectada_por_plugin_local(sandbox):
+def test_d4_detectada_por_plugin_local(sandbox):
+    """Censo por default: 121 de 121, sem intervalo de confianca."""
     from tenable_ctem_mcp.indicators.discovery import calcular
     d4 = _por_id(calcular(indicadores=["D4"]))["D4"]
     assert d4["valor"] == 100.0
     assert d4["contexto"]["plugins_sem_detalhe"] == []
+    assert d4["contexto"]["modo"] == "censo"
+    assert d4["n"] == 121
+    assert "CENSO" in d4["filtro_literal"]
 
 
 def test_amostra_de_d4_e_alocada_proporcional_a_populacao(sandbox):
-    """O erro que esta guarda existe para nao repetir: na primeira execucao real
-    a amostra foi 60/40 enquanto a populacao era 65/35. Deu quase certo por
+    """Vale quando a populacao passa do limite de censo e a amostra volta.
+
+    O erro que esta guarda existe para nao repetir: na primeira execucao real a
+    amostra foi 60/40 enquanto a populacao era 65/35. Deu quase certo por
     coincidencia."""
     from tenable_ctem_mcp.indicators.discovery import calcular
-    ctx = _por_id(calcular(indicadores=["D4"]))["D4"]["contexto"]
+    ctx = _por_id(calcular(indicadores=["D4"],
+                           modo_plugins="amostra"))["D4"]["contexto"]
     a, b = ctx["estratos"]["A"], ctx["estratos"]["B"]
     assert a["populacao"] + b["populacao"] == 121     # plugins criticos do tenant
     # a fatia da amostra acompanha a fatia da populacao, dentro de 1 plugin
@@ -363,7 +370,8 @@ def test_v1_e_informativo_e_declara_a_base_dos_pesos(sandbox):
     59,3% por deteccao e 54,6% por plugin com n=20."""
     from tenable_ctem_mcp.indicators.validation import calcular
     for base, esperado in (("por_deteccao", 59.3), ("por_plugin", 54.6)):
-        v1 = _por_id(calcular(indicadores=["V1"], n_amostra=20, ponderar=base))["V1"]
+        v1 = _por_id(calcular(indicadores=["V1"], n_amostra=20, ponderar=base,
+                              modo_plugins="amostra"))["V1"]
         assert v1["contexto"]["informativo"] is True
         assert v1["contexto"]["base_dos_pesos"] == base
         assert v1["valor"] == esperado
@@ -373,23 +381,33 @@ def test_v2_mediana_de_dias_no_kev_com_relogio_congelado(sandbox):
     """V2 e uma diferenca contra o instante da coleta e cresce sozinha a cada
     dia. Sem relogio fixo nao existe regressao."""
     from tenable_ctem_mcp.indicators.validation import calcular
-    v2 = _por_id(calcular(indicadores=["V2"], agora=INSTANTE_DA_MEDICAO))["V2"]
+    v2 = _por_id(calcular(indicadores=["V2"], agora=INSTANTE_DA_MEDICAO,
+                          modo_plugins="amostra"))["V2"]
     assert v2["valor"] == 1357.0
     assert v2["contexto"]["invertido"] is True
     assert v2["contexto"]["plugins_com_kev"] == 12
     assert "BOD 26-04" in v2["contexto"]["origem_do_limiar"]
 
 
-def test_v1_e_v2_saem_da_mesma_amostra_que_d4(sandbox):
-    """Senao o relatorio descreve tres amostras diferentes com um unico tamanho
-    declarado, e o IC publicado nao vale para nenhuma delas."""
+def test_v2_no_censo_nao_tem_intervalo_de_confianca(sandbox):
+    """Censo nao infere: nao ha o que estimar, entao nao ha IC."""
+    from tenable_ctem_mcp.indicators.validation import calcular
+    v2 = _por_id(calcular(indicadores=["V2"], agora=INSTANTE_DA_MEDICAO))["V2"]
+    assert v2["contexto"]["modo"] == "censo"
+    assert v2["contexto"]["ic95_proporcao_com_kev"] is None
+    assert v2["contexto"]["plugins_na_amostra"] == 121
+
+
+def test_v1_e_v2_saem_do_mesmo_conjunto_que_d4(sandbox):
+    """Senao o relatorio descreve tres conjuntos diferentes com um unico tamanho
+    declarado, e o IC publicado nao vale para nenhum deles."""
     from tenable_ctem_mcp.indicators.discovery import calcular as disc
     from tenable_ctem_mcp.indicators.validation import calcular as val
-    d4 = _por_id(disc(indicadores=["D4"]))["D4"]
-    v1 = _por_id(val(indicadores=["V1"]))["V1"]
-    assert d4["n"] == v1["n"]
-    assert d4["contexto"]["estratos"]["A"]["amostra"] == \
-        v1["contexto"]["por_estrato"]["A"]["n"]
+    for modo in ("censo", "amostra"):
+        d4 = _por_id(disc(indicadores=["D4"], modo_plugins=modo))["D4"]
+        v1 = _por_id(val(indicadores=["V1"], modo_plugins=modo))["V1"]
+        assert d4["n"] == v1["n"]
+        assert d4["contexto"]["modo"] == v1["contexto"]["modo"] == modo
 
 
 def test_divergencia_de_v1_tem_causa_identificada(sandbox):
@@ -421,10 +439,56 @@ def test_amostra_e_reproduzivel_entre_execucoes(sandbox):
     cada rodada, e golden test nao existe."""
     from tenable_ctem_mcp.client import CACHE
     from tenable_ctem_mcp.plugins import amostra_com_detalhes
-    a = [p["plugin_id"] for p in amostra_com_detalhes()["amostra"]["amostra"]]
+    a = [p["plugin_id"] for p in
+         amostra_com_detalhes(modo="amostra")["amostra"]["amostra"]]
     CACHE.limpar()
-    b = [p["plugin_id"] for p in amostra_com_detalhes()["amostra"]["amostra"]]
+    b = [p["plugin_id"] for p in
+         amostra_com_detalhes(modo="amostra")["amostra"]["amostra"]]
     assert a == b and len(a) == 30
+
+
+# --- Censo: o modo default desde que plugin_details_batch existe ------------
+
+def test_censo_e_o_default_quando_cabe_no_limite(sandbox):
+    """A amostragem existia porque plugins_search_plugins nao aceita lista de
+    IDs. plugin_details_batch aceita, entao a restricao caiu."""
+    from tenable_ctem_mcp.plugins import amostra_com_detalhes
+    c = amostra_com_detalhes()["amostra"]
+    assert c["modo"] == "censo"
+    assert c["n"] == c["populacao"] == 121
+    assert c["semente"] is None          # nao ha sorteio
+
+
+def test_censo_volta_a_amostra_acima_do_limite(sandbox):
+    """Um tenant grande pode ter milhares de plugins criticos; a 528 ms cada,
+    mil plugins sao nove minutos."""
+    from tenable_ctem_mcp.plugins import amostra_com_detalhes
+    c = amostra_com_detalhes(limite_censo=50)["amostra"]
+    assert c["modo"] == "amostra"
+    assert c["n"] == 30 and c["populacao"] == 121
+
+
+def test_censo_nao_pondera_nem_estima(sandbox):
+    """No censo a taxa e a contagem. `base_dos_pesos` vem `nao_se_aplica` em vez
+    de um rotulo que sugira escolha de metodo onde nao houve."""
+    from tenable_ctem_mcp.plugins import amostra_com_detalhes, taxa
+    pac = amostra_com_detalhes()
+    r = taxa(pac["amostra"], pac["detalhes"],
+             lambda d: bool(d.get("exploit_available")))
+    assert r["modo"] == "censo"
+    assert r["base_dos_pesos"] == "nao_se_aplica"
+    assert r["ic95_amostra_inteira"] is None
+    assert r["n"] == 121
+
+
+def test_censo_elimina_a_ambiguidade_da_base_de_pesos(sandbox):
+    """Na amostra, por_deteccao e por_plugin dao 59,3% e 54,6% - cinco pontos de
+    diferenca so pela escolha de metodo. No censo os dois dao o mesmo numero,
+    porque nao ha ponderacao nenhuma."""
+    from tenable_ctem_mcp.indicators.validation import calcular
+    valores = {b: _por_id(calcular(indicadores=["V1"], ponderar=b))["V1"]["valor"]
+               for b in ("por_deteccao", "por_plugin")}
+    assert valores["por_deteccao"] == valores["por_plugin"] == 61.2
 
 
 # --- Mobilization: M1, M2, M3, M4 ------------------------------------------
@@ -474,7 +538,7 @@ def test_m3_rotula_published_como_proxy_declarado(sandbox):
     """`Published` e a data do PLUGIN DE DETECCAO, nao a do patch."""
     from tenable_ctem_mcp.indicators.mobilization import calcular
     m3 = _por_id(calcular(SCANS_RECORRENTES, indicadores=["M3"],
-                          agora=INSTANTE_DA_MEDICAO))["M3"]
+                          agora=INSTANTE_DA_MEDICAO, modo_plugins="amostra"))["M3"]
     assert m3["valor"] == 1047.0
     assert m3["contexto"]["invertido"] is True
     assert "proxy" in m3["contexto"]["proxy_declarado"]

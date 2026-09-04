@@ -23,7 +23,7 @@ from .. import Indicador
 from ..cadence import scan_cadence
 from ..client import ErroApi
 from ..mttr import mttr_cadence_guard, mttr_collect
-from ..plugins import amostra_com_detalhes, wilson
+from ..plugins import LIMITE_CENSO, amostra_com_detalhes
 
 INDICADORES = ("M1", "M2", "M3", "M4")
 
@@ -51,6 +51,7 @@ def _dias_desde_publicacao(data: str, agora: datetime) -> float | None:
 
 def calcular(mapeamento: dict | None = None, indicadores: list[str] | None = None,
              corte_vpr_amostra: float = 7.0, n_amostra: int = 30,
+             modo_plugins: str = "auto", limite_censo: int = LIMITE_CENSO,
              mttr_days: int = 180,
              mttr_severities: list[str] | None = None,
              mttr_max_wait_s: int = 240,
@@ -138,7 +139,8 @@ def calcular(mapeamento: dict | None = None, indicadores: list[str] | None = Non
     # --- M3: idade da correcao disponivel, da amostra -------------------
     if "M3" in pedidos:
         try:
-            pac = amostra_com_detalhes(n=n_amostra, corte_vpr=corte_vpr_amostra)
+            pac = amostra_com_detalhes(n=n_amostra, corte_vpr=corte_vpr_amostra,
+                                       modo=modo_plugins, limite_censo=limite_censo)
             dias, sem_data = [], 0
             for p in pac["amostra"]["amostra"]:
                 d = pac["detalhes"].get(p["plugin_id"])
@@ -155,12 +157,16 @@ def calcular(mapeamento: dict | None = None, indicadores: list[str] | None = Non
             else:
                 saida.append(Indicador.ok(
                     "M3", round(_mediana(dias), 1), n=len(dias),
-                    filtro_literal=(f"mediana de (agora - Published) em {len(dias)} de "
-                                    f"{n_am} plugins da amostra estratificada, "
-                                    f"semente {pac['amostra']['semente']}"),
+                    filtro_literal=(
+                        f"mediana de (agora - Published) em {len(dias)} de {n_am} "
+                        + ("plugins criticos (CENSO)" if pac["amostra"]["modo"] == "censo"
+                           else f"plugins da amostra estratificada, "
+                                f"semente {pac['amostra']['semente']}")),
                     veredito_preflight="ok",
                     contexto={
                         "invertido": True,
+                        "modo": pac["amostra"]["modo"],
+                        "populacao": pac["amostra"]["populacao"],
                         "plugins_sem_data": sem_data,
                         "proxy_declarado": (
                             "`Published` e a data de publicacao do PLUGIN DE "

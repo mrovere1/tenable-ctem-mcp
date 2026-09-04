@@ -37,15 +37,22 @@ como "dias em aberto" produz número errado.
 Management. Não é wrapper faltando: são campos da API de Vulnerability Management, alcançáveis só
 por `POST /vulns/export`. É a razão de `mttr_collect` existir.
 
-## Censo de plugins não é alcançável por busca
+## Censo de plugins não é alcançável **por busca** — mas é por lote
 
-`plugins_search_plugins` aceita palavra-chave e CVE, **não** lista de IDs de plugin. Não há como
-pedir `Scan Type` e `Published` para o conjunto de plugins que aparece nos findings do tenant.
-D4 e M3 saem de amostra estratificada, com tamanho, alocação e intervalo de confiança declarados.
+`plugins_search_plugins` aceita palavra-chave e CVE, **não** lista de IDs de plugin. Foi por isso
+que `censo_d4_m3` virou `false` em 2026-09-03.
 
-O quadro de amostragem certo é `workbenches_list_vulnerabilities(severity=...)`, que devolve plugin,
-contagem de detecções, VPR e família de todos os plugins daquela severidade numa chamada — 121
-plugins críticos no sandbox.
+**Essa conclusão vale para a busca, não para o censo.** `plugin_details_batch` recebe lista de IDs,
+e o quadro de amostragem sai de `GET /workbenches/vulnerabilities`, que devolve todos os plugins da
+severidade numa chamada — 121 críticos no sandbox. Juntando os dois, **o censo é alcançável**: 121
+chamadas, 64 s, ~5.400 tokens.
+
+Por isso `modo_plugins` vem `auto`, que faz censo quando a população cabe em `limite_censo` e cai
+para amostra acima disso. O censo elimina o intervalo de confiança, a base de ponderação e o viés de
+alocação — ver `docs/tools.md`.
+
+**A amostragem continua existindo**, e não é legado: um tenant grande pode ter milhares de plugins
+críticos, e a 528 ms por plugin mil plugins são nove minutos.
 
 ## Propagação de índice após escrita de tag
 

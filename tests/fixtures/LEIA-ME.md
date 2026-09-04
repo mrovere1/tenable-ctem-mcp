@@ -47,3 +47,13 @@ Duas reduções, ambas declaradas:
   chaves 4.278 vezes. 1.079 KB → 269 KB.
 - **`asset_nome` virou rótulo estável** (`ativo-001`…). O nome real só importa para **agrupar**
   janelas `(ativo, first_found, last_fixed)`, e o rótulo preserva o agrupamento.
+
+## Detalhe de plugin: uma resposta inteira, o resto enxuto
+
+O censo dos 121 plugins críticos traria 121 respostas de ~8.200 caracteres com **97 atributos cada**
+— quase 1 MB para alimentar cinco campos. `_cinco_campos()` lê **seis atributos**.
+
+Então: a resposta do plugin **314348 fica inteira**, marcada com `_completa`, para a fixture
+continuar provando o tamanho que justifica `plugin_details_batch`. As outras 120 ficam só com os
+atributos lidos, marcadas com `_enxuta`. A extração continua sob teste — ela passa pela mesma lista
+de `attributes`.

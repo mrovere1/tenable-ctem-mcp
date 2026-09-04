@@ -20,7 +20,7 @@ from typing import Any
 
 from .. import Indicador
 from ..client import ErroApi, chamar, total_de
-from ..plugins import amostra_com_detalhes, taxa_ponderada, wilson
+from ..plugins import LIMITE_CENSO, amostra_com_detalhes, taxa, wilson
 from ..preflight import validar_filters, veredito
 
 BUSCA_FINDINGS = "/api/v1/t1/inventory/findings/search"
@@ -79,6 +79,8 @@ def _dias_desde(data_kev: str, agora: datetime) -> float | None:
 def calcular(mapeamento: dict | None = None, indicadores: list[str] | None = None,
              corte_vpr_amostra: float = 7.0, n_amostra: int = 30,
              ponderar: str = "por_deteccao",
+             modo_plugins: str = "auto",
+             limite_censo: int = LIMITE_CENSO,
              retrato: dict | None = None,
              agora: datetime | None = None) -> list[dict]:
     """V1 a V4. `indicadores=None` calcula os quatro.
@@ -101,7 +103,8 @@ def calcular(mapeamento: dict | None = None, indicadores: list[str] | None = Non
     # --- V1 e V2 saem da mesma amostra ----------------------------------
     if {"V1", "V2"} & set(pedidos):
         try:
-            pac = amostra_com_detalhes(n=n_amostra, corte_vpr=corte_vpr_amostra)
+            pac = amostra_com_detalhes(n=n_amostra, corte_vpr=corte_vpr_amostra,
+                                       modo=modo_plugins, limite_censo=limite_censo)
             am, detalhes = pac["amostra"], pac["detalhes"]
         except (ErroApi, ValueError) as e:
             for ind in ("V1", "V2"):
@@ -111,17 +114,21 @@ def calcular(mapeamento: dict | None = None, indicadores: list[str] | None = Non
             am = None
 
         if am is not None and "V1" in pedidos:
-            r = taxa_ponderada(am["amostra"], detalhes,
-                               lambda d: bool(d.get("exploit_available")),
-                               am["estratos"], base=ponderar)
+            r = taxa(am, detalhes, lambda d: bool(d.get("exploit_available")),
+                     base=ponderar)
             saida.append(Indicador.ok(
                 "V1", round(100.0 * r["taxa_ponderada"], 1), n=r["n"],
-                filtro_literal=(f"amostra estratificada de {am['n']}, alocacao "
-                                f"proporcional, corte VPR {corte_vpr_amostra}, "
-                                f"semente {am['semente']}"),
+                filtro_literal=(
+                    f"CENSO dos {am['n']} plugins criticos"
+                    if am["modo"] == "censo" else
+                    f"amostra estratificada de {am['n']} de {am['populacao']}, "
+                    f"alocacao proporcional, corte VPR {corte_vpr_amostra}, "
+                    f"semente {am['semente']}"),
                 veredito_preflight="ok",
                 contexto={
                     "informativo": True,
+                    "modo": am["modo"], "populacao": am["populacao"],
+                    "nota_do_conjunto": am["nota"],
                     "base_dos_pesos": r["base_dos_pesos"],
                     "por_estrato": r["por_estrato"],
                     "ic95_amostra_inteira": r["ic95_amostra_inteira"],
@@ -144,23 +151,25 @@ def calcular(mapeamento: dict | None = None, indicadores: list[str] | None = Non
                                        for k in d["cisa_known_exploited"]) if x is not None]
                 if valores:
                     dias.append(max(valores))   # min(data) => max(dias)
-            n_am = len(am["amostra"])
+            n_am = am["n"]
             if not dias:
                 saida.append(Indicador.lacuna_declarada(
                     "V2", causa=("nenhum plugin da amostra tem data de "
                                  "CISA-KNOWN-EXPLOITED."),
-                    filtro_literal=f"amostra de {n_am} plugins", n=n_am))
+                    filtro_literal=f"{am['modo']} de {n_am} plugins", n=n_am))
             else:
                 saida.append(Indicador.ok(
                     "V2", round(_mediana(dias), 1), n=len(dias),
                     filtro_literal=(f"mediana de (agora - menor data CISA-KNOWN-EXPLOITED) "
-                                    f"em {len(dias)} de {n_am} plugins da amostra"),
+                                    f"em {len(dias)} de {n_am} plugins ({am['modo']})"),
                     veredito_preflight="ok",
                     contexto={
+                        "modo": am["modo"],
                         "plugins_com_kev": com_kev,
                         "plugins_na_amostra": n_am,
                         "proporcao_com_kev": round(com_kev / n_am, 3) if n_am else None,
-                        "ic95_proporcao_com_kev": wilson(com_kev, n_am),
+                        "ic95_proporcao_com_kev": (None if am["modo"] == "censo"
+                                                   else wilson(com_kev, n_am)),
                         "invertido": True,
                         "origem_do_limiar": (
                             "Os cortes de 14 e 30 dias derivam dos tiers de remediacao "

@@ -152,7 +152,7 @@ Estágio 2: **D1, D2, D3, D4**.
 | D1 | `hoje − time_start do run mais recente` · invertido | fonte é `scan_history`. **Nunca** filtro de data em findings (ignorado) nem `age` (é recência, não idade) |
 | D2 | superfícies licenciadas cobertas / licenciadas | **razão percentual**, não contagem. `asset_class` não é `exposure_classes` |
 | D3 | agentes ativos / `assets(asset_class = DEVICE)` | denominador é DEVICE — IDENTITY, ACCOUNT e GROUP não têm software instalado |
-| D4 | plugins com `Scan Type = local` / amostra | amostra estratificada, alocação proporcional, IC de Wilson no `contexto` |
+| D4 | plugins com `Scan Type = local` / conjunto | **censo por default**; amostra estratificada com IC de Wilson acima do limite |
 
 `indicadores=["D1","D3"]` evita as chamadas de plugin que D4 exigiria — é o que torna o custo de uma
 reavaliação parcial proporcional ao pedido.
@@ -206,7 +206,7 @@ Estágio 4: **V1, V2, V3, V4**.
 
 | ID | Fórmula | Nota |
 |---|---|---|
-| V1 | plugins com exploit disponível / amostra | **informativo**, não pontua estágio |
+| V1 | plugins com exploit disponível / conjunto | **informativo**, não pontua estágio |
 | V2 | `mediana(agora − menor data CISA-KNOWN-EXPLOITED)` · invertido | cortes ancorados na CISA BOD 26-04 |
 | V3 | `RESURFACED / (RESURFACED + FIXED)` · invertido | dado direto, não cálculo |
 | V4 | DEVICE com finding de EOL / DEVICE · invertido | denominador é DEVICE |
@@ -284,7 +284,45 @@ curto. É o denominador de D4, M3, V1 e V2. No sandbox: **121 plugins críticos,
 
 Não existe censo por busca — `plugins_search_plugins` aceita palavra-chave e CVE, não lista de IDs.
 
-### Amostragem, quando D4/V1/V2 usam amostra
+### Censo ou amostra — `modo_plugins`
+
+**O censo é o default desde que `plugin_details_batch` existe.** A amostragem existia porque
+`plugins_search_plugins` aceita palavra-chave e CVE, **não lista de IDs de plugin** — foi por isso
+que `censo_d4_m3` virou `false` em 2026-09-03. `plugin_details_batch` aceita lista de IDs, então a
+restrição caiu.
+
+| `modo_plugins` | Comportamento |
+|---|---|
+| `auto` *(default)* | censo se a população couber em `limite_censo` (300); amostra acima disso |
+| `censo` | força o censo, custe o que custar |
+| `amostra` | força a amostra estratificada |
+
+**O que o censo custa e o que ele elimina.** Medido nos 121 plugins críticos do sandbox:
+
+| | Amostra n=30 | Censo |
+|---|---|---|
+| Chamadas · tempo | 30 · 16 s | 121 · **64 s** |
+| Tokens de saída | ~1.400 | **~5.400** |
+| D4 | 100,0% ± IC | **100,0% exato** |
+| V1 | 62,7% ± 20 pontos | **61,2% exato** |
+| Proporção com KEV | 40,0% ± 18 pontos | **40,5% exato** |
+
+Quatro fontes de imprecisão somem de uma vez: o portão de Wilson, a base de ponderação
+(`por_deteccao` × `por_plugin` movia V1 em 5 pontos sozinha), o viés de alocação entre estratos, e a
+irreprodutibilidade que impedia V1, V2 e M3 de terem golden test. No censo, `base_dos_pesos` vem
+`nao_se_aplica` e o IC vem `null` — não há inferência, a taxa é a contagem.
+
+E os ~5.400 tokens continuam **três vezes menores** que os ~15.000 que o MCP oficial gastava para
+**vinte** plugins.
+
+**Onde o censo não serve.** Todas as severidades somam 936 plugins no sandbox ≈ 8 min e ~42.000
+tokens — e os indicadores são definidos sobre os críticos. Um tenant grande pode ter milhares de
+plugins críticos: a 528 ms cada, mil plugins são nove minutos. Daí o `limite_censo`, e daí a
+amostragem continuar existindo. **Paralelizar as chamadas é a alavanca para subir o limite.**
+
+O modo usado vai no `filtro_literal` e no `contexto.modo` de cada indicador.
+
+### Amostragem, quando a população passa do limite
 
 Três regras, e a ordem importa:
 
