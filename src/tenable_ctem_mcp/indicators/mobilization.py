@@ -213,6 +213,11 @@ def calcular(mapeamento: dict | None = None, indicadores: list[str] | None = Non
                 contexto = {
                     "invertido": True,
                     "p50_critical": p50c, "p50_high": p50h,
+                    # Evidencia por severidade. A skill exige `n`, a origem do
+                    # dado (nativo vs derivado) e os reabertos para poder
+                    # declarar o metodo no relatorio; sem isso ela pediria uma
+                    # conclusao metodologica que o servidor nao entregou.
+                    "por_severidade": sev,
                     "cortes": CORTES_M4,
                     "como_pontuar": (
                         "M4 e o MENOR dos dois estagios - mobilizacao madura fecha as "

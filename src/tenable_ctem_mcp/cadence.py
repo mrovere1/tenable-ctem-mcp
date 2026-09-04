@@ -90,6 +90,7 @@ def scan_cadence(scan_ids: list[str | int], colapsar_runs_do_mesmo_dia: bool = T
             "intervalos_colapsados_dias": colapsados,
             "mediana_dias": _mediana(colapsados),
             "maximo_dias": max(colapsados) if colapsados else None,
+            "intervalos_crus_dias": crus,
             "mediana_sem_colapso_dias": _mediana(crus),
             "runs_relancados_no_mesmo_dia": len(usados) - len(dias),
         }
@@ -100,7 +101,7 @@ def scan_cadence(scan_ids: list[str | int], colapsar_runs_do_mesmo_dia: bool = T
     if not colapsar_runs_do_mesmo_dia:
         crus_gerais: list[float] = []
         for v in por_scan.values():
-            crus_gerais.extend(v["intervalos_colapsados_dias"])
+            crus_gerais.extend(v["intervalos_crus_dias"])
         escolhidos = crus_gerais
 
     return {

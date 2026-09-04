@@ -523,6 +523,23 @@ def test_m2_maior_lacuna_nao_muda_com_o_colapso(sandbox):
     assert scan_cadence([33], colapsar_runs_do_mesmo_dia=False)["maximo_dias"] == 140
 
 
+def test_scan_cadence_sem_colapso_agrega_intervalos_crus(sandbox):
+    """Achado da auditoria de 2026-09-04: com `colapsar_runs_do_mesmo_dia=False`
+    os intervalos crus eram calculados por scan mas a mediana GERAL continuava
+    somando os colapsados - os dois modos devolviam 21,0. O modo diagnostico
+    existe justamente para MOSTRAR o contraste 1,42 vs 21; devolvendo o mesmo
+    numero, ele escondia o que deveria expor."""
+    from tenable_ctem_mcp.cadence import scan_cadence
+    com = scan_cadence([33], colapsar_runs_do_mesmo_dia=True)
+    sem = scan_cadence([33], colapsar_runs_do_mesmo_dia=False)
+    assert com["mediana_dias"] == 21.0
+    assert sem["mediana_dias"] == 1.42
+    assert sem["mediana_dias"] != com["mediana_dias"]
+    # a lista crua vai junto, para o numero ser auditavel e nao so afirmado
+    assert len(sem["scans"]["33"]["intervalos_crus_dias"]) == 11
+    assert sem["aviso"] and "COLAPSO DESLIGADO" in sem["aviso"]
+
+
 def test_m1_sem_scans_declarados_e_lacuna(sandbox):
     """O servidor nao escolhe quais scans representam a cadencia, e a razao esta
     medida: com todos os scans com historico a mediana cai de 21 para 1,0 e o

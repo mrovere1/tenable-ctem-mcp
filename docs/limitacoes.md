@@ -3,6 +3,13 @@
 Cada linha aqui foi medida contra o tenant de laboratório, não presumida.
 Fonte: `_docs/matriz-confianca-filtros-mcp.md`.
 
+> **Dois caminhos, dois conjuntos de vereditos.** A matriz de origem foi medida **através do MCP
+> oficial da Tenable**; este servidor fala **direto com a API REST**, e em quatro pontos o
+> comportamento é outro. As seções abaixo trazem a medição do caminho antigo, marcada como tal, e
+> a seção **"Quatro vereditos da matriz que mudam na API direta"**, no fim deste arquivo, é a que
+> vale para este servidor. Em caso de conflito entre as duas, **a de baixo manda** — e
+> `ctem_preflight()` reexecuta tudo contra o tenant do momento, que é a autoridade final.
+
 ## Filtros aceitos e silenciosamente ignorados
 
 O pior tipo de falha: a consulta parece filtrada, devolve o total do corpus inteiro, e o número sobe
@@ -10,7 +17,7 @@ para o relatório como se fosse resultado do filtro. **Não há sinal de que aco
 
 | Filtro | Prova |
 |---|---|
-| datas em findings (`last_updated`, `first_observed_at`, todo operador e formato) | `older than 3650d` devolveu 1840, o corpus inteiro, igual a `within last 1d`. Revalidado em 2026-09-03 com 50 `FIXED` |
+| datas em findings — **apenas os operadores relativos**, `within last` / `older than` / `newer than` (ver correção nº 1 no fim) | `older than 3650d` devolveu 1840, o corpus inteiro, igual a `within last 1d`. Revalidado em 2026-09-03 com 50 `FIXED` |
 | `authenticated` em workbenches | `true` → 20 e `false` → 20, resultados idênticos |
 | `exploitable` em workbenches | `true` → 20, incluindo Mozilla Firefox SEoL e checagem de Spectre, que não têm exploit público |
 | `filters` recebido como string | `"tag_count >= 1"` → 30 ativos do corpus; como array JSON → 9 |
@@ -19,12 +26,17 @@ O servidor rejeita todos eles antes de a requisição sair.
 
 ## Operador que a propriedade lista e não suporta
 
-`exists` em `finding_vpr_score` responde **HTTP 400**. O caminho válido é `>= 0.1`, que é aplicado e
-monotônico: 0,1 → 4.462 · 7,0 → 1.254 · 9,0 → 586.
+**Medido via MCP oficial — corrigido na API direta (ver correção nº 2 no fim).** Ali, `exists` em
+`finding_vpr_score` responde **HTTP 400**. Na API direta o 400 vem de `value` vazio, não do
+operador, e `exists` funciona.
+
+O caminho `>= 0.1` vale nos dois: é aplicado e monotônico — 0,1 → 4.462 · 7,0 → 1.254 · 9,0 → 586.
 
 ## `age` não é idade
 
-`age` filtra por **recência da última observação**, não pela idade do finding. O último scan do
+**Medido via MCP oficial — na API direta `age` nem sequer é parâmetro (ver correção nº 4 no fim);
+o nome real é `date_range`.** No caminho antigo, `age` filtra por **recência da última observação**,
+não pela idade do finding. O último scan do
 sandbox foi 84 dias antes da coleta, e o corte ficou entre `age=80` (zero) e `age=90` (20) — na data
 do último scan, não na data de descoberta, que vai de 2018 a 2026.
 

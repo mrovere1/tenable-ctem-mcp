@@ -211,7 +211,7 @@ Critério oficial: **Risk Detection**.
 |---|---|---|---|---|
 | V1 | % da amostra com exploit disponível | `plugins(Exploit Available = True) / plugins da amostra` | `plugins_get_plugin_details` | `informativo` |
 | V2 | Mediana de dias no CISA KEV | `mediana(hoje − min(datas CISA-KNOWN-EXPLOITED))` | `plugins_get_plugin_details`, Cross References | 180 / 90 / 30 / 14 · `invertido` |
-| V3 | Taxa de reincidência | `findings(RESURFACED) / findings(RESURFACED + FIXED)` | `search_findings`, propriedade `state` | 0,25 / 0,15 / 0,08 / 0,03 · `invertido` |
+| V3 | Taxa de reincidência | `findings(RESURFACED) / findings(RESURFACED + FIXED)` | `search_findings`, propriedade `state` | 25% / 15% / 8% / 3% · `invertido` |
 | V4 | % de DEVICE com software fora de suporte | `assets DEVICE com finding de EOL / assets(asset_class = DEVICE)` | `search_findings(query_text="Unsupported Version Detection")` e `query_text="SEoL"` | 30 / 15 / 7 / 2 · `invertido` |
 
 **V1 é informativo.** Um percentual alto de exploit disponível pode indicar backlog ruim ou apenas

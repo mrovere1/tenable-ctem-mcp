@@ -262,13 +262,16 @@ mapeamento_cliente:
   categoria_criticidade: "Business Impact"
   valores_maior_criticidade: ["Tier 1", "Mission Critical"]
   categoria_owner: "CI Owner"
-  categoria_ambiente: "Environment"
-  categoria_localidade: "Location"
-  valores_producao: ["PRD", "Production"]
   scans_recorrentes: [33, 40]
-  excluir: { categoria: "Environment", valores: ["LAB", "SANDBOX"] }
   usa_excecoes: "usa_pouco"
 ```
+
+**O recorte da v1 é o tenant inteiro.** O perfil não tem `categoria_ambiente`,
+`valores_producao` nem `excluir` porque nenhum indicador os aplicaria: o servidor mede o corpus
+completo, sempre. Campos que o operador preenche e que ninguém consome são piores que campos
+ausentes — o operador exclui LAB e SANDBOX, confere o YAML, e recebe um relatório do tenant todo
+acreditando que o recorte valeu. Se o cliente precisa de recorte por ambiente ou exclusão de
+laboratório, isso é v2 e entra como filtro de tag nos indicadores, não como campo de perfil.
 
 ---
 
@@ -961,7 +964,7 @@ maturity_config:
     P3: composto             # critério declarado + oportunidade medida; tabela própria
     P3_oportunidade: [0.50, 0.20]   # cortes usados quando o cliente prioriza por CVSS
     V2: [180, 90, 30, 14]      # invertido, ancorado na CISA BOD 26-04
-    V3: [0.25, 0.15, 0.08, 0.03]   # invertido
+    V3: [25, 15, 8, 3]         # invertido. PERCENTUAL, como todo corte de taxa aqui
     V4: [30, 15, 7, 2]         # invertido
     M1: [90, 45, 14, 7]        # invertido. Intervalos entre DIAS distintos de avaliação
     colapsar_runs_do_mesmo_dia: true   # ver a nota de M1 abaixo. Nunca desligar sem declarar
