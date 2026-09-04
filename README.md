@@ -102,7 +102,8 @@ calls**, with M4 as the only gap — and a gap on merit, because the cadence gua
 
 The code, the documentation and the skill are in **English**. The Tenable vocabulary
 (`plugin_id`, `first_found`, `severity`, …) is kept as Tenable writes it, and the tag-category hints
-stay multilingual because the customer's tenant usually is.
+are **trilingual (EN, PT, ES) with accent folding**, because the customer's tenant is almost always
+in the customer's language.
 
 The **report** produced by the skill is generated in the language the operator chooses at Step 0 —
 **EN, PT-BR or ES** — and the delivered dashboard carries all three behind a header selector. Data

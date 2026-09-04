@@ -21,6 +21,8 @@ carrying two tags of the same category.
 from __future__ import annotations
 
 import json
+import re
+import unicodedata
 from typing import Any
 
 from .. import Indicator
@@ -31,13 +33,43 @@ ASSETS_SEARCH = "/api/v1/t1/inventory/assets/search"
 
 INDICATORS = ("S1", "S2", "S3", "S4")
 
-# Names looked up without regard to accent or case. Never assume the name.
-CRITICALITY_HINTS = ("criticidade", "criticality", "criticality tier",
-                     "business criticality", "crown jewel", "tier", "importancia",
-                     "importância")
-OWNER_HINTS = ("owner", "dono", "responsavel", "responsável", "responsible",
-               "custodian", "team", "squad", "departamento", "department",
-               "business unit", "bu")
+# Hints in the three languages the skill reports in: EN, PT and ES. The customer's
+# tenant is almost always in the customer's language, so an English-only list
+# would fail on exactly the tenants this skill exists to assess.
+#
+# Written WITHOUT accents, on purpose. `_fold` strips diacritics before matching,
+# so one entry covers every spelling: "criticidade" also matches "Criticidade",
+# "classificacao" also matches "Classificação", "dueno" also matches "Dueño".
+#
+# Before this, matching was a plain .lower() while the comment claimed accents
+# were ignored - it only worked because someone had hand-listed "importancia"
+# AND "importância". Any accented term nobody thought to duplicate failed in
+# silence: "Classificação", "Priorização", "Dueño" and "Criticidad" were all
+# invisible. The suggestion is not load-bearing - the operator still confirms the
+# mapping - but a suggestion that silently skips the right category makes the
+# operator read nine categories, which is the work this function exists to save.
+CRITICALITY_HINTS = (
+    # EN
+    "criticality", "criticality tier", "business criticality", "business impact",
+    "crown jewel", "tier", "importance", "severity class", "classification",
+    # PT
+    "criticidade", "importancia", "impacto", "impacto no negocio", "classificacao",
+    "priorizacao", "nivel de risco",
+    # ES
+    "criticidad", "importancia del negocio", "impacto de negocio", "clasificacion",
+    "nivel de criticidad",
+)
+OWNER_HINTS = (
+    # EN
+    "owner", "responsible", "custodian", "team", "squad", "department",
+    "business unit", "bu", "accountable", "steward",
+    # PT
+    "dono", "responsavel", "departamento", "area", "equipe", "time",
+    "unidade de negocio", "gestor",
+    # ES
+    "dueno", "propietario", "equipo", "departamento", "area responsable",
+    "unidad de negocio", "encargado",
+)
 
 
 def _count(filters: list[dict] | None) -> int | None:
@@ -54,15 +86,33 @@ def _pct(numerator: int, denominator: int) -> float | None:
     return round(100.0 * numerator / denominator, 1) if denominator else None
 
 
+def _fold(text: str) -> str:
+    """Lower-cases and strips diacritics, so one hint covers every spelling.
+
+    "Criticidade", "CRITICIDADE" and "Criticidád" all fold to the same string,
+    and so do "Classificação" -> "classificacao" and "Dueño" -> "dueno".
+    """
+    decomposed = unicodedata.normalize("NFKD", text.strip().lower())
+    return "".join(c for c in decomposed if not unicodedata.combining(c))
+
+
 def suggest_categories(categories: dict[str, list[str]]) -> dict[str, list[str]]:
     """Suggests which category is criticality and which is owner, without deciding.
 
     The decision stays with the operator: the mapping is an explicit parameter.
     This only saves them from reading nine categories to find two.
+
+    Hints cover EN, PT and ES, and matching folds accents - see the note above
+    the hint lists.
     """
     def matches(name: str, hints: tuple[str, ...]) -> bool:
-        n = name.strip().lower()
-        return any(h in n for h in hints)
+        n = _fold(name)
+        tokens = set(re.split(r"[^a-z0-9]+", n))
+        # Short hints match a whole token only. `bu` as a substring matched
+        # "Business Impact" and put a criticality category into the owner list;
+        # it would also match "backup" and "distribuicao". Longer hints stay as
+        # substrings, so "criticality tier" still finds "Criticality Tier (BIA)".
+        return any(h in tokens if len(h) <= 3 else h in n for h in hints)
 
     return {
         "criticality": [c for c in categories if matches(c, CRITICALITY_HINTS)],

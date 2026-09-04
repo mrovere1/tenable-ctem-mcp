@@ -18,9 +18,12 @@ Two deliberate exceptions:
 1. **The Tenable vocabulary stays as Tenable writes it** — `plugin_id`, `first_found`, `last_fixed`,
    `severity`, `state`, `asset_class`, `exposure_classes`, `date_range`, `tag_count`. Those are the
    API's names, not ours, and translating them would break the mapping to the documentation.
-2. **The tag-category hints in `scoping.py` stay multilingual** — `criticidade`, `responsavel`,
-   `departamento`. The customer's tenant is often in the customer's language, and translating the
-   hints would break detection of the very categories the skill needs to find.
+2. **The tag-category hints in `scoping.py` are trilingual — EN, PT and ES** — and matching folds
+   accents, so one unaccented entry covers every spelling (`classificacao` finds `Classificação`,
+   `dueno` finds `Dueño`). The customer's tenant is almost always in the customer's language, so an
+   English-only list would fail on exactly the tenants this skill exists to assess. Short hints
+   (three characters or fewer) match a whole token only: `bu` as a substring was matching
+   "Business Impact" and "backup".
 
 The **report** produced by the skill is a separate matter: its language is chosen by the operator at
 Step 0, among EN, PT-BR and ES. Data read from the tenant — tag names, tag values, scan names — is

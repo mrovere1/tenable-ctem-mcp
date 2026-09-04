@@ -60,12 +60,20 @@ Matching official criteria: **Asset Visibility** and **People | Process**.
 | S3 | % of assets with an owner tag | same, on the owner category | same | 10 / 40 / 70 / 90 |
 | S4 | Declared Crown Jewels | a criticality category exists **and** >= 1 asset with `acr >= 9` | `acr` + tags | `informational` (gate) |
 
-**How to identify the criticality and owner categories.** Do not assume the name. Look, without
-regard to accent or case, for: criticidade, criticality, criticality tier, business criticality,
-crown jewel, tier, importancia. For owner: owner, dono, responsavel, responsible, custodian, team,
-squad, departamento, department, business unit, bu. The hint list stays multilingual on purpose:
-the customer's tenant is often in the customer's language, and translating the hints would break
-detection. If nothing matches, S2 and S3 become **gaps** and the report lists the categories that
+**How to identify the criticality and owner categories.** Do not assume the name. The server
+suggests, without deciding, matching **case- and accent-insensitively** against hints in the three
+languages the skill reports in:
+
+| | Hints |
+|---|---|
+| Criticality | EN: criticality, criticality tier, business criticality, business impact, crown jewel, tier, importance, classification · PT: criticidade, importancia, impacto, impacto no negocio, classificacao, priorizacao, nivel de risco · ES: criticidad, importancia del negocio, impacto de negocio, clasificacion, nivel de criticidad |
+| Owner | EN: owner, responsible, custodian, team, squad, department, business unit, bu, accountable, steward · PT: dono, responsavel, departamento, area, equipe, time, unidade de negocio, gestor · ES: dueno, propietario, equipo, departamento, area responsable, unidad de negocio, encargado |
+
+The list is trilingual on purpose: the customer's tenant is almost always in the customer's
+language, so an English-only list would fail on exactly the tenants this skill exists to assess.
+Accents are folded before matching, so one unaccented entry covers every spelling — `classificacao`
+finds `Classificação` and `dueno` finds `Dueño`. Hints of three characters or fewer match a whole
+token only, because `bu` as a substring was matching "Business Impact" and "backup". If nothing matches, S2 and S3 become **gaps** and the report lists the categories that
 exist, so the consultant can point at the right one.
 
 **Finding from validation:** `tag_names` holds the tag VALUE, not "Category:Value".

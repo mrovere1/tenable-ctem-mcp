@@ -182,6 +182,44 @@ def test_category_suggestion_does_not_decide_on_its_own(sandbox):
     assert set(s["owner"]) == {"Owner", "Team"}
 
 
+def test_category_hints_cover_en_pt_and_es():
+    """The customer's tenant is almost always in the customer's language, so an
+    English-only hint list would fail on exactly the tenants this skill exists
+    to assess. The skill reports in EN, PT and ES; the hints follow."""
+    from tenable_ctem_mcp.indicators.scoping import suggest_categories
+    en = suggest_categories({"Business Impact": [], "CI Owner": []})
+    pt = suggest_categories({"Criticidade": [], "Responsavel": []})
+    es = suggest_categories({"Criticidad": [], "Dueno": []})
+    assert en["criticality"] == ["Business Impact"] and en["owner"] == ["CI Owner"]
+    assert pt["criticality"] == ["Criticidade"] and pt["owner"] == ["Responsavel"]
+    assert es["criticality"] == ["Criticidad"] and es["owner"] == ["Dueno"]
+
+
+def test_category_hints_fold_accents():
+    """The matching used to be a plain .lower() while the comment claimed accents
+    were ignored. It only worked because someone had hand-listed both
+    "importancia" and "importância" - any accented term nobody thought to
+    duplicate failed in silence. `Classificação`, `Priorização` and `Dueño` were
+    all invisible before the fold."""
+    from tenable_ctem_mcp.indicators.scoping import suggest_categories
+    r = suggest_categories({"Classificação": [], "Priorização de Negócio": [],
+                            "Área Responsável": [], "Dueño": []})
+    assert set(r["criticality"]) == {"Classificação", "Priorização de Negócio"}
+    assert set(r["owner"]) == {"Área Responsável", "Dueño"}
+
+
+def test_short_hints_match_a_whole_token_only():
+    """`bu` as a substring matched "Business Impact" and put a criticality
+    category into the owner list; it would also match "backup" and
+    "distribuicao". A suggestion that offers the wrong category is worse than
+    one that offers none - the operator stops trusting the proposal."""
+    from tenable_ctem_mcp.indicators.scoping import suggest_categories
+    r = suggest_categories({"Business Impact": [], "BU": [], "Backup Policy": [],
+                            "Distribuição": [], "Subnet": []})
+    assert r["criticality"] == ["Business Impact"]
+    assert r["owner"] == ["BU"]        # the whole token, and nothing else
+
+
 # --- Discovery: D1, D2, D3, D4 ---------------------------------------------
 
 # D1 is a difference against the instant of collection. Without a fixed clock
