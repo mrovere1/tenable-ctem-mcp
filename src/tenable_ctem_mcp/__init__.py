@@ -1,15 +1,16 @@
-"""tenable-ctem-mcp - servidor MCP local (stdio) para o assessment de CTEM.
+"""tenable-ctem-mcp - local MCP server (stdio) for the CTEM assessment.
 
-Aqui vive o ENVELOPE, porque todo indicador de todo estagio passa por ele e nao
-existe lugar mais neutro para colocar. Contrato do CLAUDE.md, e nao se desvia:
+The ENVELOPE lives here, because every indicator of every stage goes through it
+and there is no more neutral place to put it. Contract from CLAUDE.md, and it is
+not deviated from:
 
-    {"indicador": "M1", "valor": 21.0, "n": 12,
-     "filtro_literal": "...", "coletado_em_utc": "...", "veredito_preflight": "ok"}
+    {"indicator": "M1", "value": 21.0, "n": 12,
+     "literal_filter": "...", "collected_at_utc": "...", "preflight_verdict": "ok"}
 
-Consulta que falhou nao vira numero: vira `valor: null` com `lacuna: true` e
-`causa` preenchida. Numero parcial silencioso e proibido - e a regra central do
-projeto, porque numero errado com aparencia de certo nao tem sinal de que
-aconteceu.
+A query that failed does not become a number: it becomes `value: null` with
+`gap: true` and `cause` filled in. A silent partial number is forbidden - that is
+the central rule of the project, because a wrong number that looks right carries
+no signal that it happened.
 """
 
 from __future__ import annotations
@@ -21,57 +22,57 @@ from typing import Any
 __version__ = "0.1.0"
 
 
-def agora_utc() -> str:
+def now_utc() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
 @dataclass
-class Indicador:
-    """Envelope unico de retorno. Use `ok()` ou `lacuna()` para construir."""
+class Indicator:
+    """Single return envelope. Build with `ok()` or `declared_gap()`."""
 
-    indicador: str
-    valor: Any = None
+    indicator: str
+    value: Any = None
     n: int | None = None
-    filtro_literal: str = ""
-    coletado_em_utc: str = field(default_factory=agora_utc)
-    veredito_preflight: str = "nao_aplicavel"
-    lacuna: bool = False
-    causa: str | None = None
-    contexto: dict[str, Any] | None = None
+    literal_filter: str = ""
+    collected_at_utc: str = field(default_factory=now_utc)
+    preflight_verdict: str = "not_applicable"
+    gap: bool = False
+    cause: str | None = None
+    context: dict[str, Any] | None = None
 
     @classmethod
-    def ok(cls, indicador: str, valor: Any, n: int | None = None,
-           filtro_literal: str = "", veredito_preflight: str = "ok",
-           contexto: dict[str, Any] | None = None) -> "Indicador":
-        return cls(indicador=indicador, valor=valor, n=n,
-                   filtro_literal=filtro_literal,
-                   veredito_preflight=veredito_preflight, contexto=contexto)
+    def ok(cls, indicator: str, value: Any, n: int | None = None,
+           literal_filter: str = "", preflight_verdict: str = "ok",
+           context: dict[str, Any] | None = None) -> "Indicator":
+        return cls(indicator=indicator, value=value, n=n,
+                   literal_filter=literal_filter,
+                   preflight_verdict=preflight_verdict, context=context)
 
     @classmethod
-    def lacuna_declarada(cls, indicador: str, causa: str,
-                         filtro_literal: str = "",
-                         veredito_preflight: str = "nao_aplicavel",
-                         n: int | None = None) -> "Indicador":
-        return cls(indicador=indicador, valor=None, n=n,
-                   filtro_literal=filtro_literal,
-                   veredito_preflight=veredito_preflight,
-                   lacuna=True, causa=causa)
+    def declared_gap(cls, indicator: str, cause: str,
+                     literal_filter: str = "",
+                     preflight_verdict: str = "not_applicable",
+                     n: int | None = None) -> "Indicator":
+        return cls(indicator=indicator, value=None, n=n,
+                   literal_filter=literal_filter,
+                   preflight_verdict=preflight_verdict,
+                   gap=True, cause=cause)
 
-    def para_dict(self) -> dict[str, Any]:
+    def to_dict(self) -> dict[str, Any]:
         d: dict[str, Any] = {
-            "indicador": self.indicador,
-            "valor": self.valor,
+            "indicator": self.indicator,
+            "value": self.value,
             "n": self.n,
-            "filtro_literal": self.filtro_literal,
-            "coletado_em_utc": self.coletado_em_utc,
-            "veredito_preflight": self.veredito_preflight,
+            "literal_filter": self.literal_filter,
+            "collected_at_utc": self.collected_at_utc,
+            "preflight_verdict": self.preflight_verdict,
         }
-        if self.lacuna:
-            d["lacuna"] = True
-            d["causa"] = self.causa
-        if self.contexto:
-            d["contexto"] = self.contexto
+        if self.gap:
+            d["gap"] = True
+            d["cause"] = self.cause
+        if self.context:
+            d["context"] = self.context
         return d
 
 
-__all__ = ["Indicador", "agora_utc", "__version__"]
+__all__ = ["Indicator", "now_utc", "__version__"]

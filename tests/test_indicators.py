@@ -1,136 +1,136 @@
-"""Golden tests dos 17 indicadores, com os numeros medidos em 2026-09-02/03.
+"""Golden tests for the 19 indicators, with the numbers measured 2026-09-02/03.
 
-Fonte: _docs/execucao-maturidade-sandbox-2026-09-03.md e
-       _docs/validacao-dados-coleta-mttr-2026-09-03.md
+Sources: _docs/execucao-maturidade-sandbox-2026-09-03.md and
+         _docs/validacao-dados-coleta-mttr-2026-09-03.md
 
-Divergencia e falha. Nao ajuste o teste para passar - investigue a causa.
+A divergence is a failure. Do not adjust the test to make it pass - investigate.
 
-Estado no marco M0: aqui esta o contrato do ENVELOPE, por onde todo indicador
-passa. Os golden tests por estagio entram nos marcos M1 (scoping, discovery),
-M2 (prioritization, validation) e M5 (mobilization).
+The ENVELOPE contract, which every indicator goes through, is at the top. The
+per-stage golden tests follow, in the order of the milestones.
 """
 
 import json
 
-from tenable_ctem_mcp import Indicador
+from tenable_ctem_mcp import Indicator
 
 
-def test_envelope_tem_exatamente_os_campos_do_contrato():
-    d = Indicador.ok("M1", 21.0, n=12,
-                     filtro_literal="scan_ids=['abc'], runs colapsados em 5 dias distintos"
-                     ).para_dict()
-    assert set(d) == {"indicador", "valor", "n", "filtro_literal",
-                      "coletado_em_utc", "veredito_preflight"}
-    assert d["valor"] == 21.0 and d["n"] == 12
-    assert d["veredito_preflight"] == "ok"
+def test_envelope_has_exactly_the_contract_fields():
+    d = Indicator.ok("M1", 21.0, n=12,
+                     literal_filter="scan_ids=['abc'], runs collapsed into 5 distinct days"
+                     ).to_dict()
+    assert set(d) == {"indicator", "value", "n", "literal_filter",
+                      "collected_at_utc", "preflight_verdict"}
+    assert d["value"] == 21.0 and d["n"] == 12
+    assert d["preflight_verdict"] == "ok"
 
 
-def test_lacuna_zera_o_valor_e_nomeia_a_causa():
-    """Numero parcial silencioso e proibido: e a regra central do projeto.
-    Consulta que falhou vira lacuna declarada, com causa."""
-    d = Indicador.lacuna_declarada("M4", causa="cadencia de scan domina as janelas").para_dict()
-    assert d["valor"] is None
-    assert d["lacuna"] is True
-    assert d["causa"] == "cadencia de scan domina as janelas"
+def test_gap_nulls_the_value_and_names_the_cause():
+    """A silent partial number is forbidden: it is the project's central rule.
+    A query that failed becomes a declared gap, with a cause."""
+    d = Indicator.declared_gap("M4", cause="scan cadence dominates the windows").to_dict()
+    assert d["value"] is None
+    assert d["gap"] is True
+    assert d["cause"] == "scan cadence dominates the windows"
 
 
-def test_carimbo_de_tempo_e_utc_com_z():
-    d = Indicador.ok("S1", 30.0).para_dict()
-    assert d["coletado_em_utc"].endswith("Z")
-    assert len(d["coletado_em_utc"]) == 20
+def test_timestamp_is_utc_with_z():
+    d = Indicator.ok("S1", 30.0).to_dict()
+    assert d["collected_at_utc"].endswith("Z")
+    assert len(d["collected_at_utc"]) == 20
 
 
-def test_envelope_serializa_em_json():
-    """O envelope atravessa o transporte MCP: tem de ser JSON puro."""
-    json.dumps(Indicador.ok("D2", 100.0, n=4, filtro_literal="exposure_classes").para_dict())
+def test_envelope_serialises_to_json():
+    """The envelope crosses the MCP transport: it must be plain JSON."""
+    json.dumps(Indicator.ok("D2", 100.0, n=4, literal_filter="exposure_classes").to_dict())
 
 
-# --- Paginacao: truncamento silencioso e o defeito que este projeto proibe ---
+# --- Pagination: silent truncation is the defect this project forbids -------
 
-def test_paginar_nao_para_no_limite_da_pagina(monkeypatch):
-    """Regressao de um defeito real, encontrado no M0 contra o sandbox.
+def test_paginate_does_not_stop_at_the_page_size(monkeypatch):
+    """Regression of a real defect, found at M0 against the sandbox.
 
-    A primeira versao lia o historico de scan com uma chamada de limit=200 e
-    devolvia `runs: 200` para um scan que tem 243 runs. Contagem errada com
-    aparencia de certa - sem nenhum sinal de que aconteceu. E o mesmo tipo de
-    falha que motivou a deny-list.
+    The first version read the scan history with a single limit=200 call and
+    returned `runs: 200` for a scan that has 243 runs. A wrong count wearing the
+    appearance of a right one - with no signal at all that it happened. It is
+    the same kind of failure that motivated the deny-list.
     """
     from tenable_ctem_mcp import client
 
     total = 243
-    paginas = []
+    pages = []
 
-    def falso_chamar(metodo, caminho, corpo=None, params=None, **kwargs):
+    def fake_call(method, path, body=None, params=None, **kwargs):
         offset = (params or {}).get("offset", 0)
-        limite = (params or {}).get("limit", 200)
-        paginas.append((offset, limite))
-        return {"history": [{"i": i} for i in range(offset, min(offset + limite, total))]}
+        limit = (params or {}).get("limit", 200)
+        pages.append((offset, limit))
+        return {"history": [{"i": i} for i in range(offset, min(offset + limit, total))]}
 
-    monkeypatch.setattr(client, "chamar", falso_chamar)
-    runs = client.paginar("GET", "/scans/13/history", campo="history")
+    monkeypatch.setattr(client, "call", fake_call)
+    runs = client.paginate("GET", "/scans/13/history", field="history")
 
-    assert len(runs) == total, f"truncou em {len(runs)} de {total}"
-    assert len(paginas) > 1, "nao paginou: leu uma pagina so"
+    assert len(runs) == total, f"truncated at {len(runs)} of {total}"
+    assert len(pages) > 1, "did not paginate: read a single page"
 
 
-def test_paginar_para_quando_a_pagina_vem_incompleta(monkeypatch):
-    """Nao pede pagina a mais depois da ultima."""
+def test_paginate_stops_when_the_page_comes_short(monkeypatch):
+    """It does not request one page too many after the last one."""
     from tenable_ctem_mcp import client
 
-    chamadas = []
+    calls = []
 
-    def falso_chamar(metodo, caminho, corpo=None, params=None, **kwargs):
-        chamadas.append(params)
+    def fake_call(method, path, body=None, params=None, **kwargs):
+        calls.append(params)
         return {"data": [{"i": 1}, {"i": 2}]}
 
-    monkeypatch.setattr(client, "chamar", falso_chamar)
-    itens = client.paginar("GET", "/qualquer", limite_pagina=200)
-    assert len(itens) == 2
-    assert len(chamadas) == 1
+    monkeypatch.setattr(client, "call", fake_call)
+    items = client.paginate("GET", "/anything", page_size=200)
+    assert len(items) == 2
+    assert len(calls) == 1
 
 
 # ===========================================================================
-# GOLDEN TESTS - numeros medidos no sandbox em 2026-09-02/03.
-# Fonte: _docs/execucao-maturidade-sandbox-2026-09-03.md
+# GOLDEN TESTS - numbers measured in the sandbox on 2026-09-02/03.
+# Source: _docs/execucao-maturidade-sandbox-2026-09-03.md
 #
-# Divergencia e falha. NAO ajuste o numero esperado para passar: investigue.
+# A divergence is a failure. Do NOT adjust the expected number to make it pass:
+# investigate.
 # ===========================================================================
 
 from datetime import datetime, timezone
 
 import pytest
 
-MAPEAMENTO = {"categoria_criticidade": "Criticidade", "categoria_owner": "Owner"}
+MAPPING = {"criticality_category": "Criticidade", "owner_category": "Owner"}
 
 
-def _por_id(lista):
-    return {i["indicador"]: i for i in lista}
+def _by_id(rows):
+    return {i["indicator"]: i for i in rows}
 
 
-# --- Retrato do tenant ------------------------------------------------------
+# --- Tenant snapshot --------------------------------------------------------
 
-def test_retrato_do_tenant_bate_com_o_medido(sandbox):
-    from tenable_ctem_mcp.indicators.discovery import descobrir_tenant
-    r = descobrir_tenant(usar_cache=False)
+def test_tenant_snapshot_matches_the_measurement(sandbox):
+    from tenable_ctem_mcp.indicators.discovery import discover_tenant
+    r = discover_tenant(use_cache=False)
 
-    assert r["tags"]["quantidade"] == 9
-    assert r["ativos"]["total"] == 30
-    assert r["ativos"]["por_asset_class"]["DEVICE"] == 8
+    assert r["tags"]["count"] == 9
+    assert r["assets"]["total"] == 30
+    assert r["assets"]["by_asset_class"]["DEVICE"] == 8
     assert r["exposure_classes"]["VM"] == 8
     assert r["exposure_classes"]["WAS"] == 2
     assert r["exposure_classes"]["CLOUD"] == 0
     assert r["exposure_classes"]["IDENTITY"] == 0
-    assert r["agentes"]["ativos"] == 7
+    assert r["agents"]["active"] == 7
 
 
-def test_scan_33_tem_12_runs(sandbox):
-    """O scan recorrente do sandbox: 12 runs em 9 dias distintos.
+def test_scan_33_has_12_runs(sandbox):
+    """The sandbox's recurring scan: 12 runs across 9 distinct days.
 
-    E o caso que sustenta M1 no marco M5 - mediana 1,42 dia sem colapso,
-    21 dias com colapso.
+    It is the case that underpins M1 at milestone M5 - a median of 1.42 days
+    without the collapse, 21 days with it.
     """
-    from tenable_ctem_mcp.indicators.discovery import descobrir_tenant
-    r = descobrir_tenant(usar_cache=False)
+    from tenable_ctem_mcp.indicators.discovery import discover_tenant
+    r = discover_tenant(use_cache=False)
     s33 = next(s for s in r["scans"]["scans"] if s["scan_id"] == 33)
     assert s33["runs"] == 12
     assert s33["runs_completed"] == 12
@@ -138,144 +138,145 @@ def test_scan_33_tem_12_runs(sandbox):
 
 # --- Scoping: S1, S2, S3, S4 ------------------------------------------------
 
-@pytest.mark.parametrize("indicador,esperado", [
-    ("S1", 30.0),    # 9 de 30 ativos com ao menos uma tag
-    ("S2", 26.7),    # 8 de 30 com tag de criticidade
-    ("S3", 6.7),     # 2 de 30 com tag de owner
+@pytest.mark.parametrize("indicator,expected", [
+    ("S1", 30.0),    # 9 of 30 assets with at least one tag
+    ("S2", 26.7),    # 8 of 30 with a criticality tag
+    ("S3", 6.7),     # 2 of 30 with an owner tag
 ])
-def test_scoping_bate_com_o_medido(sandbox, indicador, esperado):
-    from tenable_ctem_mcp.indicators.scoping import calcular
-    r = _por_id(calcular(MAPEAMENTO, indicadores=[indicador]))
-    assert r[indicador]["valor"] == esperado
-    assert r[indicador]["veredito_preflight"] == "aplicado"
+def test_scoping_matches_the_measurement(sandbox, indicator, expected):
+    from tenable_ctem_mcp.indicators.scoping import compute
+    r = _by_id(compute(MAPPING, indicators=[indicator]))
+    assert r[indicator]["value"] == expected
+    assert r[indicator]["preflight_verdict"] == "applied"
 
 
-def test_s4_e_informativo_e_nao_pontua(sandbox):
-    from tenable_ctem_mcp.indicators.scoping import calcular
-    s4 = _por_id(calcular(MAPEAMENTO, indicadores=["S4"]))["S4"]
-    assert s4["valor"] is True
-    assert s4["contexto"]["informativo"] is True
-    assert "curadoria" in s4["contexto"]["lacuna_estrutural"]
+def test_s4_is_informational_and_does_not_score(sandbox):
+    from tenable_ctem_mcp.indicators.scoping import compute
+    s4 = _by_id(compute(MAPPING, indicators=["S4"]))["S4"]
+    assert s4["value"] is True
+    assert s4["context"]["informational"] is True
+    assert "curation" in s4["context"]["structural_gap"]
 
 
-def test_s2_sem_mapeamento_vira_lacuna_e_nao_numero(sandbox):
-    """O servidor nao adivinha o nome da categoria. Sem mapeamento, lacuna."""
-    from tenable_ctem_mcp.indicators.scoping import calcular
-    s2 = _por_id(calcular({}, indicadores=["S2"]))["S2"]
-    assert s2["valor"] is None and s2["lacuna"] is True
-    assert "categoria_criticidade" in s2["causa"]
+def test_s2_without_mapping_becomes_a_gap_not_a_number(sandbox):
+    """The server does not guess the category name. Without a mapping, a gap."""
+    from tenable_ctem_mcp.indicators.scoping import compute
+    s2 = _by_id(compute({}, indicators=["S2"]))["S2"]
+    assert s2["value"] is None and s2["gap"] is True
+    assert "criticality_category" in s2["cause"]
 
 
-def test_s3_com_categoria_inexistente_lista_as_que_existem(sandbox):
-    from tenable_ctem_mcp.indicators.scoping import calcular
-    s3 = _por_id(calcular({"categoria_owner": "Nao Existe"}, indicadores=["S3"]))["S3"]
-    assert s3["lacuna"] is True
-    assert "Criticidade" in s3["causa"]      # ajuda o consultor a apontar a certa
+def test_s3_with_a_nonexistent_category_lists_the_existing_ones(sandbox):
+    from tenable_ctem_mcp.indicators.scoping import compute
+    s3 = _by_id(compute({"owner_category": "Does Not Exist"}, indicators=["S3"]))["S3"]
+    assert s3["gap"] is True
+    assert "Criticidade" in s3["cause"]     # helps the consultant point at the right one
 
 
-def test_sugestao_de_categoria_nao_decide_sozinha(sandbox):
-    """Sugere, nao escolhe: 'Owner' e 'Team' casam com as pistas de owner."""
-    from tenable_ctem_mcp.indicators.discovery import descobrir_tenant
-    from tenable_ctem_mcp.indicators.scoping import sugerir_categorias
-    s = sugerir_categorias(descobrir_tenant(usar_cache=False)["tags"]["categorias"])
-    assert s["criticidade"] == ["Criticidade"]
+def test_category_suggestion_does_not_decide_on_its_own(sandbox):
+    """It suggests, it does not choose: 'Owner' and 'Team' both match the owner hints."""
+    from tenable_ctem_mcp.indicators.discovery import discover_tenant
+    from tenable_ctem_mcp.indicators.scoping import suggest_categories
+    s = suggest_categories(discover_tenant(use_cache=False)["tags"]["categories"])
+    assert s["criticality"] == ["Criticidade"]
     assert set(s["owner"]) == {"Owner", "Team"}
 
 
 # --- Discovery: D1, D2, D3, D4 ---------------------------------------------
 
-# D1 e uma diferenca contra o instante da coleta. Sem relogio fixo nao existe
-# teste de regressao: o valor cresce sozinho a cada dia. Este instante e o que
-# reproduz os 0,5 dia registrados no documento, sobre o run mais recente da
-# fixture (2026-09-03T00:28:58Z).
-INSTANTE_DA_MEDICAO = datetime(2026, 9, 3, 12, 28, 58, tzinfo=timezone.utc)
+# D1 is a difference against the instant of collection. Without a fixed clock
+# there is no regression test: the value grows on its own every day. This
+# instant is the one that reproduces the 0.5 days recorded in the document, over
+# the fixture's most recent run (2026-09-03T00:28:58Z).
+MEASUREMENT_INSTANT = datetime(2026, 9, 3, 12, 28, 58, tzinfo=timezone.utc)
 
 
-def test_d1_dias_desde_a_ultima_avaliacao(sandbox):
-    from tenable_ctem_mcp.indicators.discovery import calcular
-    d1 = _por_id(calcular(indicadores=["D1"], agora=INSTANTE_DA_MEDICAO))["D1"]
-    assert d1["valor"] == 0.5
-    assert d1["contexto"]["run_mais_recente_utc"] == "2026-09-03T00:28:58Z"
-    assert d1["contexto"]["invertido"] is True
+def test_d1_days_since_the_last_assessment(sandbox):
+    from tenable_ctem_mcp.indicators.discovery import compute
+    d1 = _by_id(compute(indicators=["D1"], now=MEASUREMENT_INSTANT))["D1"]
+    assert d1["value"] == 0.5
+    assert d1["context"]["most_recent_run_utc"] == "2026-09-03T00:28:58Z"
+    assert d1["context"]["inverted"] is True
 
 
-def test_d2_cobertura_das_superficies_licenciadas(sandbox):
-    """Razao percentual, nao contagem absoluta. Um cliente que licencia VM e
-    WAS e cobre as duas nao pode ficar em Defined por ter 'apenas 2'."""
-    from tenable_ctem_mcp.indicators.discovery import calcular
-    d2 = _por_id(calcular(indicadores=["D2"]))["D2"]
-    assert d2["valor"] == 100.0
-    assert d2["contexto"]["presentes"] == ["VM", "WAS"]
-    assert d2["contexto"]["presentes_nao_licenciadas"] == ["WAS"]
+def test_d2_coverage_of_the_licensed_surfaces(sandbox):
+    """A percentage ratio, not an absolute count. A customer licensing VM and
+    WAS and covering both cannot land in Defined for having 'only 2'."""
+    from tenable_ctem_mcp.indicators.discovery import compute
+    d2 = _by_id(compute(indicators=["D2"]))["D2"]
+    assert d2["value"] == 100.0
+    assert d2["context"]["present"] == ["VM", "WAS"]
+    assert d2["context"]["present_not_licensed"] == ["WAS"]
 
 
-def test_d3_cobertura_de_agente_sobre_device(sandbox):
-    """Denominador e DEVICE, nao o total de ativos: IDENTITY, ACCOUNT e GROUP
-    nao tem software instalado."""
-    from tenable_ctem_mcp.indicators.discovery import calcular
-    d3 = _por_id(calcular(indicadores=["D3"]))["D3"]
-    assert d3["valor"] == 87.5            # 7 agentes ativos sobre 8 DEVICE
+def test_d3_agent_coverage_over_device(sandbox):
+    """The denominator is DEVICE, not the total of assets: IDENTITY, ACCOUNT and
+    GROUP have no software installed."""
+    from tenable_ctem_mcp.indicators.discovery import compute
+    d3 = _by_id(compute(indicators=["D3"]))["D3"]
+    assert d3["value"] == 87.5            # 7 active agents over 8 DEVICE
     assert d3["n"] == 8
 
 
-def test_d4_detectada_por_plugin_local(sandbox):
-    """Censo por default: 121 de 121, sem intervalo de confianca."""
-    from tenable_ctem_mcp.indicators.discovery import calcular
-    d4 = _por_id(calcular(indicadores=["D4"]))["D4"]
-    assert d4["valor"] == 100.0
-    assert d4["contexto"]["plugins_sem_detalhe"] == []
-    assert d4["contexto"]["modo"] == "censo"
+def test_d4_detected_by_a_local_plugin(sandbox):
+    """Census by default: 121 of 121, with no confidence interval."""
+    from tenable_ctem_mcp.indicators.discovery import compute
+    d4 = _by_id(compute(indicators=["D4"]))["D4"]
+    assert d4["value"] == 100.0
+    assert d4["context"]["plugins_without_detail"] == []
+    assert d4["context"]["mode"] == "census"
     assert d4["n"] == 121
-    assert "CENSO" in d4["filtro_literal"]
+    assert "CENSUS" in d4["literal_filter"]
 
 
-def test_amostra_de_d4_e_alocada_proporcional_a_populacao(sandbox):
-    """Vale quando a populacao passa do limite de censo e a amostra volta.
+def test_d4_sample_is_allocated_proportionally_to_the_population(sandbox):
+    """This applies when the population exceeds the census limit and the sample
+    comes back.
 
-    O erro que esta guarda existe para nao repetir: na primeira execucao real a
-    amostra foi 60/40 enquanto a populacao era 65/35. Deu quase certo por
-    coincidencia."""
-    from tenable_ctem_mcp.indicators.discovery import calcular
-    ctx = _por_id(calcular(indicadores=["D4"],
-                           modo_plugins="amostra"))["D4"]["contexto"]
-    a, b = ctx["estratos"]["A"], ctx["estratos"]["B"]
-    assert a["populacao"] + b["populacao"] == 121     # plugins criticos do tenant
-    # a fatia da amostra acompanha a fatia da populacao, dentro de 1 plugin
-    assert abs(a["amostra"] / (a["amostra"] + b["amostra"])
-               - a["share_por_plugin"]) < 1 / (a["amostra"] + b["amostra"])
+    The mistake this guard exists in order not to repeat: on the first real run
+    the sample was 60/40 while the population was 65/35. It came out nearly
+    right by coincidence."""
+    from tenable_ctem_mcp.indicators.discovery import compute
+    ctx = _by_id(compute(indicators=["D4"],
+                         plugin_mode="sample"))["D4"]["context"]
+    a, b = ctx["strata"]["A"], ctx["strata"]["B"]
+    assert a["population"] + b["population"] == 121    # the tenant's critical plugins
+    # the sample's share tracks the population's share, within one plugin
+    assert abs(a["sample"] / (a["sample"] + b["sample"])
+               - a["share_by_plugin"]) < 1 / (a["sample"] + b["sample"])
 
 
-def test_censo_tem_121_plugins_criticos(sandbox):
+def test_census_has_121_critical_plugins(sandbox):
     from tenable_ctem_mcp.plugins import plugin_census
-    assert plugin_census("critical")["plugins_distintos"] == 121
+    assert plugin_census("critical")["distinct_plugins"] == 121
 
 
-def test_detalhe_de_plugin_devolve_exatamente_cinco_campos(sandbox):
-    """A economia de token do projeto depende disto. Campo extra aqui e
-    regressao, nao melhoria."""
-    from tenable_ctem_mcp.plugins import (amostrar_estratificado, plugin_census,
+def test_plugin_detail_returns_exactly_five_fields(sandbox):
+    """The project's token saving depends on this. An extra field here is a
+    regression, not an improvement."""
+    from tenable_ctem_mcp.plugins import (stratified_sample, plugin_census,
                                           plugin_details_batch)
-    censo = plugin_census("critical")
-    pid = amostrar_estratificado(censo["plugins"])["amostra"][0]["plugin_id"]
-    lote = plugin_details_batch([pid])
-    assert lote["lacunas"] == []       # senao o teste esconde buraco na fixture
-    d = lote["plugins"][0]
+    census = plugin_census("critical")
+    pid = stratified_sample(census["plugins"])["sample"][0]["plugin_id"]
+    batch = plugin_details_batch([pid])
+    assert batch["gaps"] == []       # otherwise the test hides a hole in the fixture
+    d = batch["plugins"][0]
     assert set(d) == {"plugin_id", "scan_type", "published", "exploit_available",
                       "exploitability", "cisa_known_exploited"}
     assert d["scan_type"] in ("local", "remote")
 
 
-def test_plugin_sem_detalhe_vira_lacuna_declarada_e_nao_some(sandbox):
-    """Resultado parcial DECLARADO e legitimo; parcial silencioso nao e."""
+def test_a_plugin_without_detail_becomes_a_declared_gap_and_does_not_vanish(sandbox):
+    """A DECLARED partial result is legitimate; a silent partial one is not."""
     from tenable_ctem_mcp.plugins import plugin_details_batch
-    lote = plugin_details_batch([999999999])
-    assert lote["plugins"] == []
-    assert lote["lacunas"][0]["plugin_id"] == 999999999
-    assert lote["n_pedidos"] == 1 and lote["n_resolvidos"] == 0
+    batch = plugin_details_batch([999999999])
+    assert batch["plugins"] == []
+    assert batch["gaps"][0]["plugin_id"] == 999999999
+    assert batch["n_requested"] == 1 and batch["n_resolved"] == 0
 
 
-def test_wilson_reproduz_o_ic_publicado(sandbox):
-    """9 de 20 no KEV deu IC 95% de 25,8% a 65,8% no documento."""
+def test_wilson_reproduces_the_published_ci(sandbox):
+    """9 of 20 in the KEV gave a 95% CI of 25.8% to 65.8% in the document."""
     from tenable_ctem_mcp.plugins import wilson
     lo, hi = wilson(9, 20)
     assert round(lo * 100, 1) == 25.8
@@ -284,288 +285,308 @@ def test_wilson_reproduz_o_ic_publicado(sandbox):
 
 # --- Prioritization: P1, P2, P3 --------------------------------------------
 
-def test_corpus_de_findings_bate_com_o_medido(sandbox):
-    """5.486 findings: 5.425 ACTIVE, 11 RESURFACED, 50 FIXED."""
-    from tenable_ctem_mcp.indicators.prioritization import _contar, _estado
-    assert _contar(None) == 5486
-    assert _contar([_estado("ACTIVE")]) == 5425
-    assert _contar([_estado("RESURFACED")]) == 11
-    assert _contar([_estado("FIXED")]) == 50
+def test_findings_corpus_matches_the_measurement(sandbox):
+    """5,486 findings: 5,425 ACTIVE, 11 RESURFACED, 50 FIXED."""
+    from tenable_ctem_mcp.indicators.prioritization import _count, _state
+    assert _count(None) == 5486
+    assert _count([_state("ACTIVE")]) == 5425
+    assert _count([_state("RESURFACED")]) == 11
+    assert _count([_state("FIXED")]) == 50
 
 
-def test_p1_todo_backlog_critico_esta_em_ativo_com_criticidade(sandbox):
-    """O achado da execucao de aceitacao: 100% do backlog VPR >= 9 esta em ativo
-    com criticidade, contra 26,7% de cobertura no inventario. O cliente tagueou
-    os ativos certos - e isso e mais maduro que o inverso."""
-    from tenable_ctem_mcp.indicators.prioritization import calcular
-    p1 = _por_id(calcular(MAPEAMENTO, indicadores=["P1"]))["P1"]
-    assert p1["valor"] == 100.0
-    ctx = p1["contexto"]
-    # a soma por valor de tag nao pode passar do total: um ativo pode ter duas
-    assert ctx["em_ativo_com_criticidade"] == ctx["backlog_vpr_maior_igual_9"]
+def test_p1_all_critical_backlog_sits_on_assets_with_criticality(sandbox):
+    """The finding of the acceptance run: 100% of the VPR >= 9 backlog sits on
+    assets with criticality, against 26.7% coverage across the inventory. The
+    customer tagged the right assets - and that is more mature than the reverse."""
+    from tenable_ctem_mcp.indicators.prioritization import compute
+    p1 = _by_id(compute(MAPPING, indicators=["P1"]))["P1"]
+    assert p1["value"] == 100.0
+    ctx = p1["context"]
+    # the per-tag-value sum cannot exceed the total: an asset may carry two
+    assert ctx["on_asset_with_criticality"] == ctx["backlog_vpr_gte_9"]
 
 
-def test_p2_cobertura_de_vpr_no_backlog_ativo(sandbox):
-    """81,6% - o denominador e ACTIVE, nao o corpus inteiro.
-    Com o corpus (5.486) daria 81,3%, e com VPR sobre todos os estados, 82,2%."""
-    from tenable_ctem_mcp.indicators.prioritization import calcular
-    p2 = _por_id(calcular(MAPEAMENTO, indicadores=["P2"]))["P2"]
-    assert p2["valor"] == 81.6
+def test_p2_vpr_coverage_in_the_active_backlog(sandbox):
+    """81.6% - the denominator is ACTIVE, not the whole corpus.
+    With the corpus (5,486) it would be 81.3%, and with VPR over every state, 82.2%."""
+    from tenable_ctem_mcp.indicators.prioritization import compute
+    p2 = _by_id(compute(MAPPING, indicators=["P2"]))["P2"]
+    assert p2["value"] == 81.6
     assert p2["n"] == 5425
 
 
-def test_p3_sem_criterio_declarado_e_lacuna_e_nao_numero(sandbox):
-    """"O cliente nao sabe qual criterio usa" e o proprio estagio Ad Hoc.
-    Cabe a skill classificar; o servidor nao inventa um corte."""
-    from tenable_ctem_mcp.indicators.prioritization import calcular
-    p3 = _por_id(calcular(MAPEAMENTO, indicadores=["P3"]))["P3"]
-    assert p3["valor"] is None and p3["lacuna"] is True
+def test_p3_without_a_declared_criterion_is_a_gap_not_a_number(sandbox):
+    """"The customer does not know which criterion they use" is the Ad Hoc stage
+    itself. Classifying it is the skill's job; the server invents no cutoff."""
+    from tenable_ctem_mcp.indicators.prioritization import compute
+    p3 = _by_id(compute(MAPPING, indicators=["P3"]))["P3"]
+    assert p3["value"] is None and p3["gap"] is True
 
 
-def test_p3_oportunidade_e_filas_com_criterio_cvss(sandbox):
-    """Trocar CVSS >= 7 por VPR >= 7 encolhe a fila em ~63%."""
-    from tenable_ctem_mcp.indicators.prioritization import calcular
-    p3 = _por_id(calcular(MAPEAMENTO, indicadores=["P3"],
-                          corte_priorizacao_cliente={"metrica": "cvss3", "valor": 7.0}))["P3"]
-    q = p3["contexto"]["filas"]
-    assert q["cvss3_maior_igual_corte"] == 3377
-    assert q["cobertura_de_vpr_na_fatia_alta_pct"] == 98.1   # 3.314 de 3.377
-    assert 0.62 <= p3["valor"] <= 0.64
+def test_p3_opportunity_and_queues_with_a_cvss_criterion(sandbox):
+    """Swapping CVSS >= 7 for VPR >= 7 shrinks the queue by ~63%."""
+    from tenable_ctem_mcp.indicators.prioritization import compute
+    p3 = _by_id(compute(MAPPING, indicators=["P3"],
+                        customer_priority_cutoff={"metric": "cvss3", "value": 7.0}))["P3"]
+    q = p3["context"]["queues"]
+    assert q["cvss3_gte_cutoff"] == 3377
+    assert q["vpr_coverage_in_high_slice_pct"] == 98.1   # 3,314 of 3,377
+    assert 0.62 <= p3["value"] <= 0.64
 
 
-def test_filas_de_vpr_sao_monotonicas(sandbox):
-    """0,1 -> 7,0 -> 9,0 tem de ser decrescente. E o que prova que o filtro de
-    VPR e aplicado, e nao ignorado."""
-    from tenable_ctem_mcp.indicators.prioritization import _contar, _vpr
-    n01 = _contar([_vpr(">=", "0.1")])
-    n7 = _contar([_vpr(">=", "7")])
-    n9 = _contar([_vpr(">=", "9")])
+def test_vpr_queues_are_monotonic(sandbox):
+    """0.1 -> 7.0 -> 9.0 must be decreasing. That is what proves the VPR filter
+    is applied and not ignored."""
+    from tenable_ctem_mcp.indicators.prioritization import _count, _vpr
+    n01 = _count([_vpr(">=", "0.1")])
+    n7 = _count([_vpr(">=", "7")])
+    n9 = _count([_vpr(">=", "9")])
     assert n01 == 4462
     assert n01 > n7 > n9 > 0
 
 
 # --- Validation: V1, V2, V3, V4 --------------------------------------------
 
-def test_v3_taxa_de_reincidencia(sandbox):
-    """18,0% = 11 RESURFACED sobre 11 + 50 FIXED. Dado direto, nao calculo."""
-    from tenable_ctem_mcp.indicators.validation import calcular
-    v3 = _por_id(calcular(indicadores=["V3"]))["V3"]
-    assert v3["valor"] == 18.0
+def test_v3_recurrence_rate(sandbox):
+    """18.0% = 11 RESURFACED over 11 + 50 FIXED. Direct data, not a computation."""
+    from tenable_ctem_mcp.indicators.validation import compute
+    v3 = _by_id(compute(indicators=["V3"]))["V3"]
+    assert v3["value"] == 18.0
     assert v3["n"] == 61
-    assert v3["contexto"]["invertido"] is True
+    assert v3["context"]["inverted"] is True
 
 
-def test_v4_device_com_software_fora_de_suporte(sandbox):
-    """87,5% = 7 de 8 DEVICE. Com o total de ativos daria 23% - dois estagios
-    de distancia. O denominador e DEVICE."""
-    from tenable_ctem_mcp.indicators.validation import calcular
-    v4 = _por_id(calcular(indicadores=["V4"]))["V4"]
-    assert v4["valor"] == 87.5
+def test_v3_is_reported_as_a_percentage_not_a_fraction(sandbox):
+    """Audit finding of 2026-09-04. The skill carried V3 cutoffs as
+    [0.25, 0.15, 0.08, 0.03] while every other rate cutoff there is a whole
+    number - S1 [20,50,80,95], P2 [40,70,90,98]. Being inverted, 18.0 compared
+    against 0.25 fell into the worst bucket every time; against [25,15,8,3] it
+    lands in stage 2. The unit is stated in the context so the comparison cannot
+    silently drift again."""
+    from tenable_ctem_mcp.indicators.validation import compute
+    v3 = _by_id(compute(indicators=["V3"]))["V3"]
+    assert v3["value"] > 1.0            # a percentage, never a 0..1 fraction
+    assert "PERCENTAGE" in v3["context"]["unit"]
+    assert "[25, 15, 8, 3]" in v3["context"]["unit"]
+
+
+def test_v4_device_with_out_of_support_software(sandbox):
+    """87.5% = 7 of 8 DEVICE. With the total of assets it would be 23% - two
+    stages apart. The denominator is DEVICE."""
+    from tenable_ctem_mcp.indicators.validation import compute
+    v4 = _by_id(compute(indicators=["V4"]))["V4"]
+    assert v4["value"] == 87.5
     assert v4["n"] == 8
-    assert v4["contexto"]["devices_com_eol"] == 7
+    assert v4["context"]["devices_with_eol"] == 7
 
 
-def test_v1_e_informativo_e_declara_a_base_dos_pesos(sandbox):
-    """Taxa ponderada sem base declarada nao e verificavel: a mesma amostra da
-    59,3% por deteccao e 54,6% por plugin com n=20."""
-    from tenable_ctem_mcp.indicators.validation import calcular
-    for base, esperado in (("por_deteccao", 59.3), ("por_plugin", 54.6)):
-        v1 = _por_id(calcular(indicadores=["V1"], n_amostra=20, ponderar=base,
-                              modo_plugins="amostra"))["V1"]
-        assert v1["contexto"]["informativo"] is True
-        assert v1["contexto"]["base_dos_pesos"] == base
-        assert v1["valor"] == esperado
+def test_v1_is_informational_and_declares_the_weight_base(sandbox):
+    """A weighted rate without a declared base is not verifiable: the same
+    sample gives 59.3% by detection and 54.6% by plugin with n=20."""
+    from tenable_ctem_mcp.indicators.validation import compute
+    for base, expected in (("by_detection", 59.3), ("by_plugin", 54.6)):
+        v1 = _by_id(compute(indicators=["V1"], sample_n=20, weight_by=base,
+                            plugin_mode="sample"))["V1"]
+        assert v1["context"]["informational"] is True
+        assert v1["context"]["weight_base"] == base
+        assert v1["value"] == expected
 
 
-def test_v2_mediana_de_dias_no_kev_com_relogio_congelado(sandbox):
-    """V2 e uma diferenca contra o instante da coleta e cresce sozinha a cada
-    dia. Sem relogio fixo nao existe regressao."""
-    from tenable_ctem_mcp.indicators.validation import calcular
-    v2 = _por_id(calcular(indicadores=["V2"], agora=INSTANTE_DA_MEDICAO,
-                          modo_plugins="amostra"))["V2"]
-    assert v2["valor"] == 1357.0
-    assert v2["contexto"]["invertido"] is True
-    assert v2["contexto"]["plugins_com_kev"] == 12
-    assert "BOD 26-04" in v2["contexto"]["origem_do_limiar"]
+def test_v2_median_days_in_the_kev_with_a_frozen_clock(sandbox):
+    """V2 is a difference against the instant of collection and grows on its own
+    every day. Without a fixed clock there is no regression test."""
+    from tenable_ctem_mcp.indicators.validation import compute
+    v2 = _by_id(compute(indicators=["V2"], now=MEASUREMENT_INSTANT,
+                        plugin_mode="sample"))["V2"]
+    assert v2["value"] == 1357.0
+    assert v2["context"]["inverted"] is True
+    assert v2["context"]["plugins_with_kev"] == 12
+    assert "BOD 26-04" in v2["context"]["threshold_origin"]
 
 
-def test_v2_no_censo_nao_tem_intervalo_de_confianca(sandbox):
-    """Censo nao infere: nao ha o que estimar, entao nao ha IC."""
-    from tenable_ctem_mcp.indicators.validation import calcular
-    v2 = _por_id(calcular(indicadores=["V2"], agora=INSTANTE_DA_MEDICAO))["V2"]
-    assert v2["contexto"]["modo"] == "censo"
-    assert v2["contexto"]["ic95_proporcao_com_kev"] is None
-    assert v2["contexto"]["plugins_na_amostra"] == 121
+def test_v2_under_a_census_has_no_confidence_interval(sandbox):
+    """A census does not infer: there is nothing to estimate, so there is no CI."""
+    from tenable_ctem_mcp.indicators.validation import compute
+    v2 = _by_id(compute(indicators=["V2"], now=MEASUREMENT_INSTANT))["V2"]
+    assert v2["context"]["mode"] == "census"
+    assert v2["context"]["ci95_proportion_with_kev"] is None
+    assert v2["context"]["plugins_in_set"] == 121
 
 
-def test_v1_e_v2_saem_do_mesmo_conjunto_que_d4(sandbox):
-    """Senao o relatorio descreve tres conjuntos diferentes com um unico tamanho
-    declarado, e o IC publicado nao vale para nenhum deles."""
-    from tenable_ctem_mcp.indicators.discovery import calcular as disc
-    from tenable_ctem_mcp.indicators.validation import calcular as val
-    for modo in ("censo", "amostra"):
-        d4 = _por_id(disc(indicadores=["D4"], modo_plugins=modo))["D4"]
-        v1 = _por_id(val(indicadores=["V1"], modo_plugins=modo))["V1"]
+def test_v1_and_v2_come_from_the_same_set_as_d4(sandbox):
+    """Otherwise the report describes three different sets under a single
+    declared size, and the published CI holds for none of them."""
+    from tenable_ctem_mcp.indicators.discovery import compute as disc
+    from tenable_ctem_mcp.indicators.validation import compute as val
+    for mode in ("census", "sample"):
+        d4 = _by_id(disc(indicators=["D4"], plugin_mode=mode))["D4"]
+        v1 = _by_id(val(indicators=["V1"], plugin_mode=mode))["V1"]
         assert d4["n"] == v1["n"]
-        assert d4["contexto"]["modo"] == v1["contexto"]["modo"] == modo
+        assert d4["context"]["mode"] == v1["context"]["mode"] == mode
 
 
-def test_divergencia_de_v1_tem_causa_identificada(sandbox):
-    """O documento publica V1 = 59,6% com a amostra dele (A 11/12, B 1/8).
+def test_the_v1_divergence_has_an_identified_cause(sandbox):
+    """The document publishes V1 = 59.6% with its own sample (A 11/12, B 1/8).
 
-    Esse numero NAO se reconstroi com os 65/35 de populacao que o proprio
-    documento afirma - da 64,0%. Reconstroi exatamente com share_A = 0,595
-    (a fatia por plugin medida hoje) e ponderacao POR PLUGIN, nao por deteccao.
+    That number does NOT reconstruct from the 65/35 population the document
+    itself states - that gives 64.0%. It reconstructs exactly with
+    share_A = 0.595 (the per-plugin share measured today) and weighting BY
+    PLUGIN, not by detection.
 
-    Duas conclusoes, e as duas importam:
-      1. a base de pesos usada la foi `por_plugin`, nao o `por_deteccao` que a
-         config da skill traz como default;
-      2. a fatia de populacao narrada no documento nao e a que sustenta o
-         numero publicado nele.
+    Two conclusions, and both matter:
+      1. the weight base used there was `by_plugin`, not the `by_detection` the
+         skill's config carries as the default;
+      2. the population share narrated in the document is not the one that
+         supports the number published in it.
 
-    Por isso V1 e V2 NAO tem golden test contra o valor do documento: eles
-    dependem de quais plugins foram sorteados, e a amostra de la nao e
-    recuperavel. O que se testa e o metodo, sobre a fixture, com semente fixa.
+    That is why V1 and V2 have NO golden test against the document's value: they
+    depend on which plugins were drawn, and that sample is not recoverable. What
+    is tested is the method, over the fixture, with a fixed seed.
     """
-    def reconstruir(share_a):
+    def reconstruct(share_a):
         return round(100 * ((11 / 12) * share_a + (1 / 8) * (1 - share_a)), 1)
 
-    assert reconstruir(0.65) == 64.0            # o que o documento narra
-    assert reconstruir(0.5950413223140496) == 59.6   # o que o documento publica
+    assert reconstruct(0.65) == 64.0                  # what the document narrates
+    assert reconstruct(0.5950413223140496) == 59.6    # what the document publishes
 
 
-def test_amostra_e_reproduzivel_entre_execucoes(sandbox):
-    """Semente fixa. Sem reprodutibilidade o mesmo tenant pontua diferente a
-    cada rodada, e golden test nao existe."""
+def test_the_sample_is_reproducible_across_runs(sandbox):
+    """A fixed seed. Without reproducibility the same tenant scores differently
+    every round, and a golden test cannot exist."""
     from tenable_ctem_mcp.client import CACHE
-    from tenable_ctem_mcp.plugins import amostra_com_detalhes
+    from tenable_ctem_mcp.plugins import sample_with_details
     a = [p["plugin_id"] for p in
-         amostra_com_detalhes(modo="amostra")["amostra"]["amostra"]]
-    CACHE.limpar()
+         sample_with_details(mode="sample")["sample"]["sample"]]
+    CACHE.clear()
     b = [p["plugin_id"] for p in
-         amostra_com_detalhes(modo="amostra")["amostra"]["amostra"]]
+         sample_with_details(mode="sample")["sample"]["sample"]]
     assert a == b and len(a) == 30
 
 
-# --- Censo: o modo default desde que plugin_details_batch existe ------------
+# --- Census: the default mode since plugin_details_batch exists -------------
 
-def test_censo_e_o_default_quando_cabe_no_limite(sandbox):
-    """A amostragem existia porque plugins_search_plugins nao aceita lista de
-    IDs. plugin_details_batch aceita, entao a restricao caiu."""
-    from tenable_ctem_mcp.plugins import amostra_com_detalhes
-    c = amostra_com_detalhes()["amostra"]
-    assert c["modo"] == "censo"
-    assert c["n"] == c["populacao"] == 121
-    assert c["semente"] is None          # nao ha sorteio
-
-
-def test_censo_volta_a_amostra_acima_do_limite(sandbox):
-    """Um tenant grande pode ter milhares de plugins criticos; a 528 ms cada,
-    mil plugins sao nove minutos."""
-    from tenable_ctem_mcp.plugins import amostra_com_detalhes
-    c = amostra_com_detalhes(limite_censo=50)["amostra"]
-    assert c["modo"] == "amostra"
-    assert c["n"] == 30 and c["populacao"] == 121
+def test_census_is_the_default_when_it_fits_the_limit(sandbox):
+    """Sampling existed because plugins_search_plugins does not accept a list of
+    IDs. plugin_details_batch does, so the constraint fell away."""
+    from tenable_ctem_mcp.plugins import sample_with_details
+    c = sample_with_details()["sample"]
+    assert c["mode"] == "census"
+    assert c["n"] == c["population"] == 121
+    assert c["seed"] is None          # there is no draw
 
 
-def test_censo_nao_pondera_nem_estima(sandbox):
-    """No censo a taxa e a contagem. `base_dos_pesos` vem `nao_se_aplica` em vez
-    de um rotulo que sugira escolha de metodo onde nao houve."""
-    from tenable_ctem_mcp.plugins import amostra_com_detalhes, taxa
-    pac = amostra_com_detalhes()
-    r = taxa(pac["amostra"], pac["detalhes"],
+def test_census_falls_back_to_a_sample_above_the_limit(sandbox):
+    """A large tenant may have thousands of critical plugins; at 528 ms each, a
+    thousand plugins are nine minutes."""
+    from tenable_ctem_mcp.plugins import sample_with_details
+    c = sample_with_details(census_limit=50)["sample"]
+    assert c["mode"] == "sample"
+    assert c["n"] == 30 and c["population"] == 121
+
+
+def test_census_neither_weights_nor_estimates(sandbox):
+    """Under a census the rate is the count. `weight_base` comes back as
+    `not_applicable` rather than a label suggesting a method choice where there
+    was none."""
+    from tenable_ctem_mcp.plugins import sample_with_details, rate
+    pkg = sample_with_details()
+    r = rate(pkg["sample"], pkg["details"],
              lambda d: bool(d.get("exploit_available")))
-    assert r["modo"] == "censo"
-    assert r["base_dos_pesos"] == "nao_se_aplica"
-    assert r["ic95_amostra_inteira"] is None
+    assert r["mode"] == "census"
+    assert r["weight_base"] == "not_applicable"
+    assert r["ci95_whole_sample"] is None
     assert r["n"] == 121
 
 
-def test_censo_elimina_a_ambiguidade_da_base_de_pesos(sandbox):
-    """Na amostra, por_deteccao e por_plugin dao 59,3% e 54,6% - cinco pontos de
-    diferenca so pela escolha de metodo. No censo os dois dao o mesmo numero,
-    porque nao ha ponderacao nenhuma."""
-    from tenable_ctem_mcp.indicators.validation import calcular
-    valores = {b: _por_id(calcular(indicadores=["V1"], ponderar=b))["V1"]["valor"]
-               for b in ("por_deteccao", "por_plugin")}
-    assert valores["por_deteccao"] == valores["por_plugin"] == 61.2
+def test_census_eliminates_the_weight_base_ambiguity(sandbox):
+    """Under a sample, by_detection and by_plugin give 59.3% and 54.6% - five
+    points of difference from the method choice alone. Under a census both give
+    the same number, because there is no weighting at all."""
+    from tenable_ctem_mcp.indicators.validation import compute
+    values = {b: _by_id(compute(indicators=["V1"], weight_by=b))["V1"]["value"]
+              for b in ("by_detection", "by_plugin")}
+    assert values["by_detection"] == values["by_plugin"] == 61.2
 
 
 # --- Mobilization: M1, M2, M3, M4 ------------------------------------------
 
-SCANS_RECORRENTES = {"scans_recorrentes": [33]}
+RECURRING_SCANS = {"recurring_scans": [33]}
 
 
-def test_m1_usa_dias_distintos_e_nao_runs_crus(sandbox):
-    """O CRITERIO DE PRONTO DO M5.
+def test_m1_uses_distinct_days_and_not_raw_runs(sandbox):
+    """THE DONE CRITERION OF M5.
 
-    A formula anterior era "mediana do intervalo entre runs completed
-    consecutivos", e estava errada: um scan relancado minutos depois e a MESMA
-    avaliacao. Os 12 runs do scan recorrente caem em 9 dias distintos; a mediana
-    crua da 1,42 dia - numero sem sentido para um tenant que avaliou em 9 dias
-    ao longo de 12 meses. Colapsada, 21 dias: Standardized em vez de Optimized.
+    The previous formula was "median interval between consecutive completed
+    runs", and it was wrong: a scan relaunched minutes later is the SAME
+    assessment. The recurring scan's 12 runs fall on 9 distinct days; the raw
+    median gives 1.42 days - a number with no meaning for a tenant that assessed
+    on 9 days across 12 months. Collapsed, 21 days: Standardized instead of
+    Optimized.
     """
-    from tenable_ctem_mcp.indicators.mobilization import calcular
-    m1 = _por_id(calcular(SCANS_RECORRENTES, indicadores=["M1"]))["M1"]
-    assert m1["valor"] == 21.0
-    assert m1["valor"] != 1.42
-    assert m1["contexto"]["intervalos_dias"] == [140, 40, 2, 89, 1, 1, 85, 1]
-    assert m1["contexto"]["dias_distintos"] == 9
-    # o contraste vai junto, sempre, para o leitor ver o que o colapso muda
-    assert m1["contexto"]["mediana_sem_colapso_dias"]["33"] == 1.42
+    from tenable_ctem_mcp.indicators.mobilization import compute
+    m1 = _by_id(compute(RECURRING_SCANS, indicators=["M1"]))["M1"]
+    assert m1["value"] == 21.0
+    assert m1["value"] != 1.42
+    assert m1["context"]["intervals_days"] == [140, 40, 2, 89, 1, 1, 85, 1]
+    assert m1["context"]["distinct_days"] == 9
+    # the contrast travels alongside, always, so the reader sees what the
+    # collapse changes
+    assert m1["context"]["median_without_collapse_days"]["33"] == 1.42
 
 
-def test_m2_maior_lacuna_nao_muda_com_o_colapso(sandbox):
+def test_m2_largest_gap_does_not_change_with_the_collapse(sandbox):
     from tenable_ctem_mcp.cadence import scan_cadence
-    from tenable_ctem_mcp.indicators.mobilization import calcular
-    m2 = _por_id(calcular(SCANS_RECORRENTES, indicadores=["M2"]))["M2"]
-    assert m2["valor"] == 140.0
-    assert scan_cadence([33], colapsar_runs_do_mesmo_dia=False)["maximo_dias"] == 140
+    from tenable_ctem_mcp.indicators.mobilization import compute
+    m2 = _by_id(compute(RECURRING_SCANS, indicators=["M2"]))["M2"]
+    assert m2["value"] == 140.0
+    assert scan_cadence([33], collapse_same_day_runs=False)["max_days"] == 140
 
 
-def test_scan_cadence_sem_colapso_agrega_intervalos_crus(sandbox):
-    """Achado da auditoria de 2026-09-04: com `colapsar_runs_do_mesmo_dia=False`
-    os intervalos crus eram calculados por scan mas a mediana GERAL continuava
-    somando os colapsados - os dois modos devolviam 21,0. O modo diagnostico
-    existe justamente para MOSTRAR o contraste 1,42 vs 21; devolvendo o mesmo
-    numero, ele escondia o que deveria expor."""
+def test_scan_cadence_without_collapse_aggregates_raw_intervals(sandbox):
+    """Audit finding of 2026-09-04: with `collapse_same_day_runs=False` the raw
+    intervals were computed per scan but the OVERALL median still summed the
+    collapsed ones - both modes returned 21.0. The diagnostic mode exists
+    precisely to SHOW the 1.42 vs 21 contrast; returning the same number, it hid
+    what it was there to expose."""
     from tenable_ctem_mcp.cadence import scan_cadence
-    com = scan_cadence([33], colapsar_runs_do_mesmo_dia=True)
-    sem = scan_cadence([33], colapsar_runs_do_mesmo_dia=False)
-    assert com["mediana_dias"] == 21.0
-    assert sem["mediana_dias"] == 1.42
-    assert sem["mediana_dias"] != com["mediana_dias"]
-    # a lista crua vai junto, para o numero ser auditavel e nao so afirmado
-    assert len(sem["scans"]["33"]["intervalos_crus_dias"]) == 11
-    assert sem["aviso"] and "COLAPSO DESLIGADO" in sem["aviso"]
+    with_collapse = scan_cadence([33], collapse_same_day_runs=True)
+    without = scan_cadence([33], collapse_same_day_runs=False)
+    assert with_collapse["median_days"] == 21.0
+    assert without["median_days"] == 1.42
+    assert without["median_days"] != with_collapse["median_days"]
+    # the raw list travels alongside, so the number is auditable and not merely
+    # asserted
+    assert len(without["scans"]["33"]["raw_intervals_days"]) == 11
+    assert without["warning"] and "COLLAPSE DISABLED" in without["warning"]
 
 
-def test_m1_sem_scans_declarados_e_lacuna(sandbox):
-    """O servidor nao escolhe quais scans representam a cadencia, e a razao esta
-    medida: com todos os scans com historico a mediana cai de 21 para 1,0 e o
-    maximo de 140 para 89, porque um deles roda quase todo dia."""
-    from tenable_ctem_mcp.indicators.mobilization import calcular
-    m1 = _por_id(calcular({}, indicadores=["M1"]))["M1"]
-    assert m1["lacuna"] is True and m1["valor"] is None
-    assert "scans_recorrentes" in m1["causa"]
-    assert "33" in m1["causa"]          # lista os scans com historico
+def test_m1_without_declared_scans_is_a_gap(sandbox):
+    """The server does not choose which scans represent the cadence, and the
+    reason is measured: with every scan that has history the median drops from
+    21 to 1.0 and the maximum from 140 to 89, because one of them runs almost
+    daily."""
+    from tenable_ctem_mcp.indicators.mobilization import compute
+    m1 = _by_id(compute({}, indicators=["M1"]))["M1"]
+    assert m1["gap"] is True and m1["value"] is None
+    assert "recurring_scans" in m1["cause"]
+    assert "33" in m1["cause"]          # lists the scans with history
 
 
-def test_m3_rotula_published_como_proxy_declarado(sandbox):
-    """`Published` e a data do PLUGIN DE DETECCAO, nao a do patch."""
-    from tenable_ctem_mcp.indicators.mobilization import calcular
-    m3 = _por_id(calcular(SCANS_RECORRENTES, indicadores=["M3"],
-                          agora=INSTANTE_DA_MEDICAO, modo_plugins="amostra"))["M3"]
-    assert m3["valor"] == 1047.0
-    assert m3["contexto"]["invertido"] is True
-    assert "proxy" in m3["contexto"]["proxy_declarado"]
-    assert "patch_publication_date" in m3["contexto"]["proxy_declarado"]
+def test_m3_labels_published_as_a_declared_proxy(sandbox):
+    """`Published` is the DETECTION PLUGIN's date, not the patch's."""
+    from tenable_ctem_mcp.indicators.mobilization import compute
+    m3 = _by_id(compute(RECURRING_SCANS, indicators=["M3"],
+                        now=MEASUREMENT_INSTANT, plugin_mode="sample"))["M3"]
+    assert m3["value"] == 1047.0
+    assert m3["context"]["inverted"] is True
+    assert "proxy" in m3["context"]["declared_proxy"]
+    assert "patch_publication_date" in m3["context"]["declared_proxy"]
 
 
-def test_m4_vira_lacuna_quando_a_guarda_de_cadencia_dispara(sandbox, monkeypatch):
-    """No sandbox M4 e lacuna POR MERITO: as 7 datas que formam as janelas sao
-    7 de 7 datas de execucao de scan. Com cadencia dominante, M4 mediria a mesma
-    coisa que M1 e M2 - contaria cadencia duas vezes."""
+def test_m4_becomes_a_gap_when_the_cadence_guard_fires(sandbox, monkeypatch):
+    """In the sandbox M4 is a gap ON MERIT: the 7 dates forming the windows are
+    7 out of 7 scan execution dates. With cadence dominating, M4 would measure
+    the same thing as M1 and M2 - counting cadence twice."""
     import json
     from pathlib import Path
 
@@ -574,54 +595,82 @@ def test_m4_vira_lacuna_quando_a_guarda_de_cadencia_dispara(sandbox, monkeypatch
 
     d = json.loads((Path(__file__).parent / "fixtures"
                     / "mttr_export_2026-09-03.json").read_text(encoding="utf-8"))
-    linhas = [dict(zip(d["campos"], l)) for l in d["linhas"]]
-    resumo = mttr.resumir(linhas, d["filtros_pedidos"], "uuid-fixture", d["status"], 2)
-    resumo["status"] = "concluido"
-    monkeypatch.setattr(mobilization, "mttr_collect", lambda **k: resumo)
+    rows = [dict(zip(d["fields"], r)) for r in d["rows"]]
+    summary = mttr.summarise(rows, d["requested_filters"], "uuid-fixture", d["status"], 2)
+    summary["status"] = "complete"
+    monkeypatch.setattr(mobilization, "mttr_collect", lambda **k: summary)
 
-    m4 = _por_id(mobilization.calcular(SCANS_RECORRENTES, indicadores=["M4"]))["M4"]
-    assert m4["lacuna"] is True and m4["valor"] is None
-    assert "cadencia de avaliacao" in m4["causa"]
-    g = m4["contexto"]["guarda_de_cadencia"]
-    assert g["pct_em_lote"] == 93.5
-    assert g["todas_as_datas_sao_de_scan"] is True
-    # os p50 continuam visiveis mesmo na lacuna: a skill precisa deles no texto
-    assert m4["contexto"]["p50_critical"] == 42.94
-    assert m4["contexto"]["p50_high"] == 85.51
+    m4 = _by_id(mobilization.compute(RECURRING_SCANS, indicators=["M4"]))["M4"]
+    assert m4["gap"] is True and m4["value"] is None
+    assert "assessment cadence" in m4["cause"]
+    g = m4["context"]["cadence_guard"]
+    assert g["pct_in_batch"] == 93.5
+    assert g["all_dates_are_scan_dates"] is True
+    # the p50s stay visible even in the gap: the skill needs them for the text
+    assert m4["context"]["p50_critical"] == 42.94
+    assert m4["context"]["p50_high"] == 85.51
 
 
-def test_m4_pendente_e_lacuna_recuperavel_com_uuid(sandbox, monkeypatch):
-    """Export em andamento nao e falha: e lacuna recuperavel, e a causa carrega
-    o export_uuid para a proxima chamada retomar."""
+def test_m4_carries_the_per_severity_evidence(sandbox, monkeypatch):
+    """Audit finding of 2026-09-04: the skill requires n per severity, the
+    origin of the datum (native vs derived) and the reopened count to declare
+    the method in the report. mttr_collect already computed all of it; the
+    indicator simply did not pass it on."""
+    import json
+    from pathlib import Path
+
+    from tenable_ctem_mcp import mttr
+    from tenable_ctem_mcp.indicators import mobilization
+
+    d = json.loads((Path(__file__).parent / "fixtures"
+                    / "mttr_export_2026-09-03.json").read_text(encoding="utf-8"))
+    rows = [dict(zip(d["fields"], r)) for r in d["rows"]]
+    summary = mttr.summarise(rows, d["requested_filters"], "uuid-fixture", d["status"], 2)
+    summary["status"] = "complete"
+    monkeypatch.setattr(mobilization, "mttr_collect", lambda **k: summary)
+
+    ctx = _by_id(mobilization.compute(RECURRING_SCANS, indicators=["M4"]))["M4"]["context"]
+    crit = ctx["by_severity"]["critical"]
+    assert crit["fixed_with_date"] == 10
+    assert crit["source_native_time_taken_to_fix"] + \
+           crit["source_derived_last_fixed_minus_first_found"] == 10
+    assert "reopened_in_slice" in crit
+    assert ctx["states_included"] == ["FIXED"]
+
+
+def test_m4_pending_is_a_recoverable_gap_with_the_uuid(sandbox, monkeypatch):
+    """An export in progress is not a failure: it is a recoverable gap, and the
+    cause carries the export_uuid for the next call to resume."""
     from tenable_ctem_mcp.indicators import mobilization
 
     monkeypatch.setattr(mobilization, "mttr_collect",
-                        lambda **k: {"status": "pendente", "export_uuid": "u-123",
-                                     "status_do_job": "PROCESSING"})
-    m4 = _por_id(mobilization.calcular(SCANS_RECORRENTES, indicadores=["M4"]))["M4"]
-    assert m4["lacuna"] is True
-    assert "u-123" in m4["causa"] and "409" in m4["causa"]
+                        lambda **k: {"status": "pending", "export_uuid": "u-123",
+                                     "job_status": "PROCESSING"})
+    m4 = _by_id(mobilization.compute(RECURRING_SCANS, indicators=["M4"]))["M4"]
+    assert m4["gap"] is True
+    assert "u-123" in m4["cause"] and "409" in m4["cause"]
 
 
-def test_m4_declara_que_e_o_menor_dos_dois_estagios(sandbox, monkeypatch):
-    """Mobilizacao madura fecha as duas severidades, nao compensa uma com a
-    outra. O estagio e da skill; o servidor entrega os dois p50 e os cortes."""
+def test_m4_declares_it_is_the_lower_of_the_two_stages(sandbox, monkeypatch):
+    """Mature mobilisation closes both severities, it does not offset one with
+    the other. The stage belongs to the skill; the server delivers the two p50s
+    and the cutoffs."""
     from tenable_ctem_mcp.indicators import mobilization
 
-    resumo = {
-        "status": "concluido", "export_uuid": "u",
-        "cadencia_de_scan": {"janelas": [{"ativo": "a", "first_found": "2026-01-05",
-                                          "last_fixed": "2026-01-09", "findings": 1}],
-                             "findings_com_mttr": 1},
-        "mttr_por_severidade": {"critical": {"mttr_dias_p50": 12.0},
-                                "high": {"mttr_dias_p50": 40.0}},
-        "metodo_percentil": "interpolado", "estados_incluidos_no_mttr": ["FIXED"],
-        "severidade_modificada_diferente_de_none": 0,
+    summary = {
+        "status": "complete", "export_uuid": "u",
+        "scan_cadence": {"windows": [{"asset": "a", "first_found": "2026-01-05",
+                                      "last_fixed": "2026-01-09", "findings": 1}],
+                         "findings_with_mttr": 1},
+        "mttr_by_severity": {"critical": {"mttr_days_p50": 12.0},
+                             "high": {"mttr_days_p50": 40.0}},
+        "percentile_method": "interpolated", "states_included_in_mttr": ["FIXED"],
+        "modified_severity_other_than_none": 0,
     }
-    monkeypatch.setattr(mobilization, "mttr_collect", lambda **k: resumo)
-    m4 = _por_id(mobilization.calcular({"scans_recorrentes": [33]},
-                                       indicadores=["M4"]))["M4"]
-    assert m4.get("lacuna", False) is False
-    assert m4["valor"] == {"p50_critical": 12.0, "p50_high": 40.0}
-    assert m4["contexto"]["cortes"]["critical"] == [90, 30, 15, 7]
-    assert "MENOR dos dois" in m4["contexto"]["como_pontuar"]
+    monkeypatch.setattr(mobilization, "mttr_collect", lambda **k: summary)
+    m4 = _by_id(mobilization.compute({"recurring_scans": [33]},
+                                     indicators=["M4"]))["M4"]
+    assert m4.get("gap", False) is False
+    assert m4["value"] == {"p50_critical": 12.0, "p50_high": 40.0}
+    assert m4["context"]["cutoffs"]["critical"] == [90, 30, 15, 7]
+    assert "LOWER of the two" in m4["context"]["how_to_score"]

@@ -1,19 +1,19 @@
-"""Cliente HTTP para a API Tenable: auth, TLS, backoff, paginacao, cache.
+"""HTTP client for the Tenable API: auth, TLS, backoff, pagination, cache.
 
-PORTADO de _ferramentas/mttr-export/tenable_mttr_export.py 1.1.0 (linhas 98-430).
-Nao foi reescrito do zero: a camada de TLS corporativo, o tratamento de 401/403/409
-e o backoff ja estavam resolvidos e testados em campo.
+PORTED from _ferramentas/mttr-export/tenable_mttr_export.py 1.1.0 (lines 98-430).
+It was not rewritten from scratch: the corporate TLS layer, the 401/403/409
+handling and the backoff were already solved and field-tested.
 
-Tres acrescimos que o servidor exige e o coletor nao tinha:
-  1. honrar o header `retry-after` no 429 - o limite da Tenable e DINAMICO,
-     calculado por minuto conforme a carga da plataforma, e a resposta traz o
-     numero de segundos. Ler o header e o unico jeito de respeitar o limite sem
-     inventar numero.  https://developer.tenable.com/docs/rate-limiting
-  2. paginacao interna, nunca exposta ao chamador;
-  3. cache em memoria por processo, TTL curto, chaveado pelo filtro literal.
+Three additions the server requires and the collector did not have:
+  1. honour the `retry-after` header on 429 - the Tenable limit is DYNAMIC,
+     computed per minute according to platform load, and the response carries
+     the number of seconds. Reading the header is the only way to respect the
+     limit without inventing a number.  https://developer.tenable.com/docs/rate-limiting
+  2. internal pagination, never exposed to the caller;
+  3. in-memory per-process cache, short TTL, keyed by the literal filter.
 
-Credencial: SOMENTE via TIO_ACCESS_KEY, TIO_SECRET_KEY, TIO_URL no ambiente.
-Nunca como parametro de tool, nunca em log.
+Credentials: ONLY via TIO_ACCESS_KEY, TIO_SECRET_KEY, TIO_URL in the environment.
+Never as a tool parameter, never in a log.
 """
 
 from __future__ import annotations
@@ -29,77 +29,78 @@ import urllib.parse
 import urllib.request
 from typing import Any
 
-VERSAO = "0.1.0"
-UA = f"tenable-ctem-mcp/{VERSAO} (community tooling, nao suportado pela Tenable)"
+VERSION = "0.1.0"
+UA = f"tenable-ctem-mcp/{VERSION} (community tooling, not supported by Tenable)"
 
-# TTL curto do cache em memoria. Curto de proposito: o cache existe para evitar
-# a MESMA consulta quatro vezes dentro de uma coleta, nao para servir dado velho.
-TTL_PADRAO_S = 300
+# Short TTL for the in-memory cache. Short on purpose: the cache exists to avoid
+# the SAME query four times within one collection, not to serve stale data.
+DEFAULT_TTL_S = 300
 
 
 # ----------------------------------------------------------------------------
-# Erros - estruturados, nunca numero parcial silencioso
+# Errors - structured, never a silent partial number
 # ----------------------------------------------------------------------------
 
-class ErroApi(Exception):
-    """Falha na conversa com a API. Vira lacuna declarada, com causa."""
+class ApiError(Exception):
+    """Failure talking to the API. Becomes a declared gap, with a cause."""
 
-    def __init__(self, mensagem: str, causa: str = "erro_api"):
-        super().__init__(mensagem)
-        self.causa = causa
-
-
-class ErroCredencial(ErroApi):
-    """Chave ausente, invalida ou sem permissao."""
+    def __init__(self, message: str, cause: str = "api_error"):
+        super().__init__(message)
+        self.cause = cause
 
 
-class ErroTLS(ErroApi):
-    """Falha de verificacao de certificado. NAO e transitorio: nao tentar de novo."""
+class CredentialError(ApiError):
+    """Key missing, invalid, or lacking permission."""
 
 
-AJUDA_TLS = r"""Falha ao verificar o certificado TLS de {host}.
+class TlsError(ApiError):
+    """Certificate verification failure. NOT transient: do not retry."""
 
-Isto NAO e problema de rede e nao melhora tentando de novo. O Python nao esta
-achando a cadeia de certificados. Duas causas possiveis:
 
-  A) Python instalado do python.org sem os certificados. Rode uma vez:
+TLS_HELP = r"""Failed to verify the TLS certificate of {host}.
+
+This is NOT a network problem and it does not improve by retrying. Python cannot
+find the certificate chain. Two possible causes:
+
+  A) Python installed from python.org without the certificates. Run once:
        /Applications/Python\ 3.12/Install\ Certificates.command
 
-  B) A rede corporativa inspeciona TLS e apresenta um certificado assinado por
-     uma CA interna, que esta no Keychain do macOS mas nao no bundle do Python.
-     Este e o caso mais comum em rede de cliente: e o proxy dele, nao o MCP.
-     Aponte o bundle da empresa:
-       export TIO_CA_BUNDLE=/caminho/para/ca.pem
-     ou deixe o servidor usar o Keychain do macOS:
+  B) The corporate network inspects TLS and presents a certificate signed by an
+     internal CA, which is in the macOS Keychain but not in Python's bundle.
+     This is the most common case on a customer network: it is their proxy, not
+     the MCP. Point at the company bundle:
+       export TIO_CA_BUNDLE=/path/to/ca.pem
+     or let the server use the macOS Keychain:
        export TIO_CA_KEYCHAIN=1
 
-Nao existe opcao para desligar a verificacao, e nao deve existir: sem
-verificacao as chaves de API do tenant seguem por um canal que pode estar
-sendo lido por terceiro.
+There is no option to turn verification off, and there should not be: without
+verification the tenant's API keys travel over a channel that may be being read
+by a third party.
 
-Detalhe: {detalhe}"""
+Detail: {detail}"""
 
 
 def log(msg: str) -> None:
-    """Log vai para stderr. Em stdio, stdout e do protocolo MCP."""
+    """Logs go to stderr. Under stdio, stdout belongs to the MCP protocol."""
     print(msg, file=sys.stderr, flush=True)
 
 
 # ----------------------------------------------------------------------------
-# Credenciais e base URL  (portado: _chaves 102, _base_url 113)
+# Credentials and base URL  (ported: _chaves 102, _base_url 113)
 # ----------------------------------------------------------------------------
 
-def _chaves() -> tuple[str, str]:
-    # O .strip() nao e cosmetico: espaco no fim da variavel de ambiente e uma
-    # das duas causas classicas de 401. Ver docs/troubleshooting.md.
+def _keys() -> tuple[str, str]:
+    # The .strip() is not cosmetic: a trailing space in the environment variable
+    # is one of the two classic causes of a 401. See docs/troubleshooting.md.
     ak = os.environ.get("TIO_ACCESS_KEY", "").strip()
     sk = os.environ.get("TIO_SECRET_KEY", "").strip()
     if not ak or not sk:
-        raise ErroCredencial(
-            "TIO_ACCESS_KEY e TIO_SECRET_KEY nao estao definidas no ambiente do "
-            "servidor. A chave e gerada no tenant em Settings > My Account > API Keys "
-            "e so entra por variavel de ambiente - nunca como parametro de tool.",
-            causa="credencial_ausente",
+        raise CredentialError(
+            "TIO_ACCESS_KEY and TIO_SECRET_KEY are not set in the server's "
+            "environment. The key is generated in the tenant under Settings > My "
+            "Account > API Keys and is only accepted through an environment "
+            "variable - never as a tool parameter.",
+            cause="credential_missing",
         )
     return ak, sk
 
@@ -109,260 +110,261 @@ def base_url() -> str:
 
 
 # ----------------------------------------------------------------------------
-# TLS  (portado: ErroTLS/AJUDA_TLS/estado_store_padrao/_pem_do_keychain/
-#       configurar_tls/contexto, linhas 117-248)
+# TLS  (ported: ErroTLS/AJUDA_TLS/estado_store_padrao/_pem_do_keychain/
+#       configurar_tls/contexto, lines 117-248)
 # ----------------------------------------------------------------------------
 
-_CTX: dict[str, Any] = {"ctx": None, "origem": ""}
+_CTX: dict[str, Any] = {"ctx": None, "origin": ""}
 
 
-def estado_store_padrao() -> tuple[bool, str]:
-    """Diz se este Python tem, de fato, um conjunto de CAs utilizavel.
-    Distinguir 'store ausente' de 'store presente mas nao confia nesta cadeia'
-    e o que separa a causa A da causa B."""
+def default_store_state() -> tuple[bool, str]:
+    """Says whether this Python actually has a usable set of CAs.
+    Telling 'store absent' from 'store present but does not trust this chain'
+    is what separates cause A from cause B."""
     try:
         import certifi
-        return True, f"certifi em {certifi.where()}"
+        return True, f"certifi at {certifi.where()}"
     except ImportError:
         pass
     vp = ssl.get_default_verify_paths()
-    for atr in ("cafile", "openssl_cafile"):
-        c = getattr(vp, atr, None)
+    for attr in ("cafile", "openssl_cafile"):
+        c = getattr(vp, attr, None)
         if c and os.path.exists(c) and os.path.getsize(c) > 0:
-            return True, f"{atr}={c}"
-    for atr in ("capath", "openssl_capath"):
-        d = getattr(vp, atr, None)
+            return True, f"{attr}={c}"
+    for attr in ("capath", "openssl_capath"):
+        d = getattr(vp, attr, None)
         if d and os.path.isdir(d):
             try:
                 if any(os.scandir(d)):
-                    return True, f"{atr}={d}"
+                    return True, f"{attr}={d}"
             except OSError:
                 pass
-    return False, ("nenhum arquivo de CAs encontrado - certifi nao instalado e "
-                   f"openssl_cafile ({vp.openssl_cafile}) nao existe")
+    return False, ("no CA file found - certifi not installed and "
+                   f"openssl_cafile ({vp.openssl_cafile}) does not exist")
 
 
-def _pem_do_keychain() -> str:
-    """Monta um bundle PEM a partir dos Keychains do macOS (inclui CAs corporativas
-    instaladas por MDM). Usa o binario `security`, presente em todo macOS."""
+def _pem_from_keychain() -> str:
+    """Builds a PEM bundle from the macOS Keychains (includes corporate CAs
+    installed by MDM). Uses the `security` binary, present on every macOS."""
     import subprocess
     import tempfile
-    chaveiros = ["/System/Library/Keychains/SystemRootCertificates.keychain",
+    keychains = ["/System/Library/Keychains/SystemRootCertificates.keychain",
                  "/Library/Keychains/System.keychain"]
-    pedacos = []
-    for k in chaveiros:
+    pieces = []
+    for k in keychains:
         if not os.path.exists(k):
             continue
         try:
             out = subprocess.run(["security", "find-certificate", "-a", "-p", k],
                                  capture_output=True, text=True, timeout=60)
         except (OSError, subprocess.SubprocessError) as e:
-            raise ErroTLS(f"Nao consegui ler o Keychain {k}: {e}", causa="tls")
+            raise TlsError(f"Could not read the Keychain {k}: {e}", cause="tls")
         if out.returncode == 0 and "BEGIN CERTIFICATE" in out.stdout:
-            pedacos.append(out.stdout)
-    if not pedacos:
-        raise ErroTLS("Nenhum certificado encontrado nos Keychains do macOS. "
-                      "TIO_CA_KEYCHAIN so funciona em macOS.", causa="tls")
+            pieces.append(out.stdout)
+    if not pieces:
+        raise TlsError("No certificate found in the macOS Keychains. "
+                       "TIO_CA_KEYCHAIN only works on macOS.", cause="tls")
     fh = tempfile.NamedTemporaryFile("w", suffix=".pem", delete=False, encoding="utf-8")
-    fh.write("\n".join(pedacos))
+    fh.write("\n".join(pieces))
     fh.close()
-    n = "\n".join(pedacos).count("BEGIN CERTIFICATE")
-    log(f"  {n} certificados lidos do Keychain do macOS")
+    n = "\n".join(pieces).count("BEGIN CERTIFICATE")
+    log(f"  {n} certificates read from the macOS Keychain")
     return fh.name
 
 
-def configurar_tls() -> None:
-    """Monta o contexto SSL uma unica vez. A verificacao NUNCA e desligada.
+def configure_tls() -> None:
+    """Builds the SSL context exactly once. Verification is NEVER turned off.
 
-    O servidor nao oferece, e nao deve oferecer, opcao de desabilitar a
-    verificacao de certificado. E regra do projeto, nao preferencia.
+    The server does not offer, and must not offer, an option to disable
+    certificate verification. That is a project rule, not a preference.
     """
     if os.environ.get("TIO_CA_KEYCHAIN", "").strip() in ("1", "true", "True"):
-        caminho = _pem_do_keychain()
-        _CTX["ctx"] = ssl.create_default_context(cafile=caminho)
-        _CTX["origem"] = f"Keychain do macOS ({caminho})"
+        path = _pem_from_keychain()
+        _CTX["ctx"] = ssl.create_default_context(cafile=path)
+        _CTX["origin"] = f"macOS Keychain ({path})"
         return
 
-    caminho = os.environ.get("TIO_CA_BUNDLE", "").strip()
-    if caminho:
-        if not os.path.exists(caminho):
-            raise ErroTLS(f"Bundle de CA nao encontrado: {caminho}", causa="tls")
-        _CTX["ctx"] = ssl.create_default_context(cafile=caminho)
-        _CTX["origem"] = f"bundle informado em TIO_CA_BUNDLE ({caminho})"
+    path = os.environ.get("TIO_CA_BUNDLE", "").strip()
+    if path:
+        if not os.path.exists(path):
+            raise TlsError(f"CA bundle not found: {path}", cause="tls")
+        _CTX["ctx"] = ssl.create_default_context(cafile=path)
+        _CTX["origin"] = f"bundle given in TIO_CA_BUNDLE ({path})"
         return
 
-    tem, detalhe = estado_store_padrao()
-    if not tem and sys.platform == "darwin":
-        # Este Python nao tem CAs proprias. Em vez de falhar, cair no Keychain do
-        # macOS - a mesma raiz de confianca que o Safari usa e que o proprio
-        # usuario administra. A verificacao segue LIGADA; so muda a fonte das CAs.
-        log(f"AVISO: este Python nao tem conjunto de CAs proprio ({detalhe}).")
-        log("       Usando o Keychain do macOS. A verificacao continua ativa.")
+    has_store, detail = default_store_state()
+    if not has_store and sys.platform == "darwin":
+        # This Python has no CAs of its own. Rather than fail, fall back to the
+        # macOS Keychain - the same trust root Safari uses and the user already
+        # administers. Verification stays ON; only the source of the CAs changes.
+        log(f"WARNING: this Python has no CA store of its own ({detail}).")
+        log("         Using the macOS Keychain. Verification remains active.")
         try:
-            caminho = _pem_do_keychain()
-            _CTX["ctx"] = ssl.create_default_context(cafile=caminho)
-            _CTX["origem"] = f"Keychain do macOS, por ausencia de store proprio ({caminho})"
+            path = _pem_from_keychain()
+            _CTX["ctx"] = ssl.create_default_context(cafile=path)
+            _CTX["origin"] = f"macOS Keychain, for lack of an own store ({path})"
             return
-        except ErroTLS as e:
-            log(f"       Nao consegui usar o Keychain: {e}")
+        except TlsError as e:
+            log(f"         Could not use the Keychain: {e}")
 
     _CTX["ctx"] = ssl.create_default_context()
-    _CTX["origem"] = f"padrao do Python ({detalhe})"
+    _CTX["origin"] = f"Python default ({detail})"
 
 
-def contexto() -> ssl.SSLContext:
+def context() -> ssl.SSLContext:
     if _CTX["ctx"] is None:
-        configurar_tls()
+        configure_tls()
     return _CTX["ctx"]
 
 
-def origem_tls() -> str:
-    contexto()
-    return _CTX["origem"]
+def tls_origin() -> str:
+    context()
+    return _CTX["origin"]
 
 
 # ----------------------------------------------------------------------------
-# Chamada HTTP  (portado: chamar 361)
+# HTTP call  (ported: chamar 361)
 # ----------------------------------------------------------------------------
 
-def _espera_do_header(headers, padrao: int) -> int:
-    """Le `retry-after`. O limite da Tenable e dinamico: a plataforma calcula
-    quantas requisicoes aceita por minuto conforme a carga, e diz no header
-    quantos segundos esperar. Nao ha numero fixo para fixar aqui."""
-    bruto = headers.get("retry-after") if headers else None
-    if bruto:
+def _wait_from_header(headers, default: int) -> int:
+    """Reads `retry-after`. The Tenable limit is dynamic: the platform computes
+    how many requests it accepts per minute according to load, and says in the
+    header how many seconds to wait. There is no fixed number to hard-code."""
+    raw = headers.get("retry-after") if headers else None
+    if raw:
         try:
-            return max(1, min(int(float(bruto)), 300))
+            return max(1, min(int(float(raw)), 300))
         except (TypeError, ValueError):
             pass
-    return padrao
+    return default
 
 
-def chamar(metodo: str, caminho: str, corpo: Any = None,
-           params: dict[str, Any] | None = None,
-           tentativas: int = 5, bruto: bool = False) -> Any:
-    """Chama a API com retry em 429 e 5xx. Devolve dict/list, ou bytes se bruto.
+def call(method: str, path: str, body: Any = None,
+         params: dict[str, Any] | None = None,
+         attempts: int = 5, raw: bool = False) -> Any:
+    """Calls the API retrying on 429 and 5xx. Returns dict/list, or bytes if raw.
 
-    O 409 e devolvido ao chamador em {"_conflito": ...} em vez de virar excecao:
-    e assim que mttr_collect retoma um export ja aberto em vez de pedir outro.
+    A 409 is handed back to the caller in {"_conflict": ...} instead of raising:
+    that is how mttr_collect resumes an export already open rather than asking
+    for another one.
     """
-    ak, sk = _chaves()
-    url = base_url() + caminho
+    ak, sk = _keys()
+    url = base_url() + path
     if params:
-        limpos = {k: v for k, v in params.items() if v is not None}
-        if limpos:
-            url += "?" + urllib.parse.urlencode(limpos, doseq=True)
-    dados = json.dumps(corpo).encode("utf-8") if corpo is not None else None
-    espera = 3
-    ultimo = None
+        clean = {k: v for k, v in params.items() if v is not None}
+        if clean:
+            url += "?" + urllib.parse.urlencode(clean, doseq=True)
+    data = json.dumps(body).encode("utf-8") if body is not None else None
+    wait = 3
+    last = None
 
-    for tentativa in range(1, tentativas + 1):
-        req = urllib.request.Request(url, data=dados, method=metodo)
+    for attempt in range(1, attempts + 1):
+        req = urllib.request.Request(url, data=data, method=method)
         req.add_header("X-ApiKeys", f"accessKey={ak};secretKey={sk}")
         req.add_header("Accept", "application/json")
         req.add_header("User-Agent", UA)
-        if dados is not None:
+        if data is not None:
             req.add_header("Content-Type", "application/json")
         try:
-            with urllib.request.urlopen(req, timeout=180, context=contexto()) as r:
-                conteudo = r.read()
-                if bruto:
-                    return conteudo
-                return json.loads(conteudo) if conteudo else {}
+            with urllib.request.urlopen(req, timeout=180, context=context()) as r:
+                content = r.read()
+                if raw:
+                    return content
+                return json.loads(content) if content else {}
 
         except urllib.error.HTTPError as e:
-            texto = e.read().decode("utf-8", "replace")[:500]
+            text = e.read().decode("utf-8", "replace")[:500]
             if e.code == 409:
-                # job de export ja em andamento: devolve para o chamador tratar
+                # export job already running: hand back for the caller to handle
                 try:
-                    return {"_conflito": json.loads(texto)}
+                    return {"_conflict": json.loads(text)}
                 except (ValueError, TypeError):
-                    raise ErroApi(f"409 em {caminho}: {texto}", causa="conflito")
+                    raise ApiError(f"409 on {path}: {text}", cause="conflict")
             if e.code == 401:
-                raise ErroCredencial(
-                    "401 nao autorizado. Confira TIO_ACCESS_KEY e TIO_SECRET_KEY - "
-                    "as duas causas classicas sao chave de outro container e espaco "
-                    "no fim da variavel de ambiente.",
-                    causa="credencial_invalida")
+                raise CredentialError(
+                    "401 unauthorized. Check TIO_ACCESS_KEY and TIO_SECRET_KEY - "
+                    "the two classic causes are a key from another container and "
+                    "a trailing space in the environment variable.",
+                    cause="credential_invalid")
             if e.code == 403:
-                raise ErroCredencial(
-                    "403 sem permissao. A chave precisa do papel Basic [16] ou do "
-                    f"privilegio VM.VM_EXPLORE. Resposta: {texto}",
-                    causa="sem_permissao")
-            if e.code in (429, 500, 502, 503, 504) and tentativa < tentativas:
-                ultimo = f"HTTP {e.code}: {texto}"
-                pausa = _espera_do_header(getattr(e, "headers", None), espera)
-                log(f"  {e.code} em {caminho}; nova tentativa em {pausa}s "
-                    f"({tentativa}/{tentativas - 1})")
-                time.sleep(pausa)
-                espera = min(espera * 2, 60)
+                raise CredentialError(
+                    "403 forbidden. The key needs the Basic [16] role or the "
+                    f"VM.VM_EXPLORE privilege. Response: {text}",
+                    cause="no_permission")
+            if e.code in (429, 500, 502, 503, 504) and attempt < attempts:
+                last = f"HTTP {e.code}: {text}"
+                pause = _wait_from_header(getattr(e, "headers", None), wait)
+                log(f"  {e.code} on {path}; retrying in {pause}s "
+                    f"({attempt}/{attempts - 1})")
+                time.sleep(pause)
+                wait = min(wait * 2, 60)
                 continue
-            raise ErroApi(f"HTTP {e.code} em {caminho}: {texto}", causa=f"http_{e.code}")
+            raise ApiError(f"HTTP {e.code} on {path}: {text}", cause=f"http_{e.code}")
 
         except urllib.error.URLError as e:
             if isinstance(getattr(e, "reason", None), ssl.SSLCertVerificationError):
                 host = urllib.parse.urlparse(base_url()).hostname or "cloud.tenable.com"
-                raise ErroTLS(
-                    AJUDA_TLS.format(host=host, detalhe=e.reason),
-                    causa="tls_proxy_corporativo")
-            if tentativa < tentativas:
-                ultimo = str(e)
-                log(f"  falha de rede em {caminho}; nova tentativa em {espera}s")
-                time.sleep(espera)
-                espera = min(espera * 2, 60)
+                raise TlsError(
+                    TLS_HELP.format(host=host, detail=e.reason),
+                    cause="tls_corporate_proxy")
+            if attempt < attempts:
+                last = str(e)
+                log(f"  network failure on {path}; retrying in {wait}s")
+                time.sleep(wait)
+                wait = min(wait * 2, 60)
                 continue
-            raise ErroApi(f"Falha de rede em {caminho}: {e}", causa="rede")
+            raise ApiError(f"Network failure on {path}: {e}", cause="network")
 
         except TimeoutError as e:
-            if tentativa < tentativas:
-                ultimo = str(e)
-                log(f"  timeout em {caminho}; nova tentativa em {espera}s")
-                time.sleep(espera)
-                espera = min(espera * 2, 60)
+            if attempt < attempts:
+                last = str(e)
+                log(f"  timeout on {path}; retrying in {wait}s")
+                time.sleep(wait)
+                wait = min(wait * 2, 60)
                 continue
-            raise ErroApi(f"Timeout em {caminho}: {e}", causa="timeout")
+            raise ApiError(f"Timeout on {path}: {e}", cause="timeout")
 
-    raise ErroApi(f"Esgotadas as tentativas em {caminho}. Ultimo erro: {ultimo}",
-                  causa="tentativas_esgotadas")
+    raise ApiError(f"Attempts exhausted on {path}. Last error: {last}",
+                   cause="attempts_exhausted")
 
 
 # ----------------------------------------------------------------------------
-# Paginacao - interna, invisivel para o chamador.
-# Nenhum tool expoe offset. Decisao fechada no CLAUDE.md.
+# Pagination - internal, invisible to the caller.
+# No tool exposes offset. Decision closed in CLAUDE.md.
 # ----------------------------------------------------------------------------
 
-def paginar(metodo: str, caminho: str, corpo: dict | None = None,
-            params: dict | None = None, campo: str = "data",
-            limite_pagina: int = 200, teto: int = 100_000) -> list[dict]:
-    """Percorre todas as paginas e devolve a lista completa de itens."""
-    itens: list[dict] = []
+def paginate(method: str, path: str, body: dict | None = None,
+             params: dict | None = None, field: str = "data",
+             page_size: int = 200, ceiling: int = 100_000) -> list[dict]:
+    """Walks every page and returns the complete list of items."""
+    items: list[dict] = []
     offset = 0
-    while len(itens) < teto:
-        if metodo.upper() == "GET":
-            p = dict(params or {}, limit=limite_pagina, offset=offset)
-            resp = chamar("GET", caminho, params=p)
+    while len(items) < ceiling:
+        if method.upper() == "GET":
+            p = dict(params or {}, limit=page_size, offset=offset)
+            resp = call("GET", path, params=p)
         else:
-            c = dict(corpo or {})
-            c.update({"limit": limite_pagina, "offset": offset})
-            resp = chamar(metodo, caminho, corpo=c, params=params)
+            c = dict(body or {})
+            c.update({"limit": page_size, "offset": offset})
+            resp = call(method, path, body=c, params=params)
 
-        lote = _extrair_lista(resp, campo)
-        if not lote:
+        batch = _extract_list(resp, field)
+        if not batch:
             break
-        itens.extend(lote)
-        if len(lote) < limite_pagina:
+        items.extend(batch)
+        if len(batch) < page_size:
             break
-        offset += limite_pagina
-    return itens
+        offset += page_size
+    return items
 
 
-def _extrair_lista(resp: Any, campo: str) -> list[dict]:
+def _extract_list(resp: Any, field: str) -> list[dict]:
     if isinstance(resp, list):
         return resp
     if not isinstance(resp, dict):
         return []
-    for chave in (campo, "data", "items", "results", "values"):
-        v = resp.get(chave)
+    for key in (field, "data", "items", "results", "values"):
+        v = resp.get(key)
         if isinstance(v, list):
             return v
         if isinstance(v, dict):
@@ -372,52 +374,52 @@ def _extrair_lista(resp: Any, campo: str) -> list[dict]:
     return []
 
 
-def total_de(resp: Any) -> int | None:
-    """Le so o campo de total. E o que o pre-voo precisa: uma consulta com
-    limit=1 onde so o total importa."""
+def total_of(resp: Any) -> int | None:
+    """Reads only the total field. That is what preflight needs: a query with
+    limit=1 where only the total matters."""
     if not isinstance(resp, dict):
         return None
-    for chave in ("total", "total_count", "totalCount", "count"):
-        if isinstance(resp.get(chave), int):
-            return resp[chave]
-    for pai in ("pagination", "meta", "data"):
-        sub = resp.get(pai)
+    for key in ("total", "total_count", "totalCount", "count"):
+        if isinstance(resp.get(key), int):
+            return resp[key]
+    for parent in ("pagination", "meta", "data"):
+        sub = resp.get(parent)
         if isinstance(sub, dict):
-            t = total_de(sub)
+            t = total_of(sub)
             if t is not None:
                 return t
     return None
 
 
 # ----------------------------------------------------------------------------
-# Cache em memoria, por processo, TTL curto, chaveado por filtro literal.
-# Obrigatorio em ctem_discover_tenant e plugin_census (CLAUDE.md).
+# In-memory cache, per process, short TTL, keyed by literal filter.
+# Mandatory in ctem_discover_tenant and plugin_census (CLAUDE.md).
 # ----------------------------------------------------------------------------
 
 class Cache:
-    def __init__(self, ttl_s: int = TTL_PADRAO_S):
+    def __init__(self, ttl_s: int = DEFAULT_TTL_S):
         self.ttl_s = ttl_s
-        self._itens: dict[str, tuple[float, Any]] = {}
-        self._trava = threading.Lock()
+        self._items: dict[str, tuple[float, Any]] = {}
+        self._lock = threading.Lock()
 
-    def get(self, chave: str) -> tuple[bool, Any]:
-        with self._trava:
-            item = self._itens.get(chave)
+    def get(self, key: str) -> tuple[bool, Any]:
+        with self._lock:
+            item = self._items.get(key)
             if item is None:
                 return False, None
-            gravado_em, valor = item
-            if time.monotonic() - gravado_em > self.ttl_s:
-                del self._itens[chave]
+            written_at, value = item
+            if time.monotonic() - written_at > self.ttl_s:
+                del self._items[key]
                 return False, None
-            return True, valor
+            return True, value
 
-    def set(self, chave: str, valor: Any) -> None:
-        with self._trava:
-            self._itens[chave] = (time.monotonic(), valor)
+    def set(self, key: str, value: Any) -> None:
+        with self._lock:
+            self._items[key] = (time.monotonic(), value)
 
-    def limpar(self) -> None:
-        with self._trava:
-            self._itens.clear()
+    def clear(self) -> None:
+        with self._lock:
+            self._items.clear()
 
 
 CACHE = Cache()

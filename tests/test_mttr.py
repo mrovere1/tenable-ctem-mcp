@@ -1,7 +1,7 @@
-"""M4 - MTTR, cadencia e as tres travas obrigatorias.
+"""M4 - MTTR, cadence and the three mandatory locks.
 
-Numeros de _docs/validacao-dados-coleta-mttr-2026-09-03.md.
-Divergencia e falha. Nao ajuste o teste: investigue.
+Numbers from _docs/validacao-dados-coleta-mttr-2026-09-03.md.
+A divergence is a failure. Do not adjust the test: investigate.
 """
 
 import json
@@ -10,263 +10,268 @@ from pathlib import Path
 import pytest
 
 from tenable_ctem_mcp.mttr import (
-    ErroFiltroDivergente,
-    comparar_filtros,
-    detectar_lotes,
+    FilterMismatchError,
+    compare_filters,
+    detect_batches,
     mttr_cadence_guard,
     mttr_collect,
-    percentil,
-    percentil_posicao_mais_proxima,
-    resumir,
+    percentile,
+    percentile_nearest_position,
+    summarise,
 )
 
 FIXTURE = Path(__file__).parent / "fixtures" / "mttr_export_2026-09-03.json"
 
 
 @pytest.fixture(scope="module")
-def coleta():
+def collection():
     d = json.loads(FIXTURE.read_text(encoding="utf-8"))
-    campos = d["campos"]
-    linhas = [dict(zip(campos, l)) for l in d["linhas"]]
-    return d, linhas
+    fields = d["fields"]
+    rows = [dict(zip(fields, r)) for r in d["rows"]]
+    return d, rows
 
 
 @pytest.fixture(scope="module")
-def resumo(coleta):
-    d, linhas = coleta
-    return resumir(linhas, d["filtros_pedidos"], "00000000-0000-0000-0000-000000000001",
-                   d["status"], corte_lote=2)
+def summary(collection):
+    d, rows = collection
+    return summarise(rows, d["requested_filters"],
+                     "00000000-0000-0000-0000-000000000001",
+                     d["status"], batch_cutoff=2)
 
 
-# --- Os numeros de referencia ---------------------------------------------
+# --- The reference numbers -------------------------------------------------
 
-def test_recorte_tem_as_4278_linhas(coleta):
-    _, linhas = coleta
-    assert len(linhas) == 4278
-
-
-def test_severidade_modificada_e_none_em_todas(resumo):
-    """A unica medicao direta de recast e aceitacao que o assessment alcanca.
-    `severity_modification_type` nao existe na API de Exposure Management -
-    nenhum tool tenable_one_* chega nele. Vale para S3, P1 e P2, nao so M4."""
-    assert resumo["severidade_modificada_diferente_de_none"] == 0
-    assert resumo["registros_analisados"] == 4278
+def test_the_slice_has_the_4278_rows(collection):
+    _, rows = collection
+    assert len(rows) == 4278
 
 
-def test_mttr_critical_bate_com_o_csv_de_referencia(resumo):
-    c = resumo["mttr_por_severidade"]["critical"]
-    assert c["corrigidos_com_data"] == 10
-    assert c["mttr_dias_media"] == 52.93
-    assert c["mttr_dias_p50"] == 42.94
-    assert c["mttr_dias_p90"] == 101.43
-    assert c["mttr_dias_max"] == 178.07
+def test_modified_severity_is_none_on_all_of_them(summary):
+    """The only direct measurement of recast and acceptance the assessment
+    reaches. `severity_modification_type` does not exist in the Exposure
+    Management API - no tenable_one_* tool gets to it. It applies to S3, P1 and
+    P2, not only M4."""
+    assert summary["modified_severity_other_than_none"] == 0
+    assert summary["records_analysed"] == 4278
 
 
-def test_percentil_interpolado_difere_do_por_posicao(resumo):
-    """Com n=10 a escolha muda o numero em 9%: 101,43 contra 92,91. Por isso o
-    metodo vai declarado, e os dois valores vao no resumo."""
-    c = resumo["mttr_por_severidade"]["critical"]
-    assert c["mttr_dias_p90"] == 101.43
-    assert c["mttr_dias_p90_posicao_mais_proxima"] == 92.91
-    assert "interpolado" in resumo["metodo_percentil"]
+def test_critical_mttr_matches_the_reference_csv(summary):
+    c = summary["mttr_by_severity"]["critical"]
+    assert c["fixed_with_date"] == 10
+    assert c["mttr_days_mean"] == 52.93
+    assert c["mttr_days_p50"] == 42.94
+    assert c["mttr_days_p90"] == 101.43
+    assert c["mttr_days_max"] == 178.07
 
 
-def test_origem_do_mttr_e_nativa_em_todas(resumo):
-    """100% de `time_taken_to_fix` nativo, 0 derivados."""
+def test_the_interpolated_percentile_differs_from_the_positional_one(summary):
+    """With n=10 the choice changes the number by 9%: 101.43 against 92.91. That
+    is why the method is declared, and both values go into the summary."""
+    c = summary["mttr_by_severity"]["critical"]
+    assert c["mttr_days_p90"] == 101.43
+    assert c["mttr_days_p90_nearest_position"] == 92.91
+    assert "interpolated" in summary["percentile_method"]
+
+
+def test_the_mttr_origin_is_native_on_all_of_them(summary):
+    """100% native `time_taken_to_fix`, 0 derived."""
     for sev in ("critical", "high", "medium"):
-        b = resumo["mttr_por_severidade"][sev]
-        assert b["origem_derivado_last_fixed_menos_first_found"] == 0
-        assert b["origem_nativo_time_taken_to_fix"] == b["corrigidos_com_data"]
+        b = summary["mttr_by_severity"][sev]
+        assert b["source_derived_last_fixed_minus_first_found"] == 0
+        assert b["source_native_time_taken_to_fix"] == b["fixed_with_date"]
 
 
-def test_exclusao_de_reabertos_e_declarada_com_o_efeito(resumo):
-    """A exclusao e defensavel - um finding reaberto nao foi corrigido - mas
-    tem de estar escrita, com o numero que ela muda."""
-    h = resumo["mttr_por_severidade"]["high"]
-    assert h["mttr_dias_media"] == 60.39            # so FIXED
-    assert h["mttr_dias_media_se_incluir_reabertos"] == 49.66
-    assert h["reabertos_no_recorte"] == 5
-    m = resumo["mttr_por_severidade"]["medium"]
-    assert m["mttr_dias_media"] == 95.95
-    assert m["mttr_dias_media_se_incluir_reabertos"] == 64.08
-    assert resumo["estados_incluidos_no_mttr"] == ["FIXED"]
+def test_the_reopened_exclusion_is_declared_with_its_effect(summary):
+    """The exclusion is defensible - a reopened finding was not fixed - but it
+    has to be written down, with the number it changes."""
+    h = summary["mttr_by_severity"]["high"]
+    assert h["mttr_days_mean"] == 60.39            # FIXED only
+    assert h["mttr_days_mean_if_reopened_included"] == 49.66
+    assert h["reopened_in_slice"] == 5
+    m = summary["mttr_by_severity"]["medium"]
+    assert m["mttr_days_mean"] == 95.95
+    assert m["mttr_days_mean_if_reopened_included"] == 64.08
+    assert summary["states_included_in_mttr"] == ["FIXED"]
 
 
-# --- Cadencia: o achado que importa mais que o percentual ------------------
+# --- Cadence: the finding that matters more than the percentage ------------
 
-def test_pct_em_lote_e_a_sensibilidade_ao_corte(coleta):
-    """O corte 5 daria 38,7% e passaria pela guarda de 40% da skill. Por isso o
-    corte usado e a sensibilidade vao no resumo: quem le o numero precisa saber
-    com que corte ele foi feito."""
-    _, linhas = coleta
-    c = detectar_lotes(linhas, corte=2)
-    assert c["pct_em_lote"] == 93.5
-    assert c["lote_minimo_por_janela"] == 2
-    assert c["sensibilidade_ao_corte"] == {"2": 93.5, "3": 74.2, "4": 64.5, "5": 38.7}
-    assert c["findings_com_mttr"] == 31
-    assert c["findings_em_lote"] == 29
+def test_pct_in_batch_and_the_sensitivity_to_the_cutoff(collection):
+    """Cutoff 5 would give 38.7% and would pass the skill's 40% guard. That is
+    why the cutoff used and the sensitivity go into the summary: whoever reads
+    the number needs to know which cutoff produced it."""
+    _, rows = collection
+    c = detect_batches(rows, cutoff=2)
+    assert c["pct_in_batch"] == 93.5
+    assert c["min_batch_per_window"] == 2
+    assert c["sensitivity_to_cutoff"] == {"2": 93.5, "3": 74.2, "4": 64.5, "5": 38.7}
+    assert c["findings_with_mttr"] == 31
+    assert c["findings_in_batch"] == 29
 
 
-def test_nove_janelas_sobre_sete_datas(coleta):
-    """As 9 janelas (first_found, last_fixed) sao todas pares tirados de 7 datas.
-    E o achado estrutural: essas 7 datas sao as datas de scan do tenant."""
-    _, linhas = coleta
-    c = detectar_lotes(linhas, corte=2)
-    assert c["janelas_distintas"] == 9
-    assert c["datas_que_formam_as_janelas"] == [
+def test_nine_windows_over_seven_dates(collection):
+    """The 9 windows (first_found, last_fixed) are all pairs drawn from 7 dates.
+    That is the structural finding: those 7 dates are the tenant's scan dates."""
+    _, rows = collection
+    c = detect_batches(rows, cutoff=2)
+    assert c["distinct_windows"] == 9
+    assert c["dates_forming_the_windows"] == [
         "2026-01-27", "2026-03-08", "2026-06-07", "2026-06-08",
         "2026-06-09", "2026-09-02", "2026-09-03"]
 
 
-def test_maior_lote_tem_12_findings_do_mesmo_ativo(coleta):
-    """Todos com o mesmo dias_para_corrigir por construcao - o valor e o
-    intervalo entre dois scans, nao o tempo de acao da equipe."""
-    _, linhas = coleta
-    maior = detectar_lotes(linhas, corte=2)["lotes"][0]
-    assert maior["findings"] == 12
-    assert maior["dias_para_corrigir"] == 85.51
+def test_the_largest_batch_has_12_findings_of_the_same_asset(collection):
+    """All with the same days_to_fix by construction - the value is the interval
+    between two scans, not the team's time to act."""
+    _, rows = collection
+    largest = detect_batches(rows, cutoff=2)["batches"][0]
+    assert largest["findings"] == 12
+    assert largest["days_to_fix"] == 85.51
 
 
-def test_janelas_inclui_as_unitarias_e_lotes_nao(coleta):
-    """Defeito encontrado ao ligar a guarda: alimentar mttr_cadence_guard com
-    `lotes` exclui as janelas de um finding so do denominador e inflaciona o
-    percentual - deu 100% contra os 93,5% reais, e sumiu uma das 7 datas."""
-    _, linhas = coleta
-    c = detectar_lotes(linhas, corte=2)
-    assert len(c["janelas"]) == 9
-    assert len(c["lotes"]) < len(c["janelas"])
-    assert sum(j["findings"] for j in c["janelas"]) == c["findings_com_mttr"]
+def test_windows_includes_the_singletons_and_batches_does_not(collection):
+    """Defect found when wiring up the guard: feeding mttr_cadence_guard with
+    `batches` drops the single-finding windows from the denominator and inflates
+    the percentage - it gave 100% against the real 93.5%, and one of the 7 dates
+    disappeared."""
+    _, rows = collection
+    c = detect_batches(rows, cutoff=2)
+    assert len(c["windows"]) == 9
+    assert len(c["batches"]) < len(c["windows"])
+    assert sum(w["findings"] for w in c["windows"]) == c["findings_with_mttr"]
 
 
-DATAS_DE_SCAN = ["2025-09-09", "2026-01-27", "2026-03-08", "2026-03-10",
-                 "2026-06-07", "2026-06-08", "2026-06-09", "2026-09-02", "2026-09-03"]
+SCAN_DATES = ["2025-09-09", "2026-01-27", "2026-03-08", "2026-03-10",
+              "2026-06-07", "2026-06-08", "2026-06-09", "2026-09-02", "2026-09-03"]
 
 
-def test_guarda_de_cadencia_declara_lacuna_pelos_dois_portoes(coleta):
-    """As 7 datas das janelas sao 7 de 7 datas de execucao de scan. O MTTR aqui
-    e o intervalo entre scans - mede cadencia de avaliacao, nao correcao."""
-    _, linhas = coleta
-    g = mttr_cadence_guard(detectar_lotes(linhas, corte=2)["janelas"],
-                           datas_de_scan=DATAS_DE_SCAN)
-    assert g["veredito"] == "lacuna"
-    assert g["pct_em_lote"] == 93.5
-    assert g["todas_as_datas_sao_de_scan"] is True
-    assert len(g["datas_que_coincidem_com_scan"]) == 7
-    assert len(g["motivos"]) == 2      # os dois portoes disparam
+def test_the_cadence_guard_declares_a_gap_through_both_gates(collection):
+    """The windows' 7 dates are 7 out of 7 scan execution dates. The MTTR here
+    is the interval between scans - it measures assessment cadence, not fixing."""
+    _, rows = collection
+    g = mttr_cadence_guard(detect_batches(rows, cutoff=2)["windows"],
+                           scan_dates=SCAN_DATES)
+    assert g["verdict"] == "gap"
+    assert g["pct_in_batch"] == 93.5
+    assert g["all_dates_are_scan_dates"] is True
+    assert len(g["dates_coinciding_with_scan"]) == 7
+    assert len(g["reasons"]) == 2      # both gates fire
 
 
-def test_segundo_portao_dispara_mesmo_com_percentual_baixo():
-    """O portao das datas nao depende do corte escolhido, e e por isso que ele
-    existe: com corte 5 o percentual cairia para 38,7% e passaria pela guarda."""
-    janelas = [{"ativo": "a", "first_found": "2026-06-09",
+def test_the_second_gate_fires_even_with_a_low_percentage():
+    """The dates gate does not depend on the chosen cutoff, and that is why it
+    exists: with cutoff 5 the percentage would drop to 38.7% and pass the guard."""
+    windows = [{"asset": "a", "first_found": "2026-06-09",
                 "last_fixed": "2026-09-02", "findings": 1}]
-    g = mttr_cadence_guard(janelas, datas_de_scan=["2026-06-09", "2026-09-02"])
-    assert g["pct_em_lote"] == 0.0            # nenhum lote
-    assert g["veredito"] == "lacuna"          # ainda assim
-    assert g["todas_as_datas_sao_de_scan"] is True
+    g = mttr_cadence_guard(windows, scan_dates=["2026-06-09", "2026-09-02"])
+    assert g["pct_in_batch"] == 0.0           # no batch at all
+    assert g["verdict"] == "gap"              # a gap even so
+    assert g["all_dates_are_scan_dates"] is True
 
 
-def test_guarda_libera_quando_as_datas_nao_sao_de_scan():
-    janelas = [{"ativo": "a", "first_found": "2026-01-05",
+def test_the_guard_clears_when_the_dates_are_not_scan_dates():
+    windows = [{"asset": "a", "first_found": "2026-01-05",
                 "last_fixed": "2026-01-09", "findings": 1}]
-    g = mttr_cadence_guard(janelas, datas_de_scan=["2026-06-09"])
-    assert g["veredito"] == "pode_pontuar"
-    assert g["motivos"] == []
+    g = mttr_cadence_guard(windows, scan_dates=["2026-06-09"])
+    assert g["verdict"] == "can_score"
+    assert g["reasons"] == []
 
 
 # ===========================================================================
-# As TRES travas obrigatorias de mttr_collect.
-# Nenhuma pode se perder na porta do coletor - decisao 2 do plano: nao ha
-# caminho paralelo, entao a falha tem de ser explicita e recuperavel.
+# The THREE mandatory locks of mttr_collect.
+# None of them may be lost in the port from the collector - decision 2 of the
+# plan: there is no parallel path, so the failure must be explicit and
+# recoverable.
 # ===========================================================================
 
-def test_trava_1_estouro_de_tempo_devolve_pendente_com_uuid(monkeypatch):
-    """Nao levanta excecao e nao devolve numero parcial: devolve o bilhete para
-    a proxima chamada retomar. Abrir outro export responderia 409."""
+def test_lock_1_a_timeout_returns_pending_with_the_uuid(monkeypatch):
+    """It does not raise and does not return a partial number: it returns the
+    ticket for the next call to resume. Opening another export would answer 409."""
     from tenable_ctem_mcp import mttr
 
-    monkeypatch.setattr(mttr, "abrir_export",
-                        lambda *a, **k: ("uuid-do-job", {"state": ["FIXED"]}, False))
-    monkeypatch.setattr(mttr, "aguardar",
+    monkeypatch.setattr(mttr, "open_export",
+                        lambda *a, **k: ("job-uuid", {"state": ["FIXED"]}, False))
+    monkeypatch.setattr(mttr, "wait_for",
                         lambda uuid, s: ([], {"status": "PROCESSING",
                                               "finished_chunks": 1,
                                               "total_chunks": 4}, True))
     r = mttr_collect(max_wait_s=1)
-    assert r["status"] == "pendente"
-    assert r["export_uuid"] == "uuid-do-job"
-    assert "409" in r["como_retomar"]
-    assert "mttr_dias_media" not in json.dumps(r)   # nenhum numero parcial
+    assert r["status"] == "pending"
+    assert r["export_uuid"] == "job-uuid"
+    assert "409" in r["how_to_resume"]
+    assert "mttr_days_mean" not in json.dumps(r)   # no partial number
 
 
-def test_trava_2_filtros_divergentes_viram_erro_e_nao_numero(monkeypatch):
-    """O recorte nao e o pedido, entao o numero nao responde a pergunta."""
+def test_lock_2_diverging_filters_become_an_error_not_a_number(monkeypatch):
+    """The slice is not the request, so the number does not answer the question."""
     from tenable_ctem_mcp import mttr
 
-    monkeypatch.setattr(mttr, "abrir_export",
+    monkeypatch.setattr(mttr, "open_export",
                         lambda *a, **k: ("u", {"severity": ["critical"]}, False))
-    monkeypatch.setattr(mttr, "aguardar",
+    monkeypatch.setattr(mttr, "wait_for",
                         lambda uuid, s: ([], {"status": "FINISHED",
                                               "filters": {"severity": ["low"]}}, False))
-    with pytest.raises(ErroFiltroDivergente) as exc:
+    with pytest.raises(FilterMismatchError) as exc:
         mttr_collect()
-    assert exc.value.causa == "filtros_divergiram"
+    assert exc.value.cause == "filters_diverged"
 
 
-def test_trava_3_falha_de_tls_sobe_com_causa_diagnosticada(monkeypatch):
-    """Nunca excecao crua: o parceiro precisa saber que e o proxy dele, nao o
-    MCP. E o servidor NUNCA oferece desligar a verificacao."""
+def test_lock_3_a_tls_failure_rises_with_a_diagnosed_cause(monkeypatch):
+    """Never a raw exception: the partner needs to know it is their proxy, not
+    the MCP. And the server NEVER offers to disable verification."""
     from tenable_ctem_mcp import mttr
-    from tenable_ctem_mcp.client import ErroTLS
+    from tenable_ctem_mcp.client import TlsError
 
     def explode(*a, **k):
-        raise ErroTLS("proxy corporativo interceptando TLS",
-                      causa="tls_proxy_corporativo")
+        raise TlsError("corporate proxy intercepting TLS",
+                       cause="tls_corporate_proxy")
 
-    monkeypatch.setattr(mttr, "abrir_export", explode)
-    with pytest.raises(ErroTLS) as exc:
+    monkeypatch.setattr(mttr, "open_export", explode)
+    with pytest.raises(TlsError) as exc:
         mttr_collect()
-    assert exc.value.causa == "tls_proxy_corporativo"
+    assert exc.value.cause == "tls_corporate_proxy"
 
 
-def test_retomada_por_uuid_nao_abre_export_novo(monkeypatch):
-    """E assim que se evita o 409."""
+def test_resuming_by_uuid_does_not_open_a_new_export(monkeypatch):
+    """This is how the 409 is avoided."""
     from tenable_ctem_mcp import mttr
 
-    def nao_deveria(*a, **k):
-        raise AssertionError("abriu export novo tendo export_uuid; isso daria 409")
+    def should_not_happen(*a, **k):
+        raise AssertionError("opened a new export while holding an export_uuid; "
+                             "that would give a 409")
 
-    monkeypatch.setattr(mttr, "abrir_export", nao_deveria)
-    monkeypatch.setattr(mttr, "aguardar",
+    monkeypatch.setattr(mttr, "open_export", should_not_happen)
+    monkeypatch.setattr(mttr, "wait_for",
                         lambda uuid, s: ([], {"status": "FINISHED", "filters": {}}, False))
-    r = mttr_collect(export_uuid="uuid-existente")
-    assert r["status"] == "concluido"
-    assert r["export_retomado"] is True
+    r = mttr_collect(export_uuid="existing-uuid")
+    assert r["status"] == "complete"
+    assert r["export_resumed"] is True
 
 
-def test_severidade_invalida_e_recusada_antes_de_sair():
+def test_an_invalid_severity_is_refused_before_leaving():
     with pytest.raises(ValueError):
-        mttr_collect(severities=["catastrofica"])
+        mttr_collect(severities=["catastrophic"])
 
 
-# --- Comparacao semantica de filtros ---------------------------------------
+# --- Semantic filter comparison --------------------------------------------
 
-def test_comparacao_de_filtros_ignora_normalizacao_da_api():
-    """A API normaliza a severidade e acrescenta TODOS os filtros de data com
-    valor 0. Comparar os dicionarios literalmente acusaria divergencia em toda
-    execucao - e por isso o consumidor le `filtros_divergiram`, nunca os dois."""
-    pedidos = {"state": ["FIXED"], "severity": ["critical", "high"]}
-    aplicados = {"state": ["FIXED"], "severity": ["HIGH", "CRITICAL"],
-                 "since": 0, "first_found": 0, "last_fixed": 0}
-    divergiu, div = comparar_filtros(pedidos, aplicados)
-    assert divergiu is False and div == {}
-
-
-def test_comparacao_de_filtros_pega_divergencia_real():
-    divergiu, div = comparar_filtros({"severity": ["critical"]},
-                                     {"severity": ["low"]})
-    assert divergiu is True and "severity" in div
+def test_the_filter_comparison_ignores_the_apis_normalisation():
+    """The API normalises the severity and adds ALL date filters with value 0.
+    Comparing the dictionaries literally would report a mismatch on every run -
+    which is why the consumer reads `filters_diverged`, never the two dicts."""
+    requested = {"state": ["FIXED"], "severity": ["critical", "high"]}
+    applied = {"state": ["FIXED"], "severity": ["HIGH", "CRITICAL"],
+               "since": 0, "first_found": 0, "last_fixed": 0}
+    diverged, div = compare_filters(requested, applied)
+    assert diverged is False and div == {}
 
 
-def test_percentil_com_lista_vazia_e_none():
-    assert percentil([], 90) is None
-    assert percentil_posicao_mais_proxima([], 90) is None
+def test_the_filter_comparison_catches_a_real_divergence():
+    diverged, div = compare_filters({"severity": ["critical"]},
+                                    {"severity": ["low"]})
+    assert diverged is True and "severity" in div
+
+
+def test_a_percentile_of_an_empty_list_is_none():
+    assert percentile([], 90) is None
+    assert percentile_nearest_position([], 90) is None

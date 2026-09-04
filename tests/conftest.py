@@ -1,8 +1,8 @@
-"""Toca as respostas gravadas do sandbox no lugar da API.
+"""Replays the recorded sandbox responses in place of the API.
 
-Permite `pytest` sem tenant nenhum: nenhuma chamada de rede sai daqui, e
-nenhuma chave e lida. A fixture e `tests/fixtures/sandbox_2026-09-03.json`,
-higienizada estruturalmente.
+Allows `pytest` with no tenant at all: no network call leaves here, and no key
+is read. The fixture is `tests/fixtures/sandbox_2026-09-03.json`, sanitised
+structurally.
 """
 
 import json
@@ -13,50 +13,51 @@ import pytest
 FIXTURE = Path(__file__).parent / "fixtures" / "sandbox_2026-09-03.json"
 
 
-def _assinatura(metodo, caminho, corpo, params):
-    return json.dumps([metodo, caminho, corpo, params], sort_keys=True,
+def _signature(method, path, body, params):
+    return json.dumps([method, path, body, params], sort_keys=True,
                       ensure_ascii=False)
 
 
 @pytest.fixture
 def sandbox(monkeypatch):
-    """Substitui client.chamar e client.paginar pelas respostas gravadas.
+    """Replaces client.call and client.paginate with the recorded responses.
 
-    Falha alto quando a assinatura nao existe: um teste que pede uma consulta
-    nao gravada tem de quebrar, nunca receber vazio e virar numero errado.
+    Fails loudly when the signature does not exist: a test asking for an
+    unrecorded query must break, never receive an empty result and turn into a
+    wrong number.
     """
-    gravado = json.loads(FIXTURE.read_text(encoding="utf-8"))
+    recorded = json.loads(FIXTURE.read_text(encoding="utf-8"))
 
     from tenable_ctem_mcp import client
     from tenable_ctem_mcp.indicators import discovery, scoping
     from tenable_ctem_mcp import plugins
 
-    def chamar(metodo, caminho, corpo=None, params=None, **kw):
-        a = _assinatura(metodo, caminho, corpo, params)
-        if a not in gravado:
-            raise AssertionError(f"consulta nao gravada na fixture: {a[:180]}")
-        return gravado[a]
+    def call(method, path, body=None, params=None, **kw):
+        a = _signature(method, path, body, params)
+        if a not in recorded:
+            raise AssertionError(f"query not recorded in the fixture: {a[:180]}")
+        return recorded[a]
 
-    def paginar(metodo, caminho, corpo=None, params=None, campo="data",
-                limite_pagina=200, teto=100_000):
-        itens, offset = [], 0
-        while len(itens) < teto:
-            p = dict(params or {}, limit=limite_pagina, offset=offset)
-            lote = client._extrair_lista(chamar(metodo, caminho, params=p), campo)
-            if not lote:
+    def paginate(method, path, body=None, params=None, field="data",
+                 page_size=200, ceiling=100_000):
+        items, offset = [], 0
+        while len(items) < ceiling:
+            p = dict(params or {}, limit=page_size, offset=offset)
+            batch = client._extract_list(call(method, path, params=p), field)
+            if not batch:
                 break
-            itens.extend(lote)
-            if len(lote) < limite_pagina:
+            items.extend(batch)
+            if len(batch) < page_size:
                 break
-            offset += limite_pagina
-        return itens
+            offset += page_size
+        return items
 
-    for modulo in (client, discovery, scoping, plugins):
-        if hasattr(modulo, "chamar"):
-            monkeypatch.setattr(modulo, "chamar", chamar)
-        if hasattr(modulo, "paginar"):
-            monkeypatch.setattr(modulo, "paginar", paginar)
+    for module in (client, discovery, scoping, plugins):
+        if hasattr(module, "call"):
+            monkeypatch.setattr(module, "call", call)
+        if hasattr(module, "paginate"):
+            monkeypatch.setattr(module, "paginate", paginate)
 
-    client.CACHE.limpar()
+    client.CACHE.clear()
     yield
-    client.CACHE.limpar()
+    client.CACHE.clear()

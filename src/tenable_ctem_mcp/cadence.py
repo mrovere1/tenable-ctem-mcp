@@ -1,20 +1,21 @@
-"""Colapso de runs de scan em DIAS DISTINTOS de avaliacao.
+"""Collapsing scan runs into DISTINCT ASSESSMENT DAYS.
 
-Este modulo existe por causa de um numero errado que passou despercebido.
+This module exists because of a wrong number that went unnoticed.
 
-A formula original de M1 era "mediana do intervalo entre runs `completed`
-consecutivos". Um scan relancado minutos depois e a MESMA avaliacao, nao um
-novo ciclo de cadencia. No sandbox, os 12 runs do scan recorrente incluem
-quatro pares no mesmo dia, e a mediana dos 11 intervalos crus deu 1,42 DIA -
-numero sem sentido para um tenant que avaliou em 9 dias ao longo de 12 meses.
+The original M1 formula was "median interval between consecutive `completed`
+runs". A scan relaunched minutes later is the SAME assessment, not a new cadence
+cycle. In the sandbox, the 12 runs of the recurring scan include four same-day
+pairs, and the median of the 11 raw intervals came out at 1.42 DAYS - a number
+with no meaning for a tenant that assessed on 9 days across 12 months.
 
-Colapsando em dias distintos: intervalos de 140, 40, 2, 89, 1, 1, 85 e 1 dias,
-mediana 21 DIAS. Standardized em vez de Optimized - dois estagios de diferenca.
+Collapsed into distinct days: intervals of 140, 40, 2, 89, 1, 1, 85 and 1 days,
+median 21 DAYS. Standardized instead of Optimized - two stages apart.
 
-O colapso acontece NO SERVIDOR, sempre. Nunca no cliente: foi exatamente por
-estar no cliente que o erro sobreviveu a uma execucao inteira.
+The collapse happens ON THE SERVER, always. Never on the client: it was exactly
+because it lived on the client that the error survived a whole execution.
 
-M2 (maior lacuna) NAO muda com o colapso - o maior intervalo e o mesmo.
+M2 (largest gap) does NOT change with the collapse - the largest interval is the
+same either way.
 """
 
 from __future__ import annotations
@@ -22,27 +23,27 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from typing import Any
 
-from .client import ErroApi, paginar
+from .client import ApiError, paginate
 
 
-def _dias_distintos(runs: list[dict], apenas_completed: bool = True) -> list[str]:
-    """Datas UTC distintas em que houve avaliacao, em ordem."""
-    dias = set()
+def _distinct_days(runs: list[dict], completed_only: bool = True) -> list[str]:
+    """Distinct UTC dates on which an assessment happened, in order."""
+    days = set()
     for r in runs:
-        if apenas_completed and r.get("status") != "completed":
+        if completed_only and r.get("status") != "completed":
             continue
         ts = r.get("time_start")
         if isinstance(ts, int) and ts > 0:
-            dias.add(datetime.fromtimestamp(ts, timezone.utc).strftime("%Y-%m-%d"))
-    return sorted(dias)
+            days.add(datetime.fromtimestamp(ts, timezone.utc).strftime("%Y-%m-%d"))
+    return sorted(days)
 
 
-def _intervalos(dias: list[str]) -> list[int]:
-    ds = [datetime.strptime(d, "%Y-%m-%d").replace(tzinfo=timezone.utc) for d in dias]
+def _intervals(days: list[str]) -> list[int]:
+    ds = [datetime.strptime(d, "%Y-%m-%d").replace(tzinfo=timezone.utc) for d in days]
     return [int((ds[i + 1] - ds[i]).total_seconds() // 86400) for i in range(len(ds) - 1)]
 
 
-def _mediana(v: list[float]) -> float | None:
+def _median(v: list[float]) -> float | None:
     if not v:
         return None
     s = sorted(v)
@@ -50,74 +51,75 @@ def _mediana(v: list[float]) -> float | None:
     return float(s[m]) if len(s) % 2 else (s[m - 1] + s[m]) / 2
 
 
-def scan_cadence(scan_ids: list[str | int], colapsar_runs_do_mesmo_dia: bool = True,
-                 apenas_completed: bool = True) -> dict[str, Any]:
-    """Colapsa runs em dias distintos e devolve intervalos, mediana e maximo.
+def scan_cadence(scan_ids: list[str | int], collapse_same_day_runs: bool = True,
+                 completed_only: bool = True) -> dict[str, Any]:
+    """Collapses runs into distinct days and returns intervals, median and max.
 
-    `colapsar_runs_do_mesmo_dia=False` existe para o relatorio poder MOSTRAR a
-    diferenca, nunca para ser o default. Desligar exige declarar - a saida traz
-    `mediana_sem_colapso` junto, sempre, para o contraste ficar visivel.
+    `collapse_same_day_runs=False` exists so the report can SHOW the difference,
+    never to be the default. Turning it off requires declaring it - the output
+    carries `median_without_collapse` alongside, always, so the contrast stays
+    visible.
     """
-    por_scan: dict[str, Any] = {}
-    todos_os_dias: set = set()
-    lacunas: list[dict] = []
+    per_scan: dict[str, Any] = {}
+    all_days: set = set()
+    gaps: list[dict] = []
 
     for sid in scan_ids:
         try:
-            runs = paginar("GET", f"/scans/{sid}/history", campo="history")
-        except ErroApi as e:
-            lacunas.append({"scan_id": sid, "causa": str(e)[:200]})
+            runs = paginate("GET", f"/scans/{sid}/history", field="history")
+        except ApiError as e:
+            gaps.append({"scan_id": sid, "cause": str(e)[:200]})
             continue
 
-        usados = [r for r in runs
-                  if not apenas_completed or r.get("status") == "completed"]
-        dias = _dias_distintos(runs, apenas_completed)
-        todos_os_dias |= set(dias)
+        used = [r for r in runs
+                if not completed_only or r.get("status") == "completed"]
+        days = _distinct_days(runs, completed_only)
+        all_days |= set(days)
 
-        # Intervalos crus: entre runs consecutivos, sem colapsar. E o que
-        # produz a mediana sem sentido, e vai junto para o contraste.
-        marcas = sorted(r["time_start"] for r in usados
-                        if isinstance(r.get("time_start"), int))
-        crus = [round((marcas[i + 1] - marcas[i]) / 86400.0, 2)
-                for i in range(len(marcas) - 1)]
-        colapsados = _intervalos(dias)
+        # Raw intervals: between consecutive runs, without collapsing. This is
+        # what produces the meaningless median, and it travels along for contrast.
+        marks = sorted(r["time_start"] for r in used
+                       if isinstance(r.get("time_start"), int))
+        raw = [round((marks[i + 1] - marks[i]) / 86400.0, 2)
+               for i in range(len(marks) - 1)]
+        collapsed = _intervals(days)
 
-        por_scan[str(sid)] = {
+        per_scan[str(sid)] = {
             "runs": len(runs),
-            "runs_considerados": len(usados),
-            "dias_distintos": len(dias),
-            "datas": dias,
-            "intervalos_colapsados_dias": colapsados,
-            "mediana_dias": _mediana(colapsados),
-            "maximo_dias": max(colapsados) if colapsados else None,
-            "intervalos_crus_dias": crus,
-            "mediana_sem_colapso_dias": _mediana(crus),
-            "runs_relancados_no_mesmo_dia": len(usados) - len(dias),
+            "runs_considered": len(used),
+            "distinct_days": len(days),
+            "dates": days,
+            "collapsed_intervals_days": collapsed,
+            "median_days": _median(collapsed),
+            "max_days": max(collapsed) if collapsed else None,
+            "raw_intervals_days": raw,
+            "median_without_collapse_days": _median(raw),
+            "runs_relaunched_same_day": len(used) - len(days),
         }
 
-    dias_gerais = sorted(todos_os_dias)
-    intervalos_gerais = _intervalos(dias_gerais)
-    escolhidos = intervalos_gerais if colapsar_runs_do_mesmo_dia else None
-    if not colapsar_runs_do_mesmo_dia:
-        crus_gerais: list[float] = []
-        for v in por_scan.values():
-            crus_gerais.extend(v["intervalos_crus_dias"])
-        escolhidos = crus_gerais
+    overall_days = sorted(all_days)
+    overall_intervals = _intervals(overall_days)
+    chosen = overall_intervals if collapse_same_day_runs else None
+    if not collapse_same_day_runs:
+        overall_raw: list[float] = []
+        for v in per_scan.values():
+            overall_raw.extend(v["raw_intervals_days"])
+        chosen = overall_raw
 
     return {
-        "scans": por_scan,
-        "colapsar_runs_do_mesmo_dia": colapsar_runs_do_mesmo_dia,
-        "dias_distintos_de_avaliacao": len(dias_gerais),
-        "datas": dias_gerais,
-        "intervalos_dias": intervalos_gerais,
-        "mediana_dias": _mediana(escolhidos or []),
-        "maximo_dias": max(intervalos_gerais) if intervalos_gerais else None,
-        "lacunas": lacunas,
-        "aviso": (None if colapsar_runs_do_mesmo_dia else
-                  "COLAPSO DESLIGADO. Um scan relancado minutos depois conta como "
-                  "novo ciclo de cadencia, o que nao e verdade. Declare isso no "
-                  "relatorio."),
-        "nota": ("O colapso acontece no servidor, sempre. Sem ele, a mediana de "
-                 "M1 no sandbox e 1,42 dia; com ele, 21 dias - dois estagios de "
-                 "diferenca. M2 (maior lacuna) nao muda com o colapso."),
+        "scans": per_scan,
+        "collapse_same_day_runs": collapse_same_day_runs,
+        "distinct_assessment_days": len(overall_days),
+        "dates": overall_days,
+        "intervals_days": overall_intervals,
+        "median_days": _median(chosen or []),
+        "max_days": max(overall_intervals) if overall_intervals else None,
+        "gaps": gaps,
+        "warning": (None if collapse_same_day_runs else
+                    "COLLAPSE DISABLED. A scan relaunched minutes later counts as a "
+                    "new cadence cycle, which is not true. Declare this in the "
+                    "report."),
+        "note": ("The collapse happens on the server, always. Without it the M1 "
+                 "median in the sandbox is 1.42 days; with it, 21 days - two "
+                 "stages apart. M2 (largest gap) does not change with the collapse."),
     }

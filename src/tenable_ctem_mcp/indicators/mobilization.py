@@ -1,17 +1,18 @@
-"""Estagio 5 - Mobilization (M1, M2, M3, M4).
+"""Stage 5 - Mobilization (M1, M2, M3, M4).
 
-Criterios oficiais: Mobilization e Metrics | Reporting.
+Official criteria: Mobilization and Metrics | Reporting.
 
-M1 e M2 exigem que o operador DECLARE quais scans representam a cadencia de
-avaliacao. O servidor nao escolhe, e a razao esta medida: no sandbox, so o scan
-recorrente da mediana 21 dias e maximo 140; somando todos os scans com
-historico da mediana 1,0 e maximo 89, porque um dos scans roda quase todo dia e
-nao representa a avaliacao dos ativos em escopo. Dois estagios de diferenca
-saindo de uma escolha que ninguem declarou e o pior tipo de numero.
+M1 and M2 require the operator to DECLARE which scans represent the assessment
+cadence. The server does not choose, and the reason is measured: in the sandbox,
+the recurring scan alone gives a median of 21 days and a maximum of 140; adding
+every scan with history gives a median of 1.0 and a maximum of 89, because one
+of the scans runs almost daily and does not represent the assessment of the
+assets in scope. Two stages of difference coming out of a choice nobody declared
+is the worst kind of number.
 
-M4 e o unico indicador que nao sai da API de Exposure Management, e continua
-assim depois do M3: `last_fixed`, `time_taken_to_fix` e
-`severity_modification_type` nao estao entre as 44 propriedades de findings.
+M4 is the only indicator that does not come from the Exposure Management API,
+and it stays that way after M3: `last_fixed`, `time_taken_to_fix` and
+`severity_modification_type` are not among the 44 findings properties.
 """
 
 from __future__ import annotations
@@ -19,20 +20,20 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from typing import Any
 
-from .. import Indicador
+from .. import Indicator
 from ..cadence import scan_cadence
-from ..client import ErroApi
+from ..client import ApiError
 from ..mttr import mttr_cadence_guard, mttr_collect
-from ..plugins import LIMITE_CENSO, amostra_com_detalhes
+from ..plugins import CENSUS_LIMIT, sample_with_details
 
-INDICADORES = ("M1", "M2", "M3", "M4")
+INDICATORS = ("M1", "M2", "M3", "M4")
 
-# Cortes de M4, so para a leitura do contexto. O ESTAGIO e calculado pela
-# skill: aqui vai o numero e a informacao de que M4 e o MENOR dos dois.
-CORTES_M4 = {"critical": [90, 30, 15, 7], "high": [180, 60, 30, 14]}
+# M4 cutoffs, for context reading only. The STAGE is computed by the skill:
+# what goes here is the number plus the fact that M4 is the LOWER of the two.
+M4_CUTOFFS = {"critical": [90, 30, 15, 7], "high": [180, 60, 30, 14]}
 
 
-def _mediana(v: list[float]) -> float | None:
+def _median(v: list[float]) -> float | None:
     if not v:
         return None
     s = sorted(v)
@@ -40,218 +41,222 @@ def _mediana(v: list[float]) -> float | None:
     return float(s[m]) if len(s) % 2 else (s[m - 1] + s[m]) / 2
 
 
-def _dias_desde_publicacao(data: str, agora: datetime) -> float | None:
-    """`Published` vem como AAAA/MM/DD."""
+def _days_since_publication(date: str, now: datetime) -> float | None:
+    """`Published` comes as YYYY/MM/DD."""
     try:
-        d = datetime.strptime(str(data).strip(), "%Y/%m/%d").replace(tzinfo=timezone.utc)
+        d = datetime.strptime(str(date).strip(), "%Y/%m/%d").replace(tzinfo=timezone.utc)
     except (ValueError, AttributeError):
         return None
-    return (agora - d).total_seconds() / 86400.0
+    return (now - d).total_seconds() / 86400.0
 
 
-def calcular(mapeamento: dict | None = None, indicadores: list[str] | None = None,
-             corte_vpr_amostra: float = 7.0, n_amostra: int = 30,
-             modo_plugins: str = "auto", limite_censo: int = LIMITE_CENSO,
-             mttr_days: int = 180,
-             mttr_severities: list[str] | None = None,
-             mttr_max_wait_s: int = 240,
-             mttr_export_uuid: str | None = None,
-             corte_lote: int = 2, pct_em_lote_max: float = 40.0,
-             retrato: dict | None = None,
-             agora: datetime | None = None) -> list[dict]:
-    """M1 a M4. `indicadores=None` calcula os quatro.
+def compute(mapping: dict | None = None, indicators: list[str] | None = None,
+            sample_vpr_cutoff: float = 7.0, sample_n: int = 30,
+            plugin_mode: str = "auto", census_limit: int = CENSUS_LIMIT,
+            mttr_days: int = 180,
+            mttr_severities: list[str] | None = None,
+            mttr_max_wait_s: int = 240,
+            mttr_export_uuid: str | None = None,
+            batch_cutoff: int = 2, max_batch_pct: float = 40.0,
+            snapshot: dict | None = None,
+            now: datetime | None = None) -> list[dict]:
+    """M1 to M4. `indicators=None` computes all four.
 
-    `mapeamento["scans_recorrentes"]` e obrigatorio para M1 e M2.
+    `mapping["recurring_scans"]` is mandatory for M1 and M2.
     """
-    pedidos = [i.upper() for i in (indicadores or INDICADORES)]
-    mapeamento = mapeamento or {}
-    agora = agora or datetime.now(timezone.utc)
-    saida: list[Indicador] = []
+    requested = [i.upper() for i in (indicators or INDICATORS)]
+    mapping = mapping or {}
+    now = now or datetime.now(timezone.utc)
+    out: list[Indicator] = []
 
-    from .discovery import descobrir_tenant
-    retrato = retrato or descobrir_tenant()
+    from .discovery import discover_tenant
+    snapshot = snapshot or discover_tenant()
 
-    # --- M1 e M2 saem da mesma leitura de cadencia ----------------------
-    if {"M1", "M2"} & set(pedidos):
-        scans = mapeamento.get("scans_recorrentes") or []
+    # --- M1 and M2 come from the same cadence reading -------------------
+    if {"M1", "M2"} & set(requested):
+        scans = mapping.get("recurring_scans") or []
         if not scans:
-            com_hist = [s["scan_id"] for s in retrato["scans"]["scans"]
-                        if (s.get("runs") or 0) > 0]
-            causa = ("mapeamento nao informou `scans_recorrentes`. O servidor nao "
-                     "escolhe: no sandbox, so o scan recorrente da mediana 21 dias "
-                     "e maximo 140, e somando todos os scans com historico da "
-                     "mediana 1,0 e maximo 89, porque um deles roda quase todo dia. "
-                     f"Scans com historico neste tenant: {com_hist}.")
+            with_hist = [s["scan_id"] for s in snapshot["scans"]["scans"]
+                         if (s.get("runs") or 0) > 0]
+            cause = ("the mapping did not provide `recurring_scans`. The server does "
+                     "not choose: in the sandbox, the recurring scan alone gives a "
+                     "median of 21 days and a maximum of 140, and adding every scan "
+                     "with history gives a median of 1.0 and a maximum of 89, because "
+                     "one of them runs almost daily. Scans with history in this "
+                     f"tenant: {with_hist}.")
             for ind in ("M1", "M2"):
-                if ind in pedidos:
-                    saida.append(Indicador.lacuna_declarada(
-                        ind, causa=causa, filtro_literal="nao executado"))
+                if ind in requested:
+                    out.append(Indicator.declared_gap(
+                        ind, cause=cause, literal_filter="not executed"))
         else:
             try:
                 cad = scan_cadence(scans)
-                intervalos = cad["intervalos_dias"]
-                literal = (f"scan_ids={scans}, runs colapsados em "
-                           f"{cad['dias_distintos_de_avaliacao']} dias distintos de "
-                           f"avaliacao; intervalos {intervalos}")
-                if "M1" in pedidos:
-                    if not intervalos:
-                        saida.append(Indicador.lacuna_declarada(
-                            "M1", causa=("menos de dois dias distintos de avaliacao: "
-                                         "nao ha intervalo para medir."),
-                            filtro_literal=literal, n=cad["dias_distintos_de_avaliacao"]))
+                intervals = cad["intervals_days"]
+                literal = (f"scan_ids={scans}, runs collapsed into "
+                           f"{cad['distinct_assessment_days']} distinct assessment "
+                           f"days; intervals {intervals}")
+                if "M1" in requested:
+                    if not intervals:
+                        out.append(Indicator.declared_gap(
+                            "M1", cause=("fewer than two distinct assessment days: "
+                                         "there is no interval to measure."),
+                            literal_filter=literal, n=cad["distinct_assessment_days"]))
                     else:
-                        saida.append(Indicador.ok(
-                            "M1", cad["mediana_dias"], n=len(intervalos),
-                            filtro_literal=literal, veredito_preflight="ok",
-                            contexto={
-                                "invertido": True,
-                                "dias_distintos": cad["dias_distintos_de_avaliacao"],
-                                "intervalos_dias": intervalos,
-                                "mediana_sem_colapso_dias": {
-                                    k: v["mediana_sem_colapso_dias"]
+                        out.append(Indicator.ok(
+                            "M1", cad["median_days"], n=len(intervals),
+                            literal_filter=literal, preflight_verdict="ok",
+                            context={
+                                "inverted": True,
+                                "distinct_days": cad["distinct_assessment_days"],
+                                "intervals_days": intervals,
+                                "median_without_collapse_days": {
+                                    k: v["median_without_collapse_days"]
                                     for k, v in cad["scans"].items()},
-                                "por_que_colapsar": (
-                                    "Um scan relancado minutos depois e a MESMA "
-                                    "avaliacao. Sem colapso a mediana do sandbox e "
-                                    "1,42 dia; com colapso, 21 - Standardized em vez "
-                                    "de Optimized, dois estagios de diferenca."),
-                                "lacunas": cad["lacunas"],
+                                "why_collapse": (
+                                    "A scan relaunched minutes later is the SAME "
+                                    "assessment. Without the collapse the sandbox "
+                                    "median is 1.42 days; with it, 21 - Standardized "
+                                    "instead of Optimized, two stages apart."),
+                                "gaps": cad["gaps"],
                             }))
-                if "M2" in pedidos:
-                    if not intervalos:
-                        saida.append(Indicador.lacuna_declarada(
-                            "M2", causa="menos de dois dias distintos de avaliacao.",
-                            filtro_literal=literal))
+                if "M2" in requested:
+                    if not intervals:
+                        out.append(Indicator.declared_gap(
+                            "M2", cause="fewer than two distinct assessment days.",
+                            literal_filter=literal))
                     else:
-                        saida.append(Indicador.ok(
-                            "M2", float(cad["maximo_dias"]), n=len(intervalos),
-                            filtro_literal=literal, veredito_preflight="ok",
-                            contexto={"invertido": True,
-                                      "nota": ("M2 nao muda com o colapso de runs: o "
-                                               "maior intervalo e o mesmo."),
-                                      "lacunas": cad["lacunas"]}))
-            except ErroApi as e:
+                        out.append(Indicator.ok(
+                            "M2", float(cad["max_days"]), n=len(intervals),
+                            literal_filter=literal, preflight_verdict="ok",
+                            context={"inverted": True,
+                                     "note": ("M2 does not change with the run "
+                                              "collapse: the largest interval is the "
+                                              "same."),
+                                     "gaps": cad["gaps"]}))
+            except ApiError as e:
                 for ind in ("M1", "M2"):
-                    if ind in pedidos:
-                        saida.append(Indicador.lacuna_declarada(
-                            ind, causa=str(e), filtro_literal=f"scan_ids={scans}"))
+                    if ind in requested:
+                        out.append(Indicator.declared_gap(
+                            ind, cause=str(e), literal_filter=f"scan_ids={scans}"))
 
-    # --- M3: idade da correcao disponivel, da amostra -------------------
-    if "M3" in pedidos:
+    # --- M3: age of the available fix, from the set ---------------------
+    if "M3" in requested:
         try:
-            pac = amostra_com_detalhes(n=n_amostra, corte_vpr=corte_vpr_amostra,
-                                       modo=modo_plugins, limite_censo=limite_censo)
-            dias, sem_data = [], 0
-            for p in pac["amostra"]["amostra"]:
-                d = pac["detalhes"].get(p["plugin_id"])
-                v = _dias_desde_publicacao(d.get("published"), agora) if d else None
+            pkg = sample_with_details(n=sample_n, vpr_cutoff=sample_vpr_cutoff,
+                                      mode=plugin_mode, census_limit=census_limit)
+            days, without_date = [], 0
+            for p in pkg["sample"]["sample"]:
+                d = pkg["details"].get(p["plugin_id"])
+                v = _days_since_publication(d.get("published"), now) if d else None
                 if v is None:
-                    sem_data += 1
+                    without_date += 1
                 else:
-                    dias.append(v)
-            n_am = pac["amostra"]["n"]
-            if not dias:
-                saida.append(Indicador.lacuna_declarada(
-                    "M3", causa="nenhum plugin da amostra tem data de publicacao.",
-                    filtro_literal=f"amostra de {n_am} plugins", n=n_am))
+                    days.append(v)
+            n_sel = pkg["sample"]["n"]
+            if not days:
+                out.append(Indicator.declared_gap(
+                    "M3", cause="no plugin in the set has a publication date.",
+                    literal_filter=f"set of {n_sel} plugins", n=n_sel))
             else:
-                saida.append(Indicador.ok(
-                    "M3", round(_mediana(dias), 1), n=len(dias),
-                    filtro_literal=(
-                        f"mediana de (agora - Published) em {len(dias)} de {n_am} "
-                        + ("plugins criticos (CENSO)" if pac["amostra"]["modo"] == "censo"
-                           else f"plugins da amostra estratificada, "
-                                f"semente {pac['amostra']['semente']}")),
-                    veredito_preflight="ok",
-                    contexto={
-                        "invertido": True,
-                        "modo": pac["amostra"]["modo"],
-                        "populacao": pac["amostra"]["populacao"],
-                        "plugins_sem_data": sem_data,
-                        "proxy_declarado": (
-                            "`Published` e a data de publicacao do PLUGIN DE "
-                            "DETECCAO, nao a do patch do fabricante - diferenca de "
-                            "dias. Rotular como proxy no relatorio. "
-                            "`patch_publication_date` e alcancavel pela API direta, "
-                            "mas plugin_details_batch expoe cinco campos por regra "
-                            "fechada; trocar o proxy pelo dado real e decisao da "
-                            "skill. Ver docs/limitacoes.md."),
+                out.append(Indicator.ok(
+                    "M3", round(_median(days), 1), n=len(days),
+                    literal_filter=(
+                        f"median of (now - Published) over {len(days)} of {n_sel} "
+                        + ("critical plugins (CENSUS)" if pkg["sample"]["mode"] == "census"
+                           else f"plugins of the stratified sample, "
+                                f"seed {pkg['sample']['seed']}")),
+                    preflight_verdict="ok",
+                    context={
+                        "inverted": True,
+                        "mode": pkg["sample"]["mode"],
+                        "population": pkg["sample"]["population"],
+                        "plugins_without_date": without_date,
+                        "declared_proxy": (
+                            "`Published` is the publication date of the DETECTION "
+                            "PLUGIN, not of the vendor's patch - a difference of "
+                            "days. Label it as a proxy in the report. "
+                            "`patch_publication_date` is reachable through the direct "
+                            "API, but plugin_details_batch exposes five fields by a "
+                            "closed rule; swapping the proxy for the real datum is "
+                            "the skill's decision. See docs/limitacoes.md."),
                     }))
-        except (ErroApi, ValueError) as e:
-            saida.append(Indicador.lacuna_declarada(
-                "M3", causa=str(e), filtro_literal="censo critical + amostra"))
+        except (ApiError, ValueError) as e:
+            out.append(Indicator.declared_gap(
+                "M3", cause=str(e), literal_filter="critical census + sample"))
 
-    # --- M4: MTTR, com a guarda de cadencia -----------------------------
-    if "M4" in pedidos:
+    # --- M4: MTTR, with the cadence guard -------------------------------
+    if "M4" in requested:
         try:
             r = mttr_collect(days=mttr_days,
                              severities=mttr_severities or ["critical", "high"],
                              max_wait_s=mttr_max_wait_s, export_uuid=mttr_export_uuid,
-                             corte_lote=corte_lote)
-            if r.get("status") == "pendente":
-                saida.append(Indicador.lacuna_declarada(
+                             batch_cutoff=batch_cutoff)
+            if r.get("status") == "pending":
+                out.append(Indicator.declared_gap(
                     "M4",
-                    causa=(f"export ainda em andamento ({r.get('status_do_job')}). "
-                           "Isto e recuperavel: chame de novo passando "
-                           f"mttr_export_uuid='{r['export_uuid']}'. Abrir outro "
-                           "export responderia 409."),
-                    filtro_literal=f"POST /vulns/export, {mttr_days} dias"))
+                    cause=(f"export still running ({r.get('job_status')}). This is "
+                           "recoverable: call again passing "
+                           f"mttr_export_uuid='{r['export_uuid']}'. Opening another "
+                           "export would answer 409."),
+                    literal_filter=f"POST /vulns/export, {mttr_days} days"))
             else:
-                cad_mttr = r["cadencia_de_scan"]
-                datas_scan = None
-                scans = (mapeamento or {}).get("scans_recorrentes")
+                mttr_cad = r["scan_cadence"]
+                scan_dates = None
+                scans = (mapping or {}).get("recurring_scans")
                 if scans:
                     try:
-                        datas_scan = scan_cadence(scans)["datas"]
-                    except ErroApi:
-                        datas_scan = None
-                guarda = mttr_cadence_guard(cad_mttr["janelas"], datas_scan,
-                                            pct_em_lote_max)
-                sev = r["mttr_por_severidade"]
-                p50c = (sev.get("critical") or {}).get("mttr_dias_p50")
-                p50h = (sev.get("high") or {}).get("mttr_dias_p50")
-                contexto = {
-                    "invertido": True,
+                        scan_dates = scan_cadence(scans)["dates"]
+                    except ApiError:
+                        scan_dates = None
+                guard = mttr_cadence_guard(mttr_cad["windows"], scan_dates,
+                                           max_batch_pct)
+                sev = r["mttr_by_severity"]
+                p50c = (sev.get("critical") or {}).get("mttr_days_p50")
+                p50h = (sev.get("high") or {}).get("mttr_days_p50")
+                context = {
+                    "inverted": True,
                     "p50_critical": p50c, "p50_high": p50h,
-                    # Evidencia por severidade. A skill exige `n`, a origem do
-                    # dado (nativo vs derivado) e os reabertos para poder
-                    # declarar o metodo no relatorio; sem isso ela pediria uma
-                    # conclusao metodologica que o servidor nao entregou.
-                    "por_severidade": sev,
-                    "cortes": CORTES_M4,
-                    "como_pontuar": (
-                        "M4 e o MENOR dos dois estagios - mobilizacao madura fecha as "
-                        "duas severidades, nao compensa uma com a outra. O estagio e "
-                        "calculado pela skill; aqui vao os dois p50."),
-                    "guarda_de_cadencia": guarda,
-                    "metodo_percentil": r["metodo_percentil"],
-                    "estados_incluidos": r["estados_incluidos_no_mttr"],
-                    "severidade_modificada_diferente_de_none":
-                        r["severidade_modificada_diferente_de_none"],
+                    # Per-severity evidence. The skill requires `n`, the origin of
+                    # the datum (native vs derived) and the reopened count in order
+                    # to declare the method in the report; without it the skill
+                    # would demand a methodological conclusion the server did not
+                    # deliver.
+                    "by_severity": sev,
+                    "cutoffs": M4_CUTOFFS,
+                    "how_to_score": (
+                        "M4 is the LOWER of the two stages - mature mobilisation "
+                        "closes both severities, it does not offset one with the "
+                        "other. The stage is computed by the skill; what goes here "
+                        "are the two p50s."),
+                    "cadence_guard": guard,
+                    "percentile_method": r["percentile_method"],
+                    "states_included": r["states_included_in_mttr"],
+                    "modified_severity_other_than_none":
+                        r["modified_severity_other_than_none"],
                     "export_uuid": r["export_uuid"],
                 }
-                if guarda["veredito"] == "lacuna":
-                    saida.append(Indicador.lacuna_declarada(
+                if guard["verdict"] == "gap":
+                    out.append(Indicator.declared_gap(
                         "M4",
-                        causa=("o MTTR aqui mede cadencia de avaliacao, nao tempo de "
-                               "correcao: " + "; ".join(guarda["motivos"]) +
-                               ". Com cadencia dominante, M4 mediria a mesma coisa que "
-                               "M1 e M2 - contaria cadencia duas vezes chamando de "
-                               "maturidade de remediacao o que e maturidade de "
-                               "avaliacao."),
-                        filtro_literal=(f"POST /vulns/export, {mttr_days} dias, "
-                                        f"corte de lote {corte_lote}"),
-                        n=cad_mttr["findings_com_mttr"]))
-                    saida[-1].contexto = contexto
+                        cause=("the MTTR here measures assessment cadence, not time "
+                               "to fix: " + "; ".join(guard["reasons"]) +
+                               ". With cadence dominating, M4 would measure the same "
+                               "thing as M1 and M2 - counting cadence twice while "
+                               "calling remediation maturity what is in fact "
+                               "assessment maturity."),
+                        literal_filter=(f"POST /vulns/export, {mttr_days} days, "
+                                        f"batch cutoff {batch_cutoff}"),
+                        n=mttr_cad["findings_with_mttr"]))
+                    out[-1].context = context
                 else:
-                    saida.append(Indicador.ok(
+                    out.append(Indicator.ok(
                         "M4", {"p50_critical": p50c, "p50_high": p50h},
-                        n=cad_mttr["findings_com_mttr"],
-                        filtro_literal=(f"POST /vulns/export, {mttr_days} dias, "
-                                        f"corte de lote {corte_lote}"),
-                        veredito_preflight="ok", contexto=contexto))
-        except (ErroApi, ValueError) as e:
-            saida.append(Indicador.lacuna_declarada(
-                "M4", causa=str(e), filtro_literal="POST /vulns/export"))
+                        n=mttr_cad["findings_with_mttr"],
+                        literal_filter=(f"POST /vulns/export, {mttr_days} days, "
+                                        f"batch cutoff {batch_cutoff}"),
+                        preflight_verdict="ok", context=context))
+        except (ApiError, ValueError) as e:
+            out.append(Indicator.declared_gap(
+                "M4", cause=str(e), literal_filter="POST /vulns/export"))
 
-    return [i.para_dict() for i in saida]
+    return [i.to_dict() for i in out]

@@ -1,44 +1,46 @@
-"""Deny-list de filtros e pares discriminantes.
+"""Filter deny-list and discriminant pairs.
 
-Fonte: _docs/matriz-confianca-filtros-mcp.md, atualizada em 2026-09-03.
-A lista vive AQUI e em nenhum outro lugar - o CLAUDE.md aponta para ca de
-proposito, para nao existirem duas copias divergindo.
+Source: _docs/matriz-confianca-filtros-mcp.md, updated 2026-09-03.
+The list lives HERE and nowhere else - CLAUDE.md points here on purpose, so that
+two copies cannot diverge.
 
-Por que este modulo existe. A API aceita filtros que nao aplica, e nao retorna
-erro. A consulta parece filtrada, devolve o total do corpus inteiro, e o numero
-sobe para o relatorio como se fosse resultado do filtro. Isso nao e dado
-faltando: e numero errado com aparencia de certo, e nao ha sinal de que ocorreu.
+Why this module exists. The API accepts filters it does not apply, and returns
+no error. The query looks filtered, returns the total of the whole corpus, and
+the number travels into the report as if it were the result of the filter. That
+is not missing data: it is a wrong number that looks right, and there is no
+signal that it happened.
 
-Regra: filtro nao testado e filtro nao confiavel. A deny-list rejeita ANTES de
-a requisicao sair - erro explicito, nunca contagem.
+Rule: an untested filter is an untrusted filter. The deny-list rejects BEFORE
+the request leaves - an explicit error, never a count.
 
-RESSALVA QUE SE CONFIRMOU: os vereditos da matriz foram medidos atraves do MCP
-OFICIAL da Tenable. Este servidor fala direto com a API REST, e o comportamento
-DIFERE em quatro pontos, todos reexecutados com par discriminante em
-2026-09-03. Nenhum veredito foi herdado por confianca, e foi bom:
+A CAVEAT THAT PROVED ITSELF: the verdicts in the matrix were measured through
+Tenable's OFFICIAL MCP. This server talks straight to the REST API, and the
+behaviour DIFFERS on four points, all re-executed with a discriminant pair on
+2026-09-03. No verdict was inherited on trust, and that was the right call:
 
-  1. Filtro de data em findings nao e ignorado em bloco. Os operadores
-     RELATIVOS (`within last`, `older than`, `newer than`) sao ignorados; os de
-     COMPARACAO (`<`, `<=`, `>`, `>=`, `=`) sao aplicados.
-     Prova: state=FIXED da 50. Com `older than 3650d` da 50 e com
-     `within last 1d` da 50 - mutuamente exclusivos, os dois com o corpus
-     inteiro. Ja `< 2020-01-01` da 0 e `>= 2020-01-01` da 50: somam 50.
+  1. Date filters on findings are not ignored wholesale. The RELATIVE operators
+     (`within last`, `older than`, `newer than`) are ignored; the COMPARISON
+     ones (`<`, `<=`, `>`, `>=`, `=`) are applied.
+     Proof: state=FIXED gives 50. With `older than 3650d` it gives 50 and with
+     `within last 1d` it gives 50 - mutually exclusive, both with the whole
+     corpus. Whereas `< 2020-01-01` gives 0 and `>= 2020-01-01` gives 50: they
+     sum to 50.
 
-  2. `exists` em finding_vpr_score FUNCIONA, desde que `value` nao venha vazio.
-     Prova: `exists` com value=["true"] da 4.462 e `not exists` da 1.024, que
-     somam os 5.486 do corpus. O HTTP 400 vem de `value` vazio, e a mensagem da
-     API e literalmente "Missing value in filter" - a regra real e sobre o
-     valor ausente, nao sobre a propriedade.
+  2. `exists` on finding_vpr_score WORKS, as long as `value` is not empty.
+     Proof: `exists` with value=["true"] gives 4,462 and `not exists` gives
+     1,024, summing to the 5,486 of the corpus. The HTTP 400 comes from an empty
+     `value`, and the API message is literally "Missing value in filter" - the
+     real rule is about the missing value, not about the property.
 
-  3. `resolvable` em workbenches era "presumido ignorado ate prova". Agora esta
-     provado: true e false devolvem os mesmos 121 plugins.
+  3. `resolvable` on workbenches was "presumed ignored until proven". It is now
+     proven: true and false return the same 121 plugins.
 
-  4. `age` nao e o nome do parametro na API; e `date_range`, e ele FUNCIONA
-     (1 -> 17, 30 -> 118, 90 -> 121). `age` era o nome que o MCP oficial dava,
-     e como parametro inexistente e descartado em silencio.
+  4. `age` is not the parameter name in the API; it is `date_range`, and that
+     one WORKS (1 -> 17, 30 -> 118, 90 -> 121). `age` was the name the official
+     MCP used, and as a non-existent parameter it is silently discarded.
 
-Isto NAO invalida a matriz: ela descreve o caminho do MCP oficial, e la os
-vereditos dela valem. Aqui vale esta lista.
+This does NOT invalidate the matrix: it describes the official MCP's path, and
+its verdicts hold there. Here, this list holds.
 """
 
 from __future__ import annotations
@@ -46,377 +48,379 @@ from __future__ import annotations
 from typing import Any
 
 
-class ErroDenyList(ValueError):
-    """Filtro proibido. Nunca vira numero: vira erro com a prova."""
+class DenyListError(ValueError):
+    """Forbidden filter. Never becomes a number: becomes an error with proof."""
 
-    def __init__(self, mensagem: str, regra: str, prova: str):
-        super().__init__(mensagem)
-        self.regra = regra
-        self.prova = prova
+    def __init__(self, message: str, rule: str, proof: str):
+        super().__init__(message)
+        self.rule = rule
+        self.proof = proof
 
-    def para_dict(self) -> dict[str, str]:
-        return {"erro": "filtro_negado", "regra": self.regra,
-                "detalhe": str(self), "prova": self.prova}
+    def to_dict(self) -> dict[str, str]:
+        return {"error": "filter_denied", "rule": self.rule,
+                "detail": str(self), "proof": self.proof}
 
 
-# Propriedades de data em findings.
-PROPRIEDADES_DE_DATA_EM_FINDINGS = frozenset({
+# Date properties on findings.
+DATE_PROPERTIES_ON_FINDINGS = frozenset({
     "last_updated", "first_observed_at", "last_observed_at",
     "first_found", "last_found", "last_seen", "first_seen",
 })
 
-# Operadores RELATIVOS de data: aceitos e silenciosamente ignorados. Estes sao
-# a deny-list. Os de comparacao contra data absoluta passam, porque o par
-# discriminante prova que sao aplicados.
-OPERADORES_DE_DATA_IGNORADOS = frozenset({
+# RELATIVE date operators: accepted and silently ignored. These are the
+# deny-list. Comparison operators against an absolute date pass, because the
+# discriminant pair proves they are applied.
+IGNORED_DATE_OPERATORS = frozenset({
     "within last", "older than", "newer than",
 })
 
-# Booleanos de workbenches comprovadamente ignorados, mais o nao testado da
-# mesma familia - presumido ignorado ate prova em contrario.
-PARAMETROS_NEGADOS_EM_WORKBENCHES = frozenset({
+# Workbenches booleans proven to be ignored, plus the untested one of the same
+# family - presumed ignored until proven otherwise.
+DENIED_WORKBENCHES_PARAMS = frozenset({
     "authenticated", "exploitable", "resolvable",
-    # `age` nao existe na API: o nome real e `date_range`, e ele funciona.
-    # Parametro inexistente e descartado em silencio, que e o pior caso.
+    # `age` does not exist in the API: the real name is `date_range`, and it
+    # works. A non-existent parameter is silently discarded, the worst case.
     "age",
 })
 
-# Operadores que exigem valor. A API responde 400 "Missing value in filter"
-# quando `value` vem vazio - inclusive em operadores de existencia, onde o
-# valor e semanticamente inutil mas sintaticamente obrigatorio.
-OPERADORES_QUE_EXIGEM_VALOR = frozenset({
+# Operators that require a value. The API answers 400 "Missing value in filter"
+# when `value` comes empty - including on existence operators, where the value
+# is semantically useless but syntactically mandatory.
+OPERATORS_REQUIRING_VALUE = frozenset({
     "exists", "not exists", "=", "!=", ">=", ">", "<=", "<", "between",
     "contains", "not contains", "match",
 })
 
-PROVAS = {
-    "data_em_findings":
-        "last_updated 'older than 3650d' devolveu 1840 findings, o corpus inteiro, "
-        "igual a 'within last 1d'. Revalidado em 2026-09-03: state=FIXED devolveu "
-        "50, e within last 1d, older than 3650d e < 2020-01-01 devolveram os mesmos 50.",
-    "booleano_em_workbenches":
-        "Na API direta, com severity=critical (121 plugins): authenticated, "
-        "exploitable e resolvable devolvem 121 tanto com true quanto com false. "
-        "`resolvable` era 'presumido ignorado ate prova'; agora esta provado.",
-    "age_nao_e_parametro":
-        "`age` nao e o nome do parametro na API - e `date_range`, e ele FUNCIONA: "
-        "1 -> 17, 30 -> 118, 80 -> 118, 90 -> 121, 365 -> 121. `age` era o nome do "
-        "MCP oficial; como parametro inexistente, e descartado em silencio.",
+PROOFS = {
+    "date_on_findings":
+        "last_updated 'older than 3650d' returned 1840 findings, the whole corpus, "
+        "the same as 'within last 1d'. Revalidated 2026-09-03: state=FIXED returned "
+        "50, and within last 1d, older than 3650d and < 2020-01-01 returned the same 50.",
+    "workbenches_boolean":
+        "On the direct API, with severity=critical (121 plugins): authenticated, "
+        "exploitable and resolvable all return 121 with both true and false. "
+        "`resolvable` was 'presumed ignored until proven'; it is now proven.",
+    "age_is_not_a_parameter":
+        "`age` is not the parameter name in the API - it is `date_range`, and that "
+        "one WORKS: 1 -> 17, 30 -> 118, 80 -> 118, 90 -> 121, 365 -> 121. `age` was "
+        "the official MCP's name; as a non-existent parameter it is silently discarded.",
     "filters_string":
-        "filters='tag_count >= 1' como texto livre devolveu os 30 ativos do corpus, "
-        "sem erro. O mesmo filtro como array JSON devolveu 9. Confirmado 2026-09-03.",
-    "operador_sem_valor":
-        "`exists` sem value responde HTTP 400 com a mensagem literal 'Missing "
-        "value in filter'. Com value=['true'] funciona: exists da 4.462 e not "
-        "exists da 1.024, que somam os 5.486 do corpus. Medido na API direta em "
-        "2026-09-03; pelo MCP oficial o mesmo operador era inalcancavel.",
-    "data_relativa_em_findings":
-        "state=FIXED da 50. Com `older than 3650d` da 50 e com `within last 1d` "
-        "tambem 50 - mutuamente exclusivos, os dois com o corpus inteiro. Ja "
-        "`< 2020-01-01` da 0 e `>= 2020-01-01` da 50, que somam 50: os "
-        "operadores de comparacao SAO aplicados.",
-    "age_nao_e_idade":
-        "O ultimo scan do sandbox foi 84 dias antes da coleta, e o corte ficou entre "
-        "age=80 (zero) e age=90 (20) - na data do ultimo scan, nao na data de "
-        "descoberta. age e recencia da ultima observacao, nao idade do finding.",
+        "filters='tag_count >= 1' as free text returned the 30 assets of the corpus, "
+        "with no error. The same filter as a JSON array returned 9. Confirmed 2026-09-03.",
+    "operator_without_value":
+        "`exists` with no value answers HTTP 400 with the literal message 'Missing "
+        "value in filter'. With value=['true'] it works: exists gives 4,462 and not "
+        "exists gives 1,024, summing to the 5,486 of the corpus. Measured on the "
+        "direct API on 2026-09-03; through the official MCP that operator was "
+        "unreachable.",
+    "relative_date_on_findings":
+        "state=FIXED gives 50. With `older than 3650d` it gives 50 and with "
+        "`within last 1d` also 50 - mutually exclusive, both with the whole corpus. "
+        "Whereas `< 2020-01-01` gives 0 and `>= 2020-01-01` gives 50, summing to 50: "
+        "the comparison operators ARE applied.",
+    "age_is_not_age":
+        "The sandbox's last scan was 84 days before collection, and the cutoff fell "
+        "between age=80 (zero) and age=90 (20) - on the date of the last scan, not on "
+        "the discovery date. age is recency of last observation, not finding age.",
 }
 
 
-def validar_filters(filters: Any) -> list[dict]:
-    """Valida o parametro `filters` e devolve o array normalizado.
+def validate_filters(filters: Any) -> list[dict]:
+    """Validates the `filters` parameter and returns the normalised array.
 
-    A validacao mais barata e mais valiosa do servidor: rejeitar string.
-    A sintaxe 'tag_count >= 1' e exatamente a que list_inventory_properties
-    sugere ao listar os operadores de cada propriedade - por isso e a armadilha
-    mais facil de cometer do conjunto.
+    The cheapest and most valuable validation in the server: reject a string.
+    The syntax 'tag_count >= 1' is exactly the one list_inventory_properties
+    suggests when listing each property's operators - which is why it is the
+    easiest trap in the set to fall into.
     """
     if filters is None:
         return []
     if isinstance(filters, str):
-        raise ErroDenyList(
-            "O parametro `filters` exige array JSON. Recebi uma string "
-            f"({filters!r}), que a API descarta em silencio e devolve a consulta "
-            "SEM filtro nenhum - o total do corpus inteiro com aparencia de "
-            "resultado filtrado.",
-            regra="filters_precisa_ser_array_json",
-            prova=PROVAS["filters_string"])
+        raise DenyListError(
+            "The `filters` parameter requires a JSON array. I received a string "
+            f"({filters!r}), which the API silently discards, returning the query "
+            "with NO filter at all - the total of the whole corpus wearing the "
+            "appearance of a filtered result.",
+            rule="filters_must_be_json_array",
+            proof=PROOFS["filters_string"])
     if not isinstance(filters, list):
-        raise ErroDenyList(
-            f"`filters` precisa ser um array JSON, recebi {type(filters).__name__}.",
-            regra="filters_precisa_ser_array_json",
-            prova=PROVAS["filters_string"])
+        raise DenyListError(
+            f"`filters` must be a JSON array, I received {type(filters).__name__}.",
+            rule="filters_must_be_json_array",
+            proof=PROOFS["filters_string"])
 
-    for clausula in filters:
-        if not isinstance(clausula, dict):
-            raise ErroDenyList(
-                f"Cada clausula de `filters` precisa ser um objeto, recebi "
-                f"{type(clausula).__name__}.",
-                regra="filters_precisa_ser_array_json",
-                prova=PROVAS["filters_string"])
-        prop = str(clausula.get("property", ""))
-        op = str(clausula.get("operator", ""))
-        _negar_propriedade(prop)
-        _negar_operador(prop, op)
-        _exigir_valor(prop, op, clausula.get("value"))
+    for clause in filters:
+        if not isinstance(clause, dict):
+            raise DenyListError(
+                f"Every `filters` clause must be an object, I received "
+                f"{type(clause).__name__}.",
+                rule="filters_must_be_json_array",
+                proof=PROOFS["filters_string"])
+        prop = str(clause.get("property", ""))
+        op = str(clause.get("operator", ""))
+        _deny_property(prop)
+        _deny_operator(prop, op)
+        _require_value(prop, op, clause.get("value"))
     return filters
 
 
-def _negar_propriedade(prop: str) -> None:
-    """Placeholder mantido para simetria; a regra de data e por operador."""
+def _deny_property(prop: str) -> None:
+    """Placeholder kept for symmetry; the date rule is per operator."""
     return None
 
 
-def _negar_operador(prop: str, op: str) -> None:
-    if (prop.lower() in PROPRIEDADES_DE_DATA_EM_FINDINGS
-            and op.lower() in OPERADORES_DE_DATA_IGNORADOS):
-        raise ErroDenyList(
-            f"O operador relativo `{op}` em `{prop}` e aceito pela API e "
-            "silenciosamente ignorado: a consulta volta com o corpus inteiro. "
-            "Use um operador de comparacao contra data absoluta "
-            "(`<`, `>=`), que o par discriminante prova ser aplicado. "
-            "Para tempo de correcao continua valendo mttr_collect, porque "
-            "`last_fixed` e `time_taken_to_fix` nao existem nesta API.",
-            regra="operador_relativo_de_data_e_ignorado",
-            prova=PROVAS["data_relativa_em_findings"])
+def _deny_operator(prop: str, op: str) -> None:
+    if (prop.lower() in DATE_PROPERTIES_ON_FINDINGS
+            and op.lower() in IGNORED_DATE_OPERATORS):
+        raise DenyListError(
+            f"The relative operator `{op}` on `{prop}` is accepted by the API and "
+            "silently ignored: the query comes back with the whole corpus. Use a "
+            "comparison operator against an absolute date (`<`, `>=`), which the "
+            "discriminant pair proves is applied. For time-to-fix, mttr_collect "
+            "still applies, because `last_fixed` and `time_taken_to_fix` do not "
+            "exist in this API.",
+            rule="relative_date_operator_is_ignored",
+            proof=PROOFS["relative_date_on_findings"])
 
 
-def _exigir_valor(prop: str, op: str, valor) -> None:
-    """A API responde 400 'Missing value in filter' quando o valor falta.
+def _require_value(prop: str, op: str, value) -> None:
+    """The API answers 400 'Missing value in filter' when the value is absent.
 
-    Rejeitar aqui poupa a viagem e, mais importante, evita que o 400 seja lido
-    como "a propriedade nao suporta o operador" - foi essa leitura que colocou
-    `exists` em finding_vpr_score na deny-list por engano.
+    Rejecting here saves the trip and, more importantly, keeps the 400 from
+    being read as "the property does not support the operator" - it was that
+    reading that put `exists` on finding_vpr_score into the deny-list by mistake.
     """
-    if op.lower() in OPERADORES_QUE_EXIGEM_VALOR and not valor:
-        raise ErroDenyList(
-            f"O operador `{op}` em `{prop}` exige `value` nao vazio. A API "
-            "responde HTTP 400 'Missing value in filter'. Para operadores de "
-            "existencia, use value=[\"true\"].",
-            regra="operador_exige_valor",
-            prova=PROVAS["operador_sem_valor"])
+    if op.lower() in OPERATORS_REQUIRING_VALUE and not value:
+        raise DenyListError(
+            f"The operator `{op}` on `{prop}` requires a non-empty `value`. The "
+            "API answers HTTP 400 'Missing value in filter'. For existence "
+            "operators, use value=[\"true\"].",
+            rule="operator_requires_value",
+            proof=PROOFS["operator_without_value"])
 
 
-def validar_parametros_workbenches(params: dict[str, Any]) -> dict[str, Any]:
-    """Rejeita os booleanos de workbenches que a API aceita e nao aplica."""
-    for chave in params:
-        if chave.lower() == "age":
-            raise ErroDenyList(
-                "`age` nao e um parametro desta API - o nome real e `date_range`, "
-                "e ele e aplicado. Parametro inexistente e descartado em silencio, "
-                "e a consulta volta com o corpus inteiro parecendo filtrada. "
-                "Atencao a semantica: `date_range` e recencia da ultima "
-                "observacao, nao idade do finding.",
-                regra="age_nao_existe_use_date_range",
-                prova=PROVAS["age_nao_e_parametro"])
-        if chave.lower() in PARAMETROS_NEGADOS_EM_WORKBENCHES:
-            raise ErroDenyList(
-                f"O parametro `{chave}` de workbenches e aceito e nao aplicado: "
-                "true e false devolvem o mesmo conjunto. Usar como filtro produz "
-                "numero do corpus inteiro com aparencia de filtrado.",
-                regra="booleano_de_workbenches_ignorado",
-                prova=PROVAS["booleano_em_workbenches"])
+def validate_workbenches_params(params: dict[str, Any]) -> dict[str, Any]:
+    """Rejects the workbenches booleans the API accepts and does not apply."""
+    for key in params:
+        if key.lower() == "age":
+            raise DenyListError(
+                "`age` is not a parameter of this API - the real name is "
+                "`date_range`, and that one is applied. A non-existent parameter "
+                "is silently discarded, and the query comes back with the whole "
+                "corpus looking filtered. Mind the semantics: `date_range` is "
+                "recency of last observation, not finding age.",
+                rule="age_does_not_exist_use_date_range",
+                proof=PROOFS["age_is_not_a_parameter"])
+        if key.lower() in DENIED_WORKBENCHES_PARAMS:
+            raise DenyListError(
+                f"The workbenches parameter `{key}` is accepted and not applied: "
+                "true and false return the same set. Using it as a filter "
+                "produces a whole-corpus number wearing the appearance of a "
+                "filtered one.",
+                rule="workbenches_boolean_ignored",
+                proof=PROOFS["workbenches_boolean"])
     return params
 
 
-def veredito(total_corpus: int | None, total_filtrado: int | None) -> str:
-    """O teste discriminante em uma linha.
+def verdict(corpus_total: int | None, filtered_total: int | None) -> str:
+    """The discriminant test in one line.
 
-    Se o total filtrado for identico ao corpus, o filtro esta ignorado e o
-    indicador e lacuna - nunca se publica o numero.
+    If the filtered total is identical to the corpus, the filter is ignored and
+    the indicator is a gap - the number is never published.
     """
-    if total_corpus is None or total_filtrado is None:
-        return "indeterminado"
-    if total_corpus == 0:
-        return "corpus_vazio"
-    if total_filtrado == total_corpus:
-        return "ignorado"
-    return "aplicado"
+    if corpus_total is None or filtered_total is None:
+        return "undetermined"
+    if corpus_total == 0:
+        return "empty_corpus"
+    if filtered_total == corpus_total:
+        return "ignored"
+    return "applied"
 
 
 # ----------------------------------------------------------------------------
-# O pre-voo executavel: roda os pares discriminantes contra a API e devolve a
-# tabela pronta. Nao herda veredito de documento nenhum.
+# The executable preflight: runs the discriminant pairs against the API and
+# returns the finished table. It inherits no verdict from any document.
 # ----------------------------------------------------------------------------
 
-BUSCA_FINDINGS = "/api/v1/t1/inventory/findings/search"
-BUSCA_ATIVOS = "/api/v1/t1/inventory/assets/search"
+FINDINGS_SEARCH = "/api/v1/t1/inventory/findings/search"
+ASSETS_SEARCH = "/api/v1/t1/inventory/assets/search"
 WORKBENCHES = "/workbenches/vulnerabilities"
 
 
-def _f(prop: str, op: str, *valores: str) -> dict:
-    return {"property": prop, "operator": op, "value": list(valores)}
+def _f(prop: str, op: str, *values: str) -> dict:
+    return {"property": prop, "operator": op, "value": list(values)}
 
 
-def executar_preflight(severity_workbenches: str = "critical") -> dict[str, Any]:
-    """Roda cada verificacao e devolve a tabela PREFLIGHT.
+def run_preflight(workbenches_severity: str = "critical") -> dict[str, Any]:
+    """Runs every check and returns the PREFLIGHT table.
 
-    Tres formas de prova, e a escolha depende do filtro:
+    Three forms of proof, and the choice depends on the filter:
 
-    - `par_exclusivo`: duas consultas mutuamente exclusivas cujos totais tem de
-      somar o corpus. E a prova mais forte, porque "reduziu" nao basta - um
-      filtro pode reduzir por acaso.
-    - `booleano`: true e false. Totais iguais significam parametro ignorado.
-    - `monotonico`: uma escada de cortes que tem de ser estritamente decrescente.
+    - `exclusive_pair`: two mutually exclusive queries whose totals must sum to
+      the corpus. It is the strongest proof, because "it reduced" is not enough -
+      a filter can reduce by accident.
+    - `boolean`: true and false. Equal totals mean the parameter is ignored.
+    - `monotonic`: a ladder of cutoffs that must be strictly decreasing.
 
-    Custo: consultas com limit=1, porque so o campo `total` importa.
+    Cost: queries with limit=1, because only the `total` field matters.
     """
-    from .client import ErroApi, chamar, total_de
+    from .client import ApiError, call, total_of
 
-    def n_findings(filtros=None):
-        corpo = {"filters": filtros} if filtros else {}
-        return total_de(chamar("POST", BUSCA_FINDINGS, corpo=corpo, params={"limit": 1}))
+    def n_findings(filters=None):
+        body = {"filters": filters} if filters else {}
+        return total_of(call("POST", FINDINGS_SEARCH, body=body, params={"limit": 1}))
 
-    def n_ativos(filtros=None):
-        corpo = {"filters": filtros} if filtros else {}
-        return total_de(chamar("POST", BUSCA_ATIVOS, corpo=corpo, params={"limit": 1}))
+    def n_assets(filters=None):
+        body = {"filters": filters} if filters else {}
+        return total_of(call("POST", ASSETS_SEARCH, body=body, params={"limit": 1}))
 
     def n_workbenches(extra=None):
         p = {"filter.0.filter": "severity", "filter.0.quality": "eq",
-             "filter.0.value": severity_workbenches, "filter.search_type": "and"}
+             "filter.0.value": workbenches_severity, "filter.search_type": "and"}
         p.update(extra or {})
-        return len(chamar("GET", WORKBENCHES, params=p).get("vulnerabilities") or [])
+        return len(call("GET", WORKBENCHES, params=p).get("vulnerabilities") or [])
 
-    linhas: list[dict[str, Any]] = []
+    rows: list[dict[str, Any]] = []
 
-    def registrar(id_, alvo, filtro, tipo, veredito_, detalhe, usar=None):
-        linhas.append({"id": id_, "alvo": alvo, "filtro": filtro, "tipo": tipo,
-                       "veredito": veredito_, "detalhe": detalhe,
-                       "usar": usar})
+    def record(id_, target, filter_, kind, verdict_, detail, use=None):
+        rows.append({"id": id_, "target": target, "filter": filter_, "kind": kind,
+                     "verdict": verdict_, "detail": detail, "use": use})
 
-    # --- pares exclusivos em findings -----------------------------------
+    # --- exclusive pairs on findings -------------------------------------
     try:
         corpus_f = n_findings()
         fixed = n_findings([_f("state", "=", "FIXED")])
-        registrar("state", "findings", "state = FIXED", "corpus_vs_filtrado",
-                  veredito(corpus_f, fixed),
-                  f"corpus {corpus_f}, filtrado {fixed}", usar=True)
+        record("state", "findings", "state = FIXED", "corpus_vs_filtered",
+               verdict(corpus_f, fixed),
+               f"corpus {corpus_f}, filtered {fixed}", use=True)
 
-        # data relativa: as duas exclusivas devolvem o corpus => ignorado
+        # relative date: both exclusives return the corpus => ignored
         base = [_f("state", "=", "FIXED")]
-        velho = n_findings(base + [_f("last_updated", "older than", "3650d")])
-        novo = n_findings(base + [_f("last_updated", "within last", "1d")])
-        ignorado = (velho == fixed and novo == fixed)
-        registrar("last_updated_relativo", "findings",
-                  "last_updated com `older than` / `within last`", "par_exclusivo",
-                  "ignorado" if ignorado else "aplicado",
-                  f"older than 3650d -> {velho}; within last 1d -> {novo}; "
-                  f"corpus FIXED {fixed}. Mutuamente exclusivos: nao podem estar "
-                  f"os dois certos.", usar=False)
+        old = n_findings(base + [_f("last_updated", "older than", "3650d")])
+        new = n_findings(base + [_f("last_updated", "within last", "1d")])
+        ignored = (old == fixed and new == fixed)
+        record("last_updated_relative", "findings",
+               "last_updated with `older than` / `within last`", "exclusive_pair",
+               "ignored" if ignored else "applied",
+               f"older than 3650d -> {old}; within last 1d -> {new}; "
+               f"FIXED corpus {fixed}. Mutually exclusive: they cannot both be "
+               f"right.", use=False)
 
-        # data absoluta: as duas exclusivas somam o corpus => aplicado
-        antes = n_findings(base + [_f("last_updated", "<", "2020-01-01")])
-        depois = n_findings(base + [_f("last_updated", ">=", "2020-01-01")])
-        soma_bate = (antes + depois == fixed)
-        registrar("last_updated_comparacao", "findings",
-                  "last_updated com `<` / `>=` contra data absoluta", "par_exclusivo",
-                  "aplicado" if soma_bate else "suspeito",
-                  f"< 2020-01-01 -> {antes}; >= 2020-01-01 -> {depois}; "
-                  f"somam {antes + depois} contra corpus FIXED {fixed}", usar=soma_bate)
+        # absolute date: both exclusives sum to the corpus => applied
+        before = n_findings(base + [_f("last_updated", "<", "2020-01-01")])
+        after = n_findings(base + [_f("last_updated", ">=", "2020-01-01")])
+        sum_matches = (before + after == fixed)
+        record("last_updated_comparison", "findings",
+               "last_updated with `<` / `>=` against an absolute date",
+               "exclusive_pair", "applied" if sum_matches else "suspect",
+               f"< 2020-01-01 -> {before}; >= 2020-01-01 -> {after}; "
+               f"summing {before + after} against FIXED corpus {fixed}",
+               use=sum_matches)
 
-        # exists / not exists em VPR
-        tem = n_findings([_f("finding_vpr_score", "exists", "true")])
-        nao_tem = n_findings([_f("finding_vpr_score", "not exists", "true")])
-        soma_vpr = (tem + nao_tem == corpus_f)
-        registrar("finding_vpr_score_exists", "findings",
-                  "finding_vpr_score com `exists` / `not exists` (value obrigatorio)",
-                  "par_exclusivo", "aplicado" if soma_vpr else "suspeito",
-                  f"exists -> {tem}; not exists -> {nao_tem}; somam {tem + nao_tem} "
-                  f"contra corpus {corpus_f}", usar=soma_vpr)
+        # exists / not exists on VPR
+        has = n_findings([_f("finding_vpr_score", "exists", "true")])
+        has_not = n_findings([_f("finding_vpr_score", "not exists", "true")])
+        vpr_sum = (has + has_not == corpus_f)
+        record("finding_vpr_score_exists", "findings",
+               "finding_vpr_score with `exists` / `not exists` (value mandatory)",
+               "exclusive_pair", "applied" if vpr_sum else "suspect",
+               f"exists -> {has}; not exists -> {has_not}; summing {has + has_not} "
+               f"against corpus {corpus_f}", use=vpr_sum)
 
-        # escada monotonica de VPR
-        escada = [(v, n_findings([_f("finding_vpr_score", ">=", v)]))
+        # monotonic VPR ladder
+        ladder = [(v, n_findings([_f("finding_vpr_score", ">=", v)]))
                   for v in ("0.1", "7", "9")]
-        decrescente = all(escada[i][1] > escada[i + 1][1] for i in range(len(escada) - 1))
-        registrar("finding_vpr_score_escada", "findings", "finding_vpr_score `>=`",
-                  "monotonico", "aplicado" if decrescente else "suspeito",
-                  " > ".join(f"{v} -> {n}" for v, n in escada), usar=decrescente)
+        decreasing = all(ladder[i][1] > ladder[i + 1][1] for i in range(len(ladder) - 1))
+        record("finding_vpr_score_ladder", "findings", "finding_vpr_score `>=`",
+               "monotonic", "applied" if decreasing else "suspect",
+               " > ".join(f"{v} -> {n}" for v, n in ladder), use=decreasing)
 
         cvss = n_findings([_f("finding_cvss3_base_score", ">=", "7")])
-        registrar("finding_cvss3_base_score", "findings",
-                  "finding_cvss3_base_score `>=`", "corpus_vs_filtrado",
-                  veredito(corpus_f, cvss), f"corpus {corpus_f}, >= 7 -> {cvss}",
-                  usar=True)
-    except ErroApi as e:
-        registrar("findings", "findings", "-", "-", "indeterminado",
-                  f"falha de coleta: {e}", usar=None)
+        record("finding_cvss3_base_score", "findings",
+               "finding_cvss3_base_score `>=`", "corpus_vs_filtered",
+               verdict(corpus_f, cvss), f"corpus {corpus_f}, >= 7 -> {cvss}",
+               use=True)
+    except ApiError as e:
+        record("findings", "findings", "-", "-", "undetermined",
+               f"collection failure: {e}", use=None)
 
-    # --- ativos ----------------------------------------------------------
+    # --- assets -----------------------------------------------------------
     try:
-        corpus_a = n_ativos()
-        com_tag = n_ativos([_f("tag_count", ">=", "1")])
-        sem_tag = n_ativos([_f("tag_count", "=", "0")])
-        registrar("tag_count", "assets", "tag_count `>=` / `=`", "par_exclusivo",
-                  veredito(corpus_a, com_tag),
-                  f">= 1 -> {com_tag}; = 0 -> {sem_tag}; somam {com_tag + sem_tag} "
-                  f"contra corpus {corpus_a}"
-                  + ("" if com_tag + sem_tag == corpus_a else
-                     ". NAO fecham: ha ativo sem a propriedade `tag_count`, e o "
-                     "denominador correto continua sendo o corpus"),
-                  usar=True)
-        device = n_ativos([_f("asset_class", "=", "DEVICE")])
-        registrar("asset_class", "assets", "asset_class `=`", "corpus_vs_filtrado",
-                  veredito(corpus_a, device), f"corpus {corpus_a}, DEVICE -> {device}",
-                  usar=True)
-    except ErroApi as e:
-        registrar("assets", "assets", "-", "-", "indeterminado",
-                  f"falha de coleta: {e}", usar=None)
+        corpus_a = n_assets()
+        tagged = n_assets([_f("tag_count", ">=", "1")])
+        untagged = n_assets([_f("tag_count", "=", "0")])
+        record("tag_count", "assets", "tag_count `>=` / `=`", "exclusive_pair",
+               verdict(corpus_a, tagged),
+               f">= 1 -> {tagged}; = 0 -> {untagged}; summing {tagged + untagged} "
+               f"against corpus {corpus_a}"
+               + ("" if tagged + untagged == corpus_a else
+                  ". They do NOT close: some asset lacks the `tag_count` property, "
+                  "and the correct denominator remains the corpus"),
+               use=True)
+        device = n_assets([_f("asset_class", "=", "DEVICE")])
+        record("asset_class", "assets", "asset_class `=`", "corpus_vs_filtered",
+               verdict(corpus_a, device), f"corpus {corpus_a}, DEVICE -> {device}",
+               use=True)
+    except ApiError as e:
+        record("assets", "assets", "-", "-", "undetermined",
+               f"collection failure: {e}", use=None)
 
-    # --- workbenches ------------------------------------------------------
+    # --- workbenches -------------------------------------------------------
     try:
         corpus_w = n_workbenches()
         for param in ("authenticated", "exploitable", "resolvable"):
             t = n_workbenches({param: "true"})
             fl = n_workbenches({param: "false"})
-            registrar(param, "workbenches", f"{param} true/false", "booleano",
-                      "ignorado" if t == fl else "aplicado",
-                      f"true -> {t}; false -> {fl}; corpus {corpus_w}", usar=(t != fl))
-        curto = n_workbenches({"date_range": "1"})
-        longo = n_workbenches({"date_range": "90"})
-        registrar("date_range", "workbenches", "date_range", "monotonico",
-                  "aplicado" if curto < longo else "ignorado",
-                  f"1 -> {curto}; 90 -> {longo}; corpus {corpus_w}. ATENCAO: e "
-                  f"recencia da ultima observacao, NAO idade do finding.",
-                  usar=(curto < longo))
-        idade = n_workbenches({"age": "1"})
-        registrar("age", "workbenches", "age", "corpus_vs_filtrado",
-                  "ignorado" if idade == corpus_w else "aplicado",
-                  f"age=1 -> {idade}; corpus {corpus_w}. `age` nao e parametro "
-                  f"desta API; o nome real e `date_range`.", usar=False)
-    except ErroApi as e:
-        registrar("workbenches", "workbenches", "-", "-", "indeterminado",
-                  f"falha de coleta: {e}", usar=None)
+            record(param, "workbenches", f"{param} true/false", "boolean",
+                   "ignored" if t == fl else "applied",
+                   f"true -> {t}; false -> {fl}; corpus {corpus_w}", use=(t != fl))
+        short = n_workbenches({"date_range": "1"})
+        long_ = n_workbenches({"date_range": "90"})
+        record("date_range", "workbenches", "date_range", "monotonic",
+               "applied" if short < long_ else "ignored",
+               f"1 -> {short}; 90 -> {long_}; corpus {corpus_w}. CAUTION: this is "
+               f"recency of last observation, NOT finding age.",
+               use=(short < long_))
+        age = n_workbenches({"age": "1"})
+        record("age", "workbenches", "age", "corpus_vs_filtered",
+               "ignored" if age == corpus_w else "applied",
+               f"age=1 -> {age}; corpus {corpus_w}. `age` is not a parameter of "
+               f"this API; the real name is `date_range`.", use=False)
+    except ApiError as e:
+        record("workbenches", "workbenches", "-", "-", "undetermined",
+               f"collection failure: {e}", use=None)
 
-    # --- deny-list: rejeitado ANTES de sair, nunca executado --------------
-    negados = []
-    for descricao, tentativa in (
-        ("`filters` como string", lambda: validar_filters("tag_count >= 1")),
-        ("`exists` sem value", lambda: validar_filters(
+    # --- deny-list: rejected BEFORE leaving, never executed ---------------
+    denied = []
+    for description, attempt in (
+        ("`filters` as a string", lambda: validate_filters("tag_count >= 1")),
+        ("`exists` with no value", lambda: validate_filters(
             [_f("finding_vpr_score", "exists")])),
-        ("`older than` em last_updated", lambda: validar_filters(
+        ("`older than` on last_updated", lambda: validate_filters(
             [_f("last_updated", "older than", "3650d")])),
-        ("`authenticated` em workbenches", lambda: validar_parametros_workbenches(
+        ("`authenticated` on workbenches", lambda: validate_workbenches_params(
             {"authenticated": True})),
-        ("`age` em workbenches", lambda: validar_parametros_workbenches({"age": 90})),
+        ("`age` on workbenches", lambda: validate_workbenches_params({"age": 90})),
     ):
         try:
-            tentativa()
-            negados.append({"caso": descricao, "rejeitado": False,
-                            "atencao": "DEVERIA ter sido rejeitado"})
-        except ErroDenyList as e:
-            negados.append({"caso": descricao, "rejeitado": True,
-                            "regra": e.regra, "prova": e.prova})
+            attempt()
+            denied.append({"case": description, "rejected": False,
+                           "caution": "it SHOULD have been rejected"})
+        except DenyListError as e:
+            denied.append({"case": description, "rejected": True,
+                           "rule": e.rule, "proof": e.proof})
 
     return {
-        "verificacoes": linhas,
-        "deny_list": negados,
-        "resumo": {
-            "aplicados": sum(1 for l in linhas if l["veredito"] == "aplicado"),
-            "ignorados": sum(1 for l in linhas if l["veredito"] == "ignorado"),
-            "indeterminados": sum(1 for l in linhas
-                                  if l["veredito"] in ("indeterminado", "suspeito")),
+        "checks": rows,
+        "deny_list": denied,
+        "summary": {
+            "applied": sum(1 for r in rows if r["verdict"] == "applied"),
+            "ignored": sum(1 for r in rows if r["verdict"] == "ignored"),
+            "undetermined": sum(1 for r in rows
+                                if r["verdict"] in ("undetermined", "suspect")),
         },
-        "nota": ("Os vereditos da matriz de confianca foram medidos pelo MCP "
-                 "OFICIAL. Esta tabela e medida contra a API REST direta, e "
-                 "difere dela em quatro pontos - ver o cabecalho de preflight.py. "
-                 "Filtro nao testado e filtro nao confiavel."),
+        "note": ("The trust-matrix verdicts were measured through the OFFICIAL "
+                 "MCP. This table is measured against the direct REST API, and "
+                 "differs from it on four points - see the header of preflight.py. "
+                 "An untested filter is an untrusted filter."),
     }

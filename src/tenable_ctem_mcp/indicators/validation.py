@@ -1,15 +1,17 @@
-"""Estagio 4 - Validation (V1, V2, V3, V4).
+"""Stage 4 - Validation (V1, V2, V3, V4).
 
-Criterio oficial: Risk Detection.
+Official criterion: Risk Detection.
 
-V1 e INFORMATIVO. Um percentual alto de exploit disponivel pode indicar backlog
-ruim ou apenas ambiente montado sobre stack popular, que concentra pesquisa de
-exploit. Sem premissa do cliente, virar estagio seria interpretacao.
+V1 is INFORMATIONAL. A high percentage of available exploits may indicate a bad
+backlog or merely an environment built on a popular stack, which concentrates
+exploit research. Without a customer premise, turning it into a stage would be
+interpretation.
 
-V2 e o indicador mais forte do conjunto e o unico com ancora externa citavel:
-os cortes de 14 e 30 dias derivam dos tiers de remediacao da CISA BOD 26-04.
-O relatorio declara que a diretiva se aplica a agencias federais dos EUA e aqui
-e referencia de prazo reconhecida, nao obrigacao regulatoria do cliente.
+V2 is the strongest indicator of the set and the only one with a citable
+external anchor: the 14- and 30-day cutoffs derive from the remediation tiers of
+CISA BOD 26-04. The report states that the directive applies to US federal
+agencies and that here it is a recognised deadline reference, not a regulatory
+obligation of the customer.
 """
 
 from __future__ import annotations
@@ -18,28 +20,28 @@ import json
 from datetime import datetime, timezone
 from typing import Any
 
-from .. import Indicador
-from ..client import ErroApi, chamar, total_de
-from ..plugins import LIMITE_CENSO, amostra_com_detalhes, taxa, wilson
-from ..preflight import validar_filters, veredito
+from .. import Indicator
+from ..client import ApiError, call, total_of
+from ..plugins import CENSUS_LIMIT, sample_with_details, rate, wilson
+from ..preflight import validate_filters, verdict
 
-BUSCA_FINDINGS = "/api/v1/t1/inventory/findings/search"
+FINDINGS_SEARCH = "/api/v1/t1/inventory/findings/search"
 
-INDICADORES = ("V1", "V2", "V3", "V4")
+INDICATORS = ("V1", "V2", "V3", "V4")
 
-# Busca textual e o caminho valido: `unsupported_by_vendor` existe na API mas
-# nao e alcancavel, e `query_text`/`finding_name contains` e filtro aplicado.
-TERMOS_EOL = ("Unsupported Version Detection", "SEoL")
-
-
-def _contar(filters: list[dict] | None) -> int | None:
-    corpo = {"filters": validar_filters(filters)} if filters else {}
-    return total_de(chamar("POST", BUSCA_FINDINGS, corpo=corpo, params={"limit": 1}))
+# Text search is the valid path: `unsupported_by_vendor` exists in the API but
+# is not reachable, and `query_text`/`finding_name contains` is an applied filter.
+EOL_TERMS = ("Unsupported Version Detection", "SEoL")
 
 
-def _buscar(filters: list[dict], limite: int = 500) -> list[dict]:
-    corpo = {"filters": validar_filters(filters)}
-    resp = chamar("POST", BUSCA_FINDINGS, corpo=corpo, params={"limit": limite})
+def _count(filters: list[dict] | None) -> int | None:
+    body = {"filters": validate_filters(filters)} if filters else {}
+    return total_of(call("POST", FINDINGS_SEARCH, body=body, params={"limit": 1}))
+
+
+def _search(filters: list[dict], limit: int = 500) -> list[dict]:
+    body = {"filters": validate_filters(filters)}
+    resp = call("POST", FINDINGS_SEARCH, body=body, params={"limit": limit})
     d = resp.get("data")
     if isinstance(d, list):
         return d
@@ -52,198 +54,204 @@ def _buscar(filters: list[dict], limite: int = 500) -> list[dict]:
 
 def _literal(filters: list[dict] | None) -> str:
     return (json.dumps(filters, separators=(",", ":"), ensure_ascii=False)
-            if filters else "sem filtro (corpus)")
+            if filters else "no filter (corpus)")
 
 
-def _estado(v: str) -> dict:
+def _state(v: str) -> dict:
     return {"property": "state", "operator": "=", "value": [v]}
 
 
-def _mediana(valores: list[float]) -> float | None:
-    if not valores:
+def _median(values: list[float]) -> float | None:
+    if not values:
         return None
-    v = sorted(valores)
-    meio = len(v) // 2
-    return v[meio] if len(v) % 2 else (v[meio - 1] + v[meio]) / 2
+    v = sorted(values)
+    mid = len(v) // 2
+    return v[mid] if len(v) % 2 else (v[mid - 1] + v[mid]) / 2
 
 
-def _dias_desde(data_kev: str, agora: datetime) -> float | None:
-    """As datas de CISA-KNOWN-EXPLOITED vem como AAAA/MM/DD."""
+def _days_since(kev_date: str, now: datetime) -> float | None:
+    """CISA-KNOWN-EXPLOITED dates come as YYYY/MM/DD."""
     try:
-        d = datetime.strptime(data_kev.strip(), "%Y/%m/%d").replace(tzinfo=timezone.utc)
+        d = datetime.strptime(kev_date.strip(), "%Y/%m/%d").replace(tzinfo=timezone.utc)
     except (ValueError, AttributeError):
         return None
-    return (agora - d).total_seconds() / 86400.0
+    return (now - d).total_seconds() / 86400.0
 
 
-def calcular(mapeamento: dict | None = None, indicadores: list[str] | None = None,
-             corte_vpr_amostra: float = 7.0, n_amostra: int = 30,
-             ponderar: str = "por_deteccao",
-             modo_plugins: str = "auto",
-             limite_censo: int = LIMITE_CENSO,
-             retrato: dict | None = None,
-             agora: datetime | None = None) -> list[dict]:
-    """V1 a V4. `indicadores=None` calcula os quatro.
+def compute(mapping: dict | None = None, indicators: list[str] | None = None,
+            sample_vpr_cutoff: float = 7.0, sample_n: int = 30,
+            weight_by: str = "by_detection",
+            plugin_mode: str = "auto",
+            census_limit: int = CENSUS_LIMIT,
+            snapshot: dict | None = None,
+            now: datetime | None = None) -> list[dict]:
+    """V1 to V4. `indicators=None` computes all four.
 
-    `agora` existe para o golden test congelar o relogio: V2 e uma diferenca
-    contra o instante da coleta e cresce sozinha a cada dia.
+    `now` exists so the golden test can freeze the clock: V2 is a difference
+    against the instant of collection and grows on its own every day.
 
-    `ponderar` e `por_deteccao` (default da skill) ou `por_plugin`. A escolha
-    muda o numero: na amostra de n=20 do sandbox, V1 da 59,3% por deteccao e
-    54,6% por plugin. Por isso a base vai declarada no contexto - taxa
-    ponderada sem base declarada nao e verificavel.
+    `weight_by` is `by_detection` (the skill's default) or `by_plugin`. The
+    choice changes the number: on the sandbox's n=20 sample, V1 gives 59.3% by
+    detection and 54.6% by plugin. That is why the base is declared in the
+    context - a weighted rate without a declared base is not verifiable.
     """
-    pedidos = [i.upper() for i in (indicadores or INDICADORES)]
-    agora = agora or datetime.now(timezone.utc)
-    saida: list[Indicador] = []
+    requested = [i.upper() for i in (indicators or INDICATORS)]
+    now = now or datetime.now(timezone.utc)
+    out: list[Indicator] = []
 
-    from .discovery import descobrir_tenant
-    retrato = retrato or descobrir_tenant()
+    from .discovery import discover_tenant
+    snapshot = snapshot or discover_tenant()
 
-    # --- V1 e V2 saem da mesma amostra ----------------------------------
-    if {"V1", "V2"} & set(pedidos):
+    # --- V1 and V2 come from the same set -------------------------------
+    if {"V1", "V2"} & set(requested):
         try:
-            pac = amostra_com_detalhes(n=n_amostra, corte_vpr=corte_vpr_amostra,
-                                       modo=modo_plugins, limite_censo=limite_censo)
-            am, detalhes = pac["amostra"], pac["detalhes"]
-        except (ErroApi, ValueError) as e:
+            pkg = sample_with_details(n=sample_n, vpr_cutoff=sample_vpr_cutoff,
+                                      mode=plugin_mode, census_limit=census_limit)
+            sel, details = pkg["sample"], pkg["details"]
+        except (ApiError, ValueError) as e:
             for ind in ("V1", "V2"):
-                if ind in pedidos:
-                    saida.append(Indicador.lacuna_declarada(
-                        ind, causa=str(e), filtro_literal="censo critical + amostra"))
-            am = None
+                if ind in requested:
+                    out.append(Indicator.declared_gap(
+                        ind, cause=str(e), literal_filter="critical census + sample"))
+            sel = None
 
-        if am is not None and "V1" in pedidos:
-            r = taxa(am, detalhes, lambda d: bool(d.get("exploit_available")),
-                     base=ponderar)
-            saida.append(Indicador.ok(
-                "V1", round(100.0 * r["taxa_ponderada"], 1), n=r["n"],
-                filtro_literal=(
-                    f"CENSO dos {am['n']} plugins criticos"
-                    if am["modo"] == "censo" else
-                    f"amostra estratificada de {am['n']} de {am['populacao']}, "
-                    f"alocacao proporcional, corte VPR {corte_vpr_amostra}, "
-                    f"semente {am['semente']}"),
-                veredito_preflight="ok",
-                contexto={
-                    "informativo": True,
-                    "modo": am["modo"], "populacao": am["populacao"],
-                    "nota_do_conjunto": am["nota"],
-                    "base_dos_pesos": r["base_dos_pesos"],
-                    "por_estrato": r["por_estrato"],
-                    "ic95_amostra_inteira": r["ic95_amostra_inteira"],
-                    "por_que_informativo": (
-                        "Percentual alto de exploit disponivel pode indicar backlog "
-                        "ruim ou apenas ambiente sobre stack popular, que concentra "
-                        "pesquisa de exploit. Sem premissa do cliente, virar estagio "
-                        "seria interpretacao."),
+        if sel is not None and "V1" in requested:
+            r = rate(sel, details, lambda d: bool(d.get("exploit_available")),
+                     base=weight_by)
+            out.append(Indicator.ok(
+                "V1", round(100.0 * r["weighted_rate"], 1), n=r["n"],
+                literal_filter=(
+                    f"CENSUS of the {sel['n']} critical plugins"
+                    if sel["mode"] == "census" else
+                    f"stratified sample of {sel['n']} out of {sel['population']}, "
+                    f"proportional allocation, VPR cutoff {sample_vpr_cutoff}, "
+                    f"seed {sel['seed']}"),
+                preflight_verdict="ok",
+                context={
+                    "informational": True,
+                    "mode": sel["mode"], "population": sel["population"],
+                    "set_note": sel["note"],
+                    "weight_base": r["weight_base"],
+                    "by_stratum": r["by_stratum"],
+                    "ci95_whole_sample": r["ci95_whole_sample"],
+                    "why_informational": (
+                        "A high percentage of available exploits may indicate a bad "
+                        "backlog or merely an environment on a popular stack, which "
+                        "concentrates exploit research. Without a customer premise, "
+                        "turning it into a stage would be interpretation."),
                 }))
 
-        if am is not None and "V2" in pedidos:
-            dias = []
-            com_kev = 0
-            for p in am["amostra"]:
-                d = detalhes.get(p["plugin_id"])
+        if sel is not None and "V2" in requested:
+            days = []
+            with_kev = 0
+            for p in sel["sample"]:
+                d = details.get(p["plugin_id"])
                 if not d or not d.get("cisa_known_exploited"):
                     continue
-                com_kev += 1
-                valores = [x for x in (_dias_desde(k, agora)
-                                       for k in d["cisa_known_exploited"]) if x is not None]
-                if valores:
-                    dias.append(max(valores))   # min(data) => max(dias)
-            n_am = am["n"]
-            if not dias:
-                saida.append(Indicador.lacuna_declarada(
-                    "V2", causa=("nenhum plugin da amostra tem data de "
-                                 "CISA-KNOWN-EXPLOITED."),
-                    filtro_literal=f"{am['modo']} de {n_am} plugins", n=n_am))
+                with_kev += 1
+                values = [x for x in (_days_since(k, now)
+                                      for k in d["cisa_known_exploited"]) if x is not None]
+                if values:
+                    days.append(max(values))   # min(date) => max(days)
+            n_sel = sel["n"]
+            if not days:
+                out.append(Indicator.declared_gap(
+                    "V2", cause=("no plugin in the set has a CISA-KNOWN-EXPLOITED "
+                                 "date."),
+                    literal_filter=f"{sel['mode']} of {n_sel} plugins", n=n_sel))
             else:
-                saida.append(Indicador.ok(
-                    "V2", round(_mediana(dias), 1), n=len(dias),
-                    filtro_literal=(f"mediana de (agora - menor data CISA-KNOWN-EXPLOITED) "
-                                    f"em {len(dias)} de {n_am} plugins ({am['modo']})"),
-                    veredito_preflight="ok",
-                    contexto={
-                        "modo": am["modo"],
-                        "plugins_com_kev": com_kev,
-                        "plugins_na_amostra": n_am,
-                        "proporcao_com_kev": round(com_kev / n_am, 3) if n_am else None,
-                        "ic95_proporcao_com_kev": (None if am["modo"] == "censo"
-                                                   else wilson(com_kev, n_am)),
-                        "invertido": True,
-                        "origem_do_limiar": (
-                            "Os cortes de 14 e 30 dias derivam dos tiers de remediacao "
-                            "da CISA BOD 26-04. A diretiva se aplica a agencias federais "
-                            "dos EUA; aqui e referencia de prazo reconhecida, nao "
-                            "obrigacao regulatoria do cliente."),
+                out.append(Indicator.ok(
+                    "V2", round(_median(days), 1), n=len(days),
+                    literal_filter=(f"median of (now - earliest CISA-KNOWN-EXPLOITED "
+                                    f"date) over {len(days)} of {n_sel} plugins "
+                                    f"({sel['mode']})"),
+                    preflight_verdict="ok",
+                    context={
+                        "mode": sel["mode"],
+                        "plugins_with_kev": with_kev,
+                        "plugins_in_set": n_sel,
+                        "proportion_with_kev": round(with_kev / n_sel, 3) if n_sel else None,
+                        "ci95_proportion_with_kev": (None if sel["mode"] == "census"
+                                                     else wilson(with_kev, n_sel)),
+                        "inverted": True,
+                        "threshold_origin": (
+                            "The 14- and 30-day cutoffs derive from the remediation "
+                            "tiers of CISA BOD 26-04. The directive applies to US "
+                            "federal agencies; here it is a recognised deadline "
+                            "reference, not a regulatory obligation of the customer."),
                     }))
 
-    # --- V3: taxa de reincidencia ---------------------------------------
-    if "V3" in pedidos:
-        f_r, f_f = [_estado("RESURFACED")], [_estado("FIXED")]
+    # --- V3: recurrence rate --------------------------------------------
+    if "V3" in requested:
+        f_r, f_f = [_state("RESURFACED")], [_state("FIXED")]
         try:
-            n_r, n_f = _contar(f_r), _contar(f_f)
+            n_r, n_f = _count(f_r), _count(f_f)
             den = (n_r or 0) + (n_f or 0)
             if not den:
-                saida.append(Indicador.lacuna_declarada(
-                    "V3", causa="nenhum finding RESURFACED nem FIXED; denominador zero.",
-                    filtro_literal=f"{_literal(f_r)} e {_literal(f_f)}", n=0))
+                out.append(Indicator.declared_gap(
+                    "V3", cause="no RESURFACED nor FIXED finding; denominator zero.",
+                    literal_filter=f"{_literal(f_r)} and {_literal(f_f)}", n=0))
             else:
-                saida.append(Indicador.ok(
+                out.append(Indicator.ok(
                     "V3", round(100.0 * n_r / den, 1), n=den,
-                    filtro_literal=f"{_literal(f_r)} sobre ({_literal(f_r)} + {_literal(f_f)})",
-                    veredito_preflight="ok",
-                    contexto={
-                        "resurfaced": n_r, "fixed": n_f, "invertido": True,
-                        "leitura": ("`state` e estado do registro, nao calculo. "
-                                    "Reincidencia alta indica correcao que nao se "
-                                    "sustenta: patch revertido, imagem base nao "
-                                    "corrigida, reprovisionamento a partir de "
-                                    "template vulneravel."),
+                    literal_filter=f"{_literal(f_r)} over ({_literal(f_r)} + {_literal(f_f)})",
+                    preflight_verdict="ok",
+                    context={
+                        "resurfaced": n_r, "fixed": n_f, "inverted": True,
+                        "unit": ("PERCENTAGE, like every rate cutoff in the skill. "
+                                 "The cutoffs are [25, 15, 8, 3], not [0.25, 0.15, "
+                                 "0.08, 0.03] - comparing 18.0 against 0.25 drops "
+                                 "V3 into the worst bucket every time."),
+                        "reading": ("`state` is the record's state, not a "
+                                    "computation. High recurrence indicates a fix "
+                                    "that does not hold: a reverted patch, an "
+                                    "uncorrected base image, reprovisioning from a "
+                                    "vulnerable template."),
                     }))
-        except ErroApi as e:
-            saida.append(Indicador.lacuna_declarada("V3", causa=str(e),
-                                                    filtro_literal=_literal(f_r)))
+        except ApiError as e:
+            out.append(Indicator.declared_gap("V3", cause=str(e),
+                                              literal_filter=_literal(f_r)))
 
-    # --- V4: % de DEVICE com software fora de suporte -------------------
-    if "V4" in pedidos:
-        devices = retrato["ativos"]["por_asset_class"].get("DEVICE", 0)
+    # --- V4: % of DEVICE with out-of-support software -------------------
+    if "V4" in requested:
+        devices = snapshot["assets"]["by_asset_class"].get("DEVICE", 0)
         if not devices:
-            saida.append(Indicador.lacuna_declarada(
-                "V4", causa="nenhum ativo DEVICE; denominador zero.",
-                filtro_literal="asset_class=DEVICE", n=0))
+            out.append(Indicator.declared_gap(
+                "V4", cause="no DEVICE asset; denominator zero.",
+                literal_filter="asset_class=DEVICE", n=0))
         else:
             f_device = {"property": "asset_class", "operator": "=", "value": ["DEVICE"]}
-            ativos_eol: set[str] = set()
-            por_termo: dict[str, int] = {}
-            usados = []
+            eol_assets: set[str] = set()
+            by_term: dict[str, int] = {}
+            used = []
             try:
-                for termo in TERMOS_EOL:
+                for term in EOL_TERMS:
                     f = [{"property": "finding_name", "operator": "contains",
-                          "value": [termo]}, f_device]
-                    usados.append(_literal(f))
-                    itens = _buscar(f)
-                    ids = {i.get("asset_id") for i in itens if i.get("asset_id")}
-                    por_termo[termo] = len(ids)
-                    ativos_eol |= ids
-                saida.append(Indicador.ok(
-                    "V4", round(100.0 * len(ativos_eol) / devices, 1), n=devices,
-                    filtro_literal=" UNIAO ".join(usados),
-                    veredito_preflight=veredito(devices, len(ativos_eol)),
-                    contexto={
-                        "devices_com_eol": len(ativos_eol), "devices": devices,
-                        "ativos_distintos_por_termo": por_termo,
-                        "invertido": True,
-                        "denominador": ("DEVICE, nao o total de ativos: o inventario "
-                                        "inclui IDENTITY, ACCOUNT e GROUP, que nao tem "
-                                        "software instalado. No sandbox a diferenca e "
-                                        "de dois estagios - 7/30 da 23%, 7/8 da 87,5%."),
-                        "caminho": ("`unsupported_by_vendor` existe na API mas nao e "
-                                    "alcancavel. Busca textual em finding_name e filtro "
-                                    "comprovadamente aplicado."),
+                          "value": [term]}, f_device]
+                    used.append(_literal(f))
+                    items = _search(f)
+                    ids = {i.get("asset_id") for i in items if i.get("asset_id")}
+                    by_term[term] = len(ids)
+                    eol_assets |= ids
+                out.append(Indicator.ok(
+                    "V4", round(100.0 * len(eol_assets) / devices, 1), n=devices,
+                    literal_filter=" UNION ".join(used),
+                    preflight_verdict=verdict(devices, len(eol_assets)),
+                    context={
+                        "devices_with_eol": len(eol_assets), "devices": devices,
+                        "distinct_assets_per_term": by_term,
+                        "inverted": True,
+                        "denominator": ("DEVICE, not the total of assets: the "
+                                        "inventory includes IDENTITY, ACCOUNT and "
+                                        "GROUP, which have no software installed. In "
+                                        "the sandbox the difference is two stages - "
+                                        "7/30 gives 23%, 7/8 gives 87.5%."),
+                        "path": ("`unsupported_by_vendor` exists in the API but is "
+                                 "not reachable. A text search on finding_name is a "
+                                 "provably applied filter."),
                     }))
-            except ErroApi as e:
-                saida.append(Indicador.lacuna_declarada(
-                    "V4", causa=str(e), filtro_literal=" UNIAO ".join(usados)))
+            except ApiError as e:
+                out.append(Indicator.declared_gap(
+                    "V4", cause=str(e), literal_filter=" UNION ".join(used)))
 
-    return [i.para_dict() for i in saida]
+    return [i.to_dict() for i in out]

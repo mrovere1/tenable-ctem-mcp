@@ -1,1 +1,1 @@
-"""Indicadores do assessment, um modulo por estagio CTEM."""
+"""Assessment indicators, one module per CTEM stage."""
