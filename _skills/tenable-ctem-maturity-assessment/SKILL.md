@@ -81,14 +81,20 @@ palavras-chave. Isso falha em qualquer cliente que use nomenclatura própria —
 Executar antes de qualquer pergunta, e guardar o resultado:
 
 ```
-tagging_list_tag_categories_and_values        → categorias e valores reais do tenant
-tenable_one_search_assets(limit=1)            → total de ativos
-tenable_one_search_assets(asset_class=...)    → contagem por classe de ativo
-tenable_one_search_assets(filters=exposure_classes=X)  → uma por classe, para saber quais existem
-scan_list_scans                                → todos os scans, com status e data
-scan_history(scan_id) dos que têm histórico    → quantas execuções cada um tem
-agent_list_agents                              → agentes e a quais ativos pertencem
+ctem_discover_tenant()
 ```
+
+**Uma chamada.** Devolve categorias e valores reais de tag, total de ativos, contagem por
+`asset_class`, `exposure_classes` presentes com o total de cada, scans com histórico e quantas
+execuções cada um tem, e agentes por status. Substitui as ~10 chamadas que esta fase exigia.
+
+O resultado fica em cache por TTL curto no servidor, então reconsultar durante a mesma execução não
+custa chamada nova.
+
+**Atenção que o retrato já traz explícita:** `asset_class` não é `exposure_classes`. Um tenant pode
+ter ativos com `asset_class = IDENTITY` e `exposure_classes = IDENTITY` em zero — os ativos de
+identidade estão no inventário sem carregar achados de Identity Exposure. D2 usa
+`exposure_classes`.
 
 ### Fase B — Confirmação, com os valores reais como opções
 
@@ -189,7 +195,7 @@ Pergunta 7 — Há ativos a EXCLUIR do escopo do assessment?
 Pergunta 8 — O cliente usa regras de exceção (accept ou recast) no Tenable VM?
   tipo: single_select
   opções: ["Não usa", "Usa pouco (menos de 10% do backlog)", "Usa muito (mais de 10%)", "Não sei"]
-  → NÃO altera cálculo. Determina o texto de ressalva que vai no relatório. **Se houver CSV do
+  → NÃO altera cálculo. Determina o texto de ressalva que vai no relatório. **Se M4 for coletado, o
     coletor**, a coluna `severidade_modificada` mede o campo direto e a ressalva passa a citar o
     número medido em vez da estimativa do operador — inclusive quando ele responde "Não sei".
     Ver a seção sobre exceções abaixo.
@@ -292,10 +298,10 @@ O que isso significa para os números desta skill, e que vai declarado:
    MCP não os imprime. Não é possível dizer, sem um tenant que use exceções, se o wrapper descarta o
    campo ou se o valor era zero.
 
-4. **Com o CSV do coletor, isso deixa de ser cego.** O `POST /vulns/export` devolve
-   `severity_modification_type`, que vira a coluna `severidade_modificada` do CSV. Quando o CSV
+4. **Com `ctem_mobilization`, isso deixa de ser cego.** O `POST /vulns/export` devolve
+   `severity_modification_type`, que M4 devolve em `contexto.severidade_modificada_diferente_de_none`. Quando M4
    existe, contar as linhas por valor (`NONE`, `RECASTED`, `ACCEPTED`) e **usar a contagem em vez
-   da estimativa do operador**. O recorte do CSV costuma ser mais estreito que o do assessment
+   da estimativa do operador**. O recorte do export costuma ser mais estreito que o do assessment
    (severidade e janela de dias), então a contagem é declarada com o recorte ao lado, nunca
    extrapolada para o backlog inteiro. Na coleta de referência de 2026-09-03, as 4 278 linhas
    vieram `NONE`: nenhuma severidade distorcida por exceção naquele recorte.
@@ -308,7 +314,7 @@ O que isso significa para os números desta skill, e que vai declarado:
 | Usa pouco | *"O cliente usa regras de exceção. O MCP não permite identificá-las, então elas estão contadas no backlog e um recast pode ter reduzido a severidade reportada. Impacto estimado pelo operador: abaixo de 10%."* |
 | Usa muito | Mesma ressalva, **em destaque no topo do relatório**, com a recomendação de validar os números no console antes de levar ao cliente |
 | Não sei | *"Não foi possível determinar se o cliente usa regras de exceção. Confirmar antes de usar estes números em decisão de investimento."* |
-| Qualquer resposta, **com CSV do coletor** | Substituir a estimativa pela medição: *"No recorte do CSV (severidades X, últimos N dias, M linhas), K findings tinham severidade modificada — J recasteados e L com risco aceito."* Se `K = 0`, dizer isso: é a confirmação de que nenhuma severidade daquele recorte foi ajustada |
+| Qualquer resposta, **com M4 coletado** | Substituir a estimativa pela medição: *"No recorte do export (severidades X, últimos N dias, M linhas), K findings tinham severidade modificada — J recasteados e L com risco aceito."* O número vem de `contexto.severidade_modificada_diferente_de_none`. Se `K = 0`, dizer isso: é a confirmação de que nenhuma severidade daquele recorte foi ajustada |
 
 **Pedido técnico ao time do MCP**, junto com os outros: expor `severity_modification_type`,
 `severity_default_id` e os contadores `accepted_count` e `recasted_count`. Sem eles, nenhuma skill
@@ -319,95 +325,143 @@ processo maduro, justamente o cliente que esta skill quer avaliar bem.
 
 ## Passo 1 — Pré-voo e corpus
 
-Executar o procedimento da seção 2 de `references/mcp-preflight.md` para cada filtro que a skill
-usa, e guardar o resultado numa tabela `PREFLIGHT` que vai inteira para o relatório.
-
-Filtros a validar: `finding_severity`, `vpr_min`, `finding_cvss3_base_score`, `state`,
-`asset_class`, `tag_count`, `tag` no formato `Categoria:Valor`, `query_text`, e `severity` de
-workbenches.
-
-Guardar como denominadores:
-
 ```
-total_findings_ativos   = search_findings sem filtro
-total_assets            = search_assets sem filtro
-total_devices           = search_assets(asset_class="DEVICE")
+ctem_preflight()
 ```
 
-**Não usar filtro de data em findings.** São aceitos e silenciosamente ignorados. Onde a skill
-precisa de tempo, a fonte é `scan_history`.
+**Uma chamada.** Devolve a tabela `PREFLIGHT` pronta — cada filtro testado **ao vivo**, com par
+discriminante — e a `deny_list` dos filtros que o servidor rejeita antes de a requisição sair, cada
+um com a regra e a prova medida. A tabela vai inteira para o relatório.
+
+O servidor não herda veredito de documento. Três formas de prova: `par_exclusivo` (duas consultas
+mutuamente exclusivas cujos totais têm de somar o corpus — "reduziu" não basta), `booleano`
+(`true` e `false` com totais iguais significam parâmetro ignorado) e `monotonico` (escada de cortes
+estritamente decrescente).
+
+**Os denominadores vêm de `ctem_discover_tenant()`**, já coletado no Passo 0: `ativos.total`,
+`ativos.por_asset_class.DEVICE`. O corpus de findings vem no pré-voo.
+
+**Não montar filtro de data em findings à mão.** Os operadores relativos (`within last`,
+`older than`, `newer than`) são aceitos e silenciosamente ignorados — o servidor os rejeita com
+erro. Onde a skill precisa de tempo de avaliação, a fonte é `scan_cadence`; onde precisa de tempo
+de correção, é `mttr_collect`.
 
 ---
 
 ## Passo 2 — Coletar os 19 indicadores
 
-Seguir `references/indicadores-maturidade.md`, que traz por indicador a chamada exata, a fórmula e
-a origem do limiar. Ordem de coleta recomendada, por custo crescente:
+Seguir `references/indicadores-maturidade.md`, que traz por indicador a fórmula e a origem do
+limiar. **A coleta são quatro chamadas**, uma por estágio, cada uma devolvendo os indicadores já
+agregados:
 
-1. **Tags e ativos** — uma chamada de `tagging_list_tag_categories_and_values`, depois uma por
-   valor de tag lendo só o `total`. Cobre S1, S2, S3, S4.
-2. **Findings** — `search_findings` com os filtros validados. Cobre P1, P2, P3, V3, V4.
-3. **Inventário** — `exposure_classes` e `asset_class`. Cobre D2, D3.
-4. **Histórico de scan** — `scan_list_scans`, depois `scan_history` de cada scan com histórico.
-   Cobre D1, M1, M2.
-5. **Detalhe de plugin** — o mais caro. Cobre D4, V1, V2, M3. Usar a amostragem estratificada da
-   seção 4 de `mcp-preflight.md`, com os dois estratos, e respeitar o orçamento de contexto:
-   extrair só os campos necessários, descartar `Description`, `Synopsis` e a lista completa de CVEs.
+```
+ctem_scoping(mapeamento)          → S1, S2, S3, S4
+ctem_discovery()                  → D1, D2, D3, D4
+ctem_prioritization(mapeamento, corte_priorizacao_cliente, p2_valor)
+                                  → P1, P2, P3 + as três filas comparadas
+ctem_validation(mapeamento)       → V1, V2, V3, V4
+ctem_mobilization(mapeamento)     → M1, M2, M3, M4
+```
 
-Para cada indicador, registrar em `EVIDENCIA[id]`: valor bruto, N analisado, filtro literal,
-carimbo de data e hora, veredito do pré-voo, e o corte aplicado com sua origem.
+`mapeamento` são as respostas da Fase B do Passo 0:
 
-### 2.M4 — MTTR, o único indicador que não vem do MCP
+```yaml
+categoria_criticidade: "<nome da categoria>"   # obrigatório para S2, S4 e P1
+categoria_owner:       "<nome da categoria>"   # obrigatório para S3
+scans_recorrentes:     [<scan_id>, ...]        # obrigatório para M1 e M2
+```
 
-M4 exige o CSV do coletor `tenable_mttr_export.py`, que **acompanha esta skill** em
-`scripts/tenable_mttr_export.py`, versão 1.1.0,
-SHA-256 `116dadf92799f3b7a7726043a27f1d754b0e760a5ac2076711af955c11999355`.
-O roteiro de execução está em `references/roteiro-de-execucao.md`.
+**O servidor não adivinha nenhum desses.** Sem eles o indicador vira lacuna e a causa lista as
+opções que existem no tenant, para o consultor apontar a certa. Isso é deliberado: no sandbox, M1
+dá mediana 21 dias com o scan recorrente declarado e 1,0 dia somando todos os scans com histórico —
+dois estágios de diferença saindo de uma escolha que ninguém fez.
 
-O mesmo arquivo é distribuído com a skill `tenable-mttr-dashboard`; as duas cópias são idênticas
-por checksum. Se o operador já tiver rodado o coletor por causa da outra skill, **reusar o CSV** —
-não rodar de novo (um export por chave de cada vez; o segundo pedido responde 409).
-A razão está na nota de precisão nº 6: `last_fixed` e `time_taken_to_fix` vivem na API de
-Vulnerability Management, em `POST /vulns/export`, e nenhum tool `tenable_one_*` os alcança.
+**Reexecução parcial.** Todo tool de estágio aceita `indicadores=["V2","V3"]` e calcula só o
+subconjunto pedido. Use isso para recoletar um indicador que ficou em lacuna sem pagar os 17 de
+novo — `ctem_validation(indicadores=["V3"])` não gasta as chamadas de plugin que V1 e V2 exigiriam.
 
-**Nunca pedir chaves de API ao operador nesta conversa.** O coletor roda no terminal dele, com
-`TIO_ACCESS_KEY` e `TIO_SECRET_KEY` no ambiente dele. A skill pede o **caminho do CSV**, jamais a
-credencial.
+**Cada indicador já vem com a evidência.** O envelope traz `valor`, `n`, `filtro_literal`,
+`coletado_em_utc` e `veredito_preflight`; o `contexto` traz o que é específico do indicador
+(estratos, intervalos, cortes, notas de proxy). Copie isso para `EVIDENCIA[id]` e acrescente só o
+corte aplicado com sua origem, que é decisão da skill, não do servidor.
+
+**Consulta que falhou não vira número.** Vem `valor: null` com `lacuna: true` e `causa` preenchida.
+Número parcial silencioso não existe nesta cadeia.
+
+### Censo em vez de amostra
+
+`ctem_discovery`, `ctem_validation` e `ctem_mobilization` aceitam `modo_plugins`, que vem `auto`:
+faz **censo** de todos os plugins da severidade quando a população cabe em `limite_censo` (300), e
+cai para amostra estratificada acima disso. O modo usado vai no `filtro_literal` e em
+`contexto.modo`.
+
+Isto **substitui** `CONFIG.amostra_plugins.censo_d4_m3: false`. Aquela decisão foi correta para o
+caminho antigo: `plugins_search_plugins` aceita palavra-chave e CVE, não lista de IDs. Mas
+`plugin_details_batch` recebe lista de IDs, então o censo passou a ser alcançável — 121 plugins
+críticos custam 64 s e ~5.400 tokens, ainda três vezes menos que os ~15.000 que o caminho antigo
+gastava para **vinte** plugins.
+
+No censo **não há intervalo de confiança, nem ponderação, nem alocação entre estratos**: a taxa é a
+contagem. O portão de confiança da amostra (`portao_ic`) só se aplica quando `contexto.modo` for
+`amostra`. Quando for `censo`, o relatório declara censo e não publica IC.
+
+### 2.M4 — MTTR, o único indicador fora da API de Exposure Management
+
+**M4 não exige mais CSV nem script externo.** `ctem_mobilization` chama `mttr_collect` internamente
+e já aplica a guarda de cadência. O coletor `tenable_mttr_export.py` sai do pacote desta skill:
+ele continua existindo como **origem do código** de `mttr.py` no servidor e como gerador das
+fixtures dos golden tests, não como caminho de execução. Um caminho, não dois.
+
+A razão de M4 ser especial não mudou: `last_fixed`, `time_taken_to_fix` e
+`severity_modification_type` vivem na API de Vulnerability Management, em `POST /vulns/export`, e
+**não estão entre as 44 propriedades de findings** da API de Exposure Management. Não é wrapper
+faltando.
+
+**Export demorado não trava a conversa.** Se estourar `mttr_max_wait_s`, M4 volta como lacuna
+**recuperável**, com o `export_uuid` na causa. Chame `ctem_mobilization(indicadores=["M4"],
+mttr_export_uuid="<uuid>")` para retomar. Nunca abra um export novo enquanto houver um aberto para
+aquela chave: a API responde **409**.
+
+**Nunca pedir chaves de API ao operador nesta conversa.** As credenciais vivem no ambiente do
+processo do servidor MCP, em `TIO_ACCESS_KEY` e `TIO_SECRET_KEY`. Nenhum tool aceita chave como
+parâmetro, e a skill jamais pede credencial.
+
+**A guarda de cadência já vem aplicada.** `ctem_mobilization` cruza as janelas do MTTR contra as
+datas de `scan_cadence` dos `scans_recorrentes` declarados, e devolve M4 como lacuna quando um dos
+dois portões dispara:
+
+1. `pct_em_lote` acima de `CONFIG.mttr.pct_em_lote_max`;
+2. janelas formadas **só** por datas de scan — mesmo com `pct_em_lote` abaixo do corte.
+
+O portão 2 é o mais forte, e é por isso que ele existe: o percentual depende do corte de lote
+escolhido — no sandbox o mesmo dado dá 93,5% com corte 2 e 38,7% com corte 5, e o corte 5 passaria
+pela guarda de 40%. A composição das datas não depende de escolha nenhuma.
+
+**O que a skill ainda precisa fazer:** ler `contexto.p50_critical` e `contexto.p50_high`, mapear
+cada um pelos seus cortes, e tomar o **menor dos dois estágios**. Mobilização madura fecha as duas
+severidades, não compensa uma com a outra. O servidor entrega os dois números e os cortes; o
+estágio é da skill.
 
 Procedimento:
 
-1. Procurar `tenable_mttr_findings_*.csv` no ambiente do operador. Se houver mais de um, usar o
-   mais recente e imprimir a data.
-2. Se `CONFIG.mttr.csv` estiver preenchido, usar aquele caminho e não procurar.
-3. Se não achar, **perguntar uma vez**:
+1. `ctem_mobilization` já chama `mttr_collect` internamente. Não há CSV a procurar nem script a
+   rodar, e **nada a perguntar ao operador** — as credenciais vivem no ambiente do servidor MCP.
+2. Se M4 voltar como lacuna **recuperável** (export ainda em andamento), a causa traz o
+   `export_uuid`. Retomar com
+   `ctem_mobilization(indicadores=["M4"], mttr_export_uuid="<uuid>")`.
+   **Nunca** abrir um export novo enquanto houver um aberto: a API responde 409.
+3. Se M4 voltar como lacuna **de mérito** (a guarda de cadência disparou), isso é resultado, não
+   falha: declarar a lacuna com a causa que o servidor devolveu, `P = 16`, e o portão do Passo 4 se
+   ajusta sozinho.
 
-```
-message: (PT) "M4 (MTTR) precisa do CSV do coletor de export. Você já rodou o
-              tenable_mttr_export.py?"
-questions:
-  - question: (PT) "Como seguir?"
-    type: single_select
-    options:
-      - "Tenho o CSV — vou informar o caminho"
-      - "Não tenho — me mostre como rodar o coletor"
-      - "Seguir sem M4, com os 16 pontuáveis restantes"
-```
+**Nada disso pede nada ao operador.** O fluxo antigo perguntava pelo caminho do CSV e, se não
+houvesse, mandava rodar o coletor no terminal. Esse fluxo foi removido: não há arquivo a informar e
+não há script a rodar.
 
-- Opção 1 → ler o CSV.
-- Opção 2 → imprimir o bloco de comandos de `references/roteiro-de-execucao.md` e **parar**. Não
-  entregar assessment pela metade. **Nunca pedir a chave de API na conversa:** o coletor lê
-  `TIO_ACCESS_KEY` e `TIO_SECRET_KEY` do ambiente do operador e não aceita credencial por
-  argumento nem por prompt.
-- Opção 3, ou sem resposta → M4 vira lacuna com causa nomeada ("CSV de MTTR não fornecido"),
-  `P = 16`, e o portão do Passo 4 se ajusta sozinho.
-
-**Cálculo.** Ler o CSV pelo nome do cabeçalho, nunca por posição. Para cada severidade em
-(`critical`, `high`):
-
-```
-base[sev] = linhas com severidade=sev, estado=FIXED e dias_para_corrigir não vazio
-p50[sev]  = mediana de dias_para_corrigir em base[sev]
-```
+**Cálculo.** Os dois p50 vêm prontos em `contexto.p50_critical` e `contexto.p50_high`, calculados
+sobre `estado=FIXED` com `dias_para_corrigir` presente, por percentil **interpolado** (o método vai
+declarado em `contexto.metodo_percentil`, junto do valor por posição mais próxima, para o leitor
+medir o efeito da escolha).
 
 Traduzir cada p50 para estágio pelos cortes de M4 em `references/indicadores-maturidade.md`, e:
 
@@ -426,7 +480,7 @@ severidades, não compensa uma com a outra.
 | as duas severidades abaixo do mínimo | **M4 = lacuna**, com o `n` de cada uma declarado |
 | `mttr_fonte = derivado` em mais de `max_derivado_pct` (default 30%) | M4 pontua, com ⚠️ de composição no relatório |
 | `filtros_divergiram = true` no JSON de resumo | **M4 = lacuna.** Job reaproveitado por 409: o recorte não é o pedido. **Ler o booleano**, nunca comparar os dicionários — a API normaliza e adiciona defaults, então a comparação literal acusa divergência em toda execução |
-| `pct_em_lote >= CONFIG.mttr.pct_em_lote_max` (default 40), **recontado do CSV com `lote_minimo_por_janela`** | **M4 = lacuna com causa nomeada:** *"MTTR dominado pela cadência de scan (X% dos findings fechados em lote); M1 e M2 já medem cadência"*. Ver abaixo |
+| `pct_em_lote >= CONFIG.mttr.pct_em_lote_max` (default 40), **calculado pelo servidor com `lote_minimo_por_janela`** | **M4 = lacuna com causa nomeada:** *"MTTR dominado pela cadência de scan (X% dos findings fechados em lote); M1 e M2 já medem cadência"*. Ver abaixo |
 | janelas `(first_found, last_fixed)` formadas só por pares de datas de scan | **M4 = lacuna**, mesmo com `pct_em_lote` abaixo do corte: o número é o intervalo entre scans. Checar contra `scan_history` |
 | linhas `FIXED` com `dias_para_corrigir` vazio | fora do cálculo, contagem declarada. **Nunca** imputar valor |
 | `severidade_modificada != NONE` em alguma linha | M4 pontua, com a ressalva de que a severidade foi ajustada por recast |
@@ -456,7 +510,7 @@ ele vale mais que o número perdido:
 #### O que a validação da coleta de 2026-09-03 mostrou, e o que a skill passa a exigir
 
 Coleta real do sandbox, 4 278 findings, 31 `FIXED` com data. O resumo do coletor publicou
-`pct_em_lote = 74,2%`. Recontado a partir do CSV linha a linha, o valor é **93,5%** — a diferença
+`pct_em_lote = 74,2%`. Recontado linha a linha com corte 2, o valor é **93,5%** — a diferença
 não é erro de conta, é uma **escolha de método não declarada**: o coletor só conta um grupo como
 lote a partir de **3** findings na mesma janela, e há três grupos de 2 que ele descarta.
 
@@ -470,26 +524,26 @@ seria lacuna pelos dois valores, 74,2% ou 93,5%.
 **Consequência para a skill.** O coletor **1.1.0** já publica as três escolhas no resumo
 (`lote_minimo_por_janela`, `sensibilidade_ao_corte`, `estados_incluidos_no_mttr`,
 `metodo_percentil`) — quando esses campos existirem, ler dali. Se o resumo vier de uma versão
-anterior (campos ausentes ⇒ coletor 1.0.0, corte de lote 3), **recontar do CSV** com os defaults
+anterior (campos ausentes ⇒ coletor 1.0.0, corte de lote 3), **recontar** com os defaults
 da skill e declarar o recálculo no relatório:
 
 | Escolha de método | Por que importa | O que fazer |
 |---|---|---|
-| corte de lote (`lote_minimo_por_janela`) | no sandbox o mesmo CSV dá 93,5% com corte 2, 74,2% com 3, 64,5% com 4 e 38,7% com 5 — o corte 5 passaria a guarda de 40% e faria M4 pontuar | recontar com **2** (default da skill). Se o resumo usar outro corte, usar o valor recontado e dizer qual foi |
+| corte de lote (`lote_minimo_por_janela`) | no sandbox o mesmo recorte dá 93,5% com corte 2, 74,2% com 3, 64,5% com 4 e 38,7% com 5 — o corte 5 passaria a guarda de 40% e faria M4 pontuar | recontar com **2** (default da skill). Se o resumo usar outro corte, usar o valor recontado e dizer qual foi |
 | estados incluídos no MTTR | o coletor calcula só sobre `FIXED`. Incluindo `REOPENED`, a média de High vai de 60,39 para 49,66 dias — 18% de diferença, e `REOPENED` é justamente o finding que voltou | manter só `FIXED` (um finding reaberto não foi corrigido), e **declarar** a exclusão com a contagem de `REOPENED` |
 | método de percentil | `p90` de Critical dá 101,43 interpolado e 92,91 por posição mais próxima; com n=10 a escolha muda o número em 9% | usar `interpolado` (`CONFIG.mttr.metodo_percentil`) e nomear o método |
 
 Nenhuma das três muda o veredito neste tenant. Todas mudam o número, e a camada 3 do modelo exige
 que o leitor consiga refazer a conta — por isso as três vão escritas em `EVIDENCIA[M4]`.
 
-**`severidade_modificada` agora mede a distorção por exceção.** No CSV do coletor esse campo vem
+**`severidade_modificada` agora mede a distorção por exceção.** No retorno de M4 esse campo vem
 de `severity_modification_type`, que a API de Exposure Management não expõe — era ponto cego. Na
 coleta do sandbox as 4 278 linhas vieram `NONE`: nenhum recast, nenhuma aceitação, então nenhuma
 severidade do assessment está inflada ou deflacionada por exceção. Quando houver linhas diferentes
 de `NONE`, contar e declarar por severidade: é a única medição direta que a skill tem do que as
 exceções escondem, e vale para S3, P1 e P2, não só para M4.
 
-Em `EVIDENCIA[M4]`, além dos campos padrão, registrar: caminho e data do CSV, `coletado_em_utc`,
+Em `EVIDENCIA[M4]`, além dos campos padrão, registrar: `export_uuid` e `coletado_em_utc`,
 `filtros_pedidos`, `filtros_divergiram`, `registros_analisados`, `pct_em_lote` **com o corte de
 lote usado**, os estados incluídos no cálculo **com a contagem de `REOPENED` excluída**, o método
 de percentil, a contagem de `severidade_modificada != NONE`, `n` e composição nativo/derivado por
@@ -509,8 +563,9 @@ Indicadores marcados `informativo` — S4 e V1 — **não** pontuam.
 oportunidade medida no backlog. Ver `references/indicadores-maturidade.md`. **P3 depende de P2:**
 se P2 estiver em lacuna, P3 também.
 
-Resultado: 17 indicadores pontuáveis quando há CSV do coletor, 16 sem ele (M4 vira lacuna),
-cada um em um dos cinco estágios.
+Resultado: **17 indicadores pontuáveis**, cada um em um dos cinco estágios — 16 quando M4 vira
+lacuna, o que agora acontece por mérito (guarda de cadência) ou por falha de coleta, não por
+ausência de arquivo.
 
 ### 3.2 Estágio por estágio CTEM
 
@@ -541,11 +596,19 @@ Os estágios **não têm o mesmo número de indicadores pontuáveis**:
 | Validation | 3 — V2, V3, V4 | V1 |
 | Mobilization | **4** — M1, M2, M3, M4 | — |
 
-Total: **17 pontuáveis** quando há CSV do coletor, **16** sem ele. 2 informativos.
+Total: **17 pontuáveis**, **16** quando M4 vira lacuna. 2 informativos.
 
-**M4 é condicional.** Ele mede o MTTR e só existe quando o CSV do coletor
-`tenable_mttr_export.py` está disponível (ver Passo 2.M4). Sem CSV, M4 vira lacuna com causa
-nomeada, Mobilization volta a três indicadores e o total de pontuáveis cai para 16. O portão de
+**M4 continua condicional, mas por outra razão.** Não depende mais de um arquivo existir: o
+`ctem_mobilization` sempre tenta coletá-lo. M4 vira lacuna quando:
+
+| Causa | O que é |
+|---|---|
+| a guarda de cadência dispara | **resultado, não falha** — o MTTR ali mede intervalo entre scans |
+| o export estoura `max_wait_s` | lacuna **recuperável**: retomar pelo `export_uuid` |
+| o job aplica recorte diferente do pedido | erro estruturado — o recorte não é a pergunta |
+| n abaixo de `n_minimo_por_severidade` | amostra pequena demais para a severidade pontuar |
+
+Em qualquer desses casos Mobilization volta a três indicadores e o total cai para 16. O portão de
 confiança do Passo 4 é proporcional justamente para absorver isso sem recalibração manual.
 
 A distribuição está quase equilibrada — três estágios com três indicadores, Discovery e
@@ -590,10 +653,10 @@ já está comprometida, por boa que seja a ferramenta.
 Antes de publicar qualquer estágio:
 
 O portão é **proporcional aos pontuáveis daquela run**, não a um número fixo. Isso é necessário
-porque M4 é condicional: com CSV do coletor há 17 pontuáveis, sem CSV há 16.
+porque M4 é condicional: 17 pontuáveis quando M4 pontua, 16 quando ele vira lacuna.
 
 ```
-P        = pontuáveis aplicáveis nesta run   (17 com CSV de MTTR, 16 sem)
+P        = pontuáveis aplicáveis nesta run   (17 com M4, 16 sem)
 medidos  = pontuáveis que retornaram dado
 normal   = teto(0,8125 × P)
 com_aviso= teto(0,6250 × P)
@@ -789,7 +852,7 @@ header (título + seletor de idioma + exportar) → barra de KPIs → abas 1..5 
 ```
 
 **Barra de KPIs (5):** estágio efetivo · estágio médio · estágio que limita o conjunto ·
-indicadores com dado, sobre os pontuáveis daquela run (17 com CSV, 16 sem) ·
+indicadores com dado, sobre os pontuáveis daquela run (17 com M4, 16 sem) ·
 dias desde a última avaliação.
 
 **Aba 1 — Panorama.** O radar dos cinco estágios, e abaixo dele a barra com ênfase. Depois, em
@@ -843,8 +906,9 @@ maturity_config:
     coef_normal: 0.8125        # teto(coef × pontuáveis). Em 16 dá 13; em 17 dá 14
     coef_com_aviso: 0.6250     # em 16 dá 10; em 17 dá 11
   mttr:
-    csv: ""                    # caminho do tenable_mttr_findings_*.csv. Vazio = procurar, depois perguntar
-    exigir_csv: false          # true = abortar se não houver CSV, em vez de M4 virar lacuna
+    dias: 180                  # janela do POST /vulns/export
+    severidades: [critical, high]   # M4 pontua pelo menor estágio das duas
+    max_wait_s: 240            # ao estourar, M4 vira lacuna RECUPERÁVEL com export_uuid
     n_minimo_por_severidade: 5 # abaixo disso a severidade não pontua em M4
     max_derivado_pct: 30       # acima disso M4 pontua com ⚠️ de composição
     pct_em_lote_max: 40        # acima disso M4 vira lacuna (guarda de cadência)
@@ -857,9 +921,12 @@ maturity_config:
     piso_estrato_b: 4          # o estrato B existe para achar casos, não para estimar taxa
     ponderar: por_deteccao     # por_deteccao | por_plugin — base dos pesos ao combinar estratos
     portao_ic: true            # amplia em blocos de 10 enquanto o IC 95% atravessar um corte
-    censo_d4_m3: false         # censo NÃO é alcançável: plugins_search_plugins aceita palavra-chave
-                               # e CVE, não lista de IDs. D4 e M3 saem da amostra estratificada,
-                               # com o tamanho e a alocação declarados. Verificado em 2026-09-03
+    modo_plugins: auto         # auto | censo | amostra. SUBSTITUI censo_d4_m3.
+                               # O censo passou a ser alcançável: plugins_search_plugins não aceita
+                               # lista de IDs, mas plugin_details_batch aceita. Medido em
+                               # 2026-09-04: 121 plugins críticos em 64 s e ~5.400 tokens.
+                               # No censo não há IC, ponderação nem alocação — a taxa é a contagem.
+    limite_censo: 300          # acima disso volta a amostra estratificada
   corte_priorizacao_cliente:
     metrica: vpr               # vpr | cvss3. Default: vpr
     valor: 7.0                 # default VPR >= 7.0
@@ -971,11 +1038,11 @@ primeiras 24 horas de um ambiente novo.
 | Cliente usa regras de exceção | Nenhum cálculo muda, porque o MCP não expõe o campo. A ressalva da Pergunta 8 entra no relatório |
 | Estágio com menos de 2 indicadores | Estágio vira `lacuna` e sai do cálculo do efetivo e do médio |
 | `medidos < teto(0,625 × P)` pontuáveis com dado | Não classificar. Entregar indicadores e o que habilitar |
-| CSV de MTTR ausente | M4 vira lacuna com causa nomeada, `P` cai para 16 e o portão se ajusta. **Nunca** estimar MTTR |
-| CSV de MTTR com `filtros_divergiram = true` | M4 vira lacuna. O recorte não é o pedido, então não sustenta estágio |
-| CSV de MTTR com `pct_em_lote >= 40` | M4 vira lacuna. O número mediria cadência, que M1 e M2 já medem. O achado vai escrito no relatório |
-| Resumo do coletor sem declarar corte de lote, estados ou método de percentil | Recontar do CSV com os defaults da skill (lote ≥ 2, só `FIXED`, percentil interpolado) e declarar o recálculo. **Nunca** aceitar o número do resumo sem saber o método |
-| CSV com `severidade_modificada != NONE` em parte das linhas | Contar por severidade e declarar. Sem esse campo o assessment é cego a recast e aceitação — com ele, a ressalva é obrigatória em S3, P1, P2 e M4 |
+| Export de MTTR falhou ou estourou o tempo | M4 vira lacuna com causa nomeada, `P` cai para 16 e o portão se ajusta. Se houver `export_uuid` na causa, a lacuna é **recuperável**: retomar. **Nunca** estimar MTTR |
+| `filtros_divergiram = true` | O servidor devolve **erro estruturado**, não número: o recorte não é o pedido. M4 vira lacuna |
+| Guarda de cadência disparou | M4 vira lacuna. O número mediria cadência, que M1 e M2 já medem. O achado vai escrito no relatório — é resultado, não falha |
+| Retorno sem corte de lote, estados ou método de percentil declarados | Não deve acontecer: o servidor declara os três. Se faltar, tratar como lacuna. Defaults da skill (lote ≥ 2, só `FIXED`, percentil interpolado) e declarar o recálculo. **Nunca** aceitar o número do resumo sem saber o método |
+| `severidade_modificada_diferente_de_none > 0` | Contar por severidade e declarar. Sem esse campo o assessment é cego a recast e aceitação — com ele, a ressalva é obrigatória em S3, P1, P2 e M4 |
 | Superfície não licenciada | Mensagem clara de superfície não licenciada. Nunca falhar, nunca reportar zero |
 | Tenant sem histórico de scan | D1, M1 e M2 viram lacuna. Declarar que o estágio Mobilization ficou sem base |
 | Última avaliação há mais de 30 dias | Abrir o relatório com aviso de dado defasado e a data |
@@ -1027,7 +1094,8 @@ primeiras 24 horas de um ambiente novo.
 5. **A BOD 26-04 é referência**, não obrigação do cliente, salvo se ele for agência federal dos EUA.
 6. **MTTR vem de fora do MCP, e a origem vai escrita.** O MCP não expõe `last_fixed` nem
    `time_taken_to_fix` — os dois vivem na API de Vulnerability Management, em `POST /vulns/export`.
-   M4 só pontua com o CSV do coletor; sem CSV é lacuna declarada, nunca estimativa. Quando pontua,
+   M4 só pontua quando a guarda de cadência libera; do contrário é lacuna declarada, nunca
+   estimativa. Quando pontua,
    o relatório mostra a composição nativo/derivado e o `n` de cada severidade. Cadência de
    avaliação (M1, M2) continua medindo outra coisa e medindo bem: **MTTR pergunta quanto tempo se
    leva para fechar; cadência pergunta se se está olhando.**

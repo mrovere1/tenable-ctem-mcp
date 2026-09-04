@@ -2,8 +2,30 @@
 
 Arquivo de referência da skill `tenable-ctem-maturity-assessment`. Uma cópia vive dentro do pacote.
 
-Cada indicador traz: a chamada MCP exata, a fórmula, a origem do limiar e os cortes default.
-**Todo indicador passa pelo pré-voo de `mcp-preflight.md` antes de virar número no relatório.**
+Cada indicador traz a fórmula, a origem do limiar e os cortes default.
+
+> **Atualizado em 2026-09-04.** A coluna **Fonte MCP** de cada tabela descreve o caminho ANTIGO,
+> pelo MCP oficial da Tenable. A coleta agora é feita pelo servidor **`tenable-ctem-mcp`**, que
+> devolve cada indicador já agregado:
+>
+> | Estágio | Tool | Indicadores |
+> |---|---|---|
+> | Scoping | `ctem_scoping(mapeamento)` | S1–S4 |
+> | Discovery | `ctem_discovery()` | D1–D4 |
+> | Prioritization | `ctem_prioritization(mapeamento, corte_priorizacao_cliente)` | P1–P3 |
+> | Validation | `ctem_validation(mapeamento)` | V1–V4 |
+> | Mobilization | `ctem_mobilization(mapeamento)` | M1–M4 |
+>
+> **As fórmulas, os cortes e a origem dos limiares não mudaram** — só quem executa a consulta. A
+> coluna antiga fica porque documenta de onde cada número vem na API, e porque é ela que explica as
+> armadilhas de filtro que a deny-list do servidor hoje bloqueia.
+>
+> Três mudanças de fato, e não só de caminho:
+> - **D4, V1, V2 e M3 saem de CENSO por default**, não de amostra — ver `mcp-preflight.md`;
+> - **M4 não usa mais CSV**: `ctem_mobilization` chama `mttr_collect` e já aplica a guarda de cadência;
+> - **M1 recebe os runs já colapsados** em dias distintos, feito no servidor.
+
+**Todo indicador passa pelo pré-voo, que agora é uma chamada: `ctem_preflight()`.**
 
 ## Como ler os cortes
 

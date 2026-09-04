@@ -1,3 +1,24 @@
+# Roteiro de execução — OBSOLETO desde 2026-09-04
+
+> **Este roteiro descrevia a execução manual do coletor `tenable_mttr_export.py` no terminal do
+> operador, com o CSV alimentando M4.** Esse caminho não existe mais: `ctem_mobilization` chama
+> `mttr_collect` internamente, e o coletor saiu do pacote da skill.
+>
+> O coletor continua existindo como **origem do código** de `mttr.py` no servidor MCP e como
+> gerador das fixtures dos golden tests — não como caminho de execução. Um caminho, não dois:
+> se o MCP falhar, todos os indicadores falham, e manter contingência só para M4 não mudaria o
+> resultado da skill.
+>
+> Ver `docs/tools.md` do `tenable-ctem-mcp` para o contrato de `mttr_collect` e
+> `mttr_cadence_guard`, e `docs/troubleshooting.md` para 401, 409 e TLS.
+
+---
+
+O conteúdo abaixo fica registrado para quem precisar entender de onde vieram os números de
+referência de 2026-09-03.
+
+---
+
 # Roteiro de execução — CTEM Maturity Assessment
 
 Trilíngue: **PT-BR** abaixo, **EN** e **ES** nas seções seguintes. Versão longa, com

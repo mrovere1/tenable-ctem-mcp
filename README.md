@@ -70,12 +70,14 @@ Ver `docs/troubleshooting.md`.
 # desenvolvimento: o Inspector mostra o JSON cru de request e response
 npx @modelcontextprotocol/inspector uv run python -m tenable_ctem_mcp.server
 
-# registrar no Claude Code
+# registrar no Claude Code, SEM --env
 claude mcp add tenable-ctem -- /caminho/para/.venv/bin/python -m tenable_ctem_mcp.server
 ```
 
-As chaves vêm do ambiente do **processo do servidor**. Se o cliente não herdar o seu shell, passe-as
-na configuração do cliente — nunca como parâmetro de tool.
+**Não passe as chaves com `--env`:** isso as gravaria em `~/.claude.json`, e credencial em arquivo
+de configuração é justamente o que este projeto proíbe. Exporte-as no shell e abra o cliente a
+partir dele — um processo filho herda o ambiente do pai. Passo a passo em
+`docs/instalacao-no-cliente.md`.
 
 ## Tools
 

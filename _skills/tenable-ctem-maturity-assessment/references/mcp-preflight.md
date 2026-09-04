@@ -5,6 +5,30 @@ para que cada skill funcione sozinha depois de baixada do Exchange.
 
 Validado no MCP Tenable em 2026-09-01.
 
+> **Atualizado em 2026-09-04, e em dois pontos o veredito MUDOU.**
+>
+> **1. O pré-voo virou uma chamada: `ctem_preflight()`.** O servidor executa os pares
+> discriminantes ao vivo e devolve a tabela pronta, mais a `deny_list` dos filtros que ele rejeita
+> antes de a requisição sair. O procedimento manual da seção 2 continua sendo a *definição* do que
+> ele faz — leia para entender, não para executar à mão.
+>
+> **2. Quatro vereditos deste arquivo valem para o MCP oficial, e não para a API REST direta**, que
+> é por onde o servidor fala:
+>
+> | Aqui | Pela API direta |
+> |---|---|
+> | filtro de data em findings é ignorado, em todo operador | só os **relativos** (`within last`, `older than`, `newer than`); `<` e `>=` contra data absoluta **funcionam** |
+> | `exists` não funciona em `finding_vpr_score` | **funciona** — o HTTP 400 vinha de `value` vazio |
+> | `resolvable` — presumir ignorado até prova | **provado** ignorado |
+> | `age` é aplicado em workbenches | `age` **não é parâmetro** da API; o nome real é `date_range`, e esse funciona |
+>
+> **3. A seção 4 (amostragem) só se aplica quando `contexto.modo` for `amostra`.** O censo passou a
+> ser alcançável — a conclusão de 4.1 vale para a BUSCA (`plugins_search_plugins` não aceita lista
+> de IDs), mas `plugin_details_batch` aceita. Com `modo_plugins: auto`, o servidor faz censo de
+> todos os plugins da severidade quando a população cabe em `limite_censo`. **No censo não há
+> intervalo de confiança, nem ponderação, nem alocação entre estratos: a taxa é a contagem.**
+> As três regras de 4.2 e 4.3 continuam valendo para tenants grandes, onde a amostra volta.
+
 ---
 
 ## 1. Por que este pré-voo existe
