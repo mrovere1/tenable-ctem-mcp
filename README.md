@@ -18,7 +18,7 @@ vira **lacuna declarada com causa** — número parcial silencioso é proibido.
 | Chamadas para os 17 indicadores | ~40 | ~7 (**4 para os 15 de S a V**, medido) |
 | Detalhe de 20 plugins | 20 chamadas, ~31.900 tokens | 1 chamada, ~900 tokens (**−97,2%**, medido) |
 | MTTR | impossível; exige script Python fora | 1 tool |
-| Cadência (M1) | 12 runs crus, colapsados no cliente | já colapsado em dias distintos |
+| Cadência (M1) | 12 runs crus, colapsados no cliente | já colapsado: mediana **21 d**, não 1,42 |
 
 ## O que ele não é
 
@@ -86,7 +86,7 @@ Onze no total. Contrato completo em `docs/tools.md`.
 | **M1 — pronto** | `ctem_scoping`, `ctem_discovery`, `plugin_details_batch`, `plugin_census` |
 | **M2 — pronto** | `ctem_prioritization`, `ctem_validation` |
 | **M3 — pronto** | `ctem_preflight` |
-| M4 | `mttr_collect`, `mttr_cadence_guard`, `scan_cadence` |
+| **M4 — pronto** | `mttr_collect`, `mttr_cadence_guard`, `scan_cadence` |
 | M5 | `ctem_mobilization` |
 
 ## Testes

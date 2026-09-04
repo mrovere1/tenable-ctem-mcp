@@ -264,6 +264,70 @@ A amostra usa semente fixa (`20260903`): sem reprodutibilidade não existe golde
 
 ---
 
+## `scan_cadence(scan_ids, colapsar_runs_do_mesmo_dia=True, apenas_completed=True)`  — M4
+
+Colapsa runs do mesmo dia em **dias distintos de avaliação** e devolve intervalos, mediana e máximo.
+
+**Por que existe.** Um scan relançado minutos depois é a *mesma* avaliação, não um novo ciclo de
+cadência. No sandbox, os 12 runs do scan recorrente caem em **9 dias distintos**:
+
+| | |
+|---|---|
+| intervalos colapsados | 140, 40, 2, 89, 1, 1, 85, 1 |
+| **mediana com colapso** | **21,0 dias** |
+| mediana sem colapso | 1,42 dia |
+| máximo (M2) | 140 dias — não muda com o colapso |
+
+Vinte e um dias contra 1,42 é *Standardized* em vez de *Optimized* — **dois estágios de diferença**.
+O colapso acontece no servidor, sempre; foi por estar no cliente que o erro sobreviveu a uma
+execução inteira. `mediana_sem_colapso_dias` vai na resposta sempre, para o contraste ficar visível.
+
+## `mttr_collect(days=180, severities=None, tags=None, max_wait_s=240, export_uuid=None, ...)`  — M4
+
+MTTR por `POST /vulns/export`, com polling e download em chunks. **É o único caminho:**
+`last_fixed`, `time_taken_to_fix` e `severity_modification_type` não estão entre as 44 propriedades
+de findings da API de Exposure Management — não é wrapper faltando.
+
+### As três travas obrigatórias
+
+| # | Situação | Comportamento |
+|---|---|---|
+| 1 | estoura `max_wait_s` | devolve `{status: "pendente", export_uuid}` — **sem exceção e sem número parcial**. Chame de novo com esse `export_uuid`; abrir outro export responderia **409** |
+| 2 | `filtros_divergiram` | **erro estruturado, nunca número** — o recorte não é a pergunta |
+| 3 | falha de TLS | causa diagnosticada ("proxy corporativo interceptando TLS"), nunca exceção crua. O servidor **não oferece** desligar a verificação |
+
+### O que o resumo declara, e por quê
+
+- **`metodo_percentil`** — interpolado (tipo 7 do R). Com n=10 o p90 de critical dá **101,43**
+  interpolado e **92,91** por posição mais próxima: 9% de diferença. Os dois vão na resposta.
+- **`estados_incluidos_no_mttr`** — só `FIXED`. Incluindo `REOPENED`, a média de high cai de
+  **60,39** para **49,66** dias, e a de medium de 95,95 para 64,08. A exclusão é defensável — um
+  finding reaberto não foi corrigido — mas tem de estar escrita, com o número que ela muda.
+- **`cadencia_de_scan`** — `pct_em_lote`, o corte usado, a `sensibilidade_ao_corte` e as
+  `datas_que_formam_as_janelas`.
+- **`severidade_modificada_diferente_de_none`** — a única medição direta de recast e aceitação que
+  o assessment alcança. Vale para S3, P1 e P2, não só para M4.
+
+**Leia `cadencia_de_scan` junto do MTTR, sempre**, e passe `cadencia_de_scan.janelas` para
+`mttr_cadence_guard` — não `lotes`, que já vem filtrado pelo corte.
+
+## `mttr_cadence_guard(janelas, datas_de_scan=None, corte_alerta_pct=40.0)`  — M4
+
+Diz se o MTTR está medindo **cadência de scan** em vez de tempo de correção. Dois portões:
+
+1. `pct_em_lote` acima do corte de alerta → M4 é lacuna;
+2. janelas formadas **só** por datas de scan → M4 é lacuna, **mesmo com `pct_em_lote` baixo**.
+
+**O portão 2 é o mais forte**, e é o que a validação de 2026-09-03 mostrou: o percentual depende do
+corte de lote escolhido — o mesmo dado dá 93,5% com corte 2 e **38,7% com corte 5**, e o corte 5
+passaria pela guarda de 40%. A composição das datas não depende de escolha nenhuma.
+
+No sandbox: `pct_em_lote` **93,5%**, sensibilidade **93,5 / 74,2 / 64,5 / 38,7**, e as **7** datas
+que formam as 9 janelas são **7 de 7** datas de execução de scan. M4 é lacuna ali — e isso é
+resultado correto, não defeito.
+
+---
+
 ## Endpoints usados
 
 Confirmados em developer.tenable.com em 2026-09-03.
@@ -279,7 +343,7 @@ Confirmados em developer.tenable.com em 2026-09-03.
 | categorias e valores de tag | `GET /tags/categories` · `GET /tags/values` |
 | scans e histórico | `GET /scans` · `GET /scans/{scan_id}/history` |
 | agentes | `GET /scanners/null/agents` |
-| export de MTTR | `POST /vulns/export` |
+| export de MTTR | `POST /vulns/export` · `GET /vulns/export/{uuid}/status` · `GET /vulns/export/{uuid}/chunks/{id}` |
 
 Os endpoints de Exposure Management estão marcados como **beta** na documentação da Tenable: a
 estrutura da resposta pode mudar. A leitura no servidor é defensiva e não presume formato.

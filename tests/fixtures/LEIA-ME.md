@@ -33,3 +33,17 @@ V1, V2 e M3.
 `tests/conftest.py` substitui `client.chamar` e `client.paginar` por uma reprodução indexada pela
 assinatura `[método, caminho, corpo, params]`. Consulta que não estiver gravada **quebra o teste** —
 nunca devolve vazio, porque vazio viraria número errado.
+
+## `mttr_export_2026-09-03.json`
+
+As **linhas normalizadas** do `POST /vulns/export`, não a resposta crua. A resposta crua tem 4.278
+findings com dezenas de campos cada e passaria de 10 MB; `resumir()` e `detectar_lotes()` leem
+**nove campos**. Gravar só eles preserva a prova inteira — todos os números do golden test de M4
+saem daqui — e cabe no repositório.
+
+Duas reduções, ambas declaradas:
+
+- **Forma colunar.** Uma lista de valores por linha, na ordem de `campos`, em vez de repetir as nove
+  chaves 4.278 vezes. 1.079 KB → 269 KB.
+- **`asset_nome` virou rótulo estável** (`ativo-001`…). O nome real só importa para **agrupar**
+  janelas `(ativo, first_found, last_fixed)`, e o rótulo preserva o agrupamento.

@@ -3,10 +3,7 @@
 Transporte: stdio. Nenhum HTTP, nenhuma hospedagem, nenhuma autenticacao de
 rede - decisao fechada.
 
-Estado do marco M3: os quatro tools de estagio de S a V, as primitivas de
-plugin e o pre-voo. Faltam:
-  M4  mttr_collect, mttr_cadence_guard, scan_cadence
-  M5  ctem_mobilization
+Estado do marco M4: falta so o M5, ctem_mobilization.
 
 NOTA sobre o SDK: o CLAUDE.md pede "FastMCP se disponivel no SDK". No SDK
 oficial 2.x FastMCP foi renomeado para MCPServer; a ergonomia e a mesma
@@ -24,6 +21,10 @@ from . import __version__, agora_utc
 from .client import ErroApi, origem_tls
 from .indicators import discovery, prioritization, scoping, validation
 from .indicators.discovery import descobrir_tenant
+from .cadence import scan_cadence as _scan_cadence
+from .mttr import ErroFiltroDivergente
+from .mttr import mttr_cadence_guard as _mttr_cadence_guard
+from .mttr import mttr_collect as _mttr_collect
 from .plugins import plugin_census as _plugin_census
 from .plugins import plugin_details_batch as _plugin_details_batch
 from .preflight import ErroDenyList
@@ -50,6 +51,12 @@ def _erro(e: Exception) -> dict[str, Any]:
     """
     if isinstance(e, ErroDenyList):
         return dict(e.para_dict(), lacuna=True, coletado_em_utc=agora_utc())
+    if isinstance(e, ErroFiltroDivergente):
+        return {"erro": "filtros_divergiram", "causa": e.causa, "detalhe": str(e),
+                "lacuna": True, "coletado_em_utc": agora_utc(),
+                "nota": ("O recorte que o job aplicou nao e o pedido, entao o "
+                         "numero nao responde a pergunta. Isto e erro, nao "
+                         "numero com ressalva.")}
     if isinstance(e, ErroApi):
         return {"erro": "falha_de_coleta", "causa": e.causa, "detalhe": str(e),
                 "lacuna": True, "coletado_em_utc": agora_utc()}
@@ -227,6 +234,83 @@ def plugin_census(severity: str = "critical") -> dict[str, Any]:
     """
     try:
         return _plugin_census(severity)
+    except Exception as e:  # noqa: BLE001
+        return _erro(e)
+
+
+@mcp.tool()
+def scan_cadence(scan_ids: list[str], colapsar_runs_do_mesmo_dia: bool = True,
+                 apenas_completed: bool = True) -> dict[str, Any]:
+    """Colapsa runs do mesmo dia em DIAS DISTINTOS de avaliacao.
+
+    Devolve intervalos, mediana e maximo - e tambem `mediana_sem_colapso_dias`,
+    sempre, para o contraste ficar visivel.
+
+    Por que isso existe: um scan relancado minutos depois e a MESMA avaliacao,
+    nao um novo ciclo. No sandbox os 12 runs do scan recorrente caem em 9 dias
+    distintos; a mediana crua da 1,42 dia e a colapsada da 21 - Standardized em
+    vez de Optimized, dois estagios de diferenca.
+
+    `colapsar_runs_do_mesmo_dia=False` existe para o relatorio mostrar a
+    diferenca, nunca para ser o default. M2 (maior lacuna) nao muda com o colapso.
+    """
+    try:
+        return _scan_cadence(scan_ids, colapsar_runs_do_mesmo_dia, apenas_completed)
+    except Exception as e:  # noqa: BLE001
+        return _erro(e)
+
+
+@mcp.tool()
+def mttr_collect(days: int = 180, severities: list[str] | None = None,
+                 tags: dict[str, Any] | None = None, max_wait_s: int = 240,
+                 export_uuid: str | None = None,
+                 estados: list[str] | None = None,
+                 num_assets: int = 100, corte_lote: int = 2) -> dict[str, Any]:
+    """MTTR por POST /vulns/export, com polling e download em chunks.
+
+    E o UNICO caminho para MTTR: `last_fixed`, `time_taken_to_fix` e
+    `severity_modification_type` nao estao entre as 44 propriedades de findings
+    da API de Exposure Management. Nao e wrapper faltando.
+
+    NAO bloqueia. Ao estourar `max_wait_s` devolve
+    {status: "pendente", export_uuid} - chame de novo passando esse
+    `export_uuid` para retomar. Abrir um export novo responderia 409.
+
+    Se o job aplicar um recorte diferente do pedido, devolve ERRO estruturado e
+    nao numero: o recorte nao e a pergunta.
+
+    Leia sempre `cadencia_de_scan` junto do MTTR, e passe as janelas de la para
+    `mttr_cadence_guard`.
+    """
+    try:
+        return _mttr_collect(days, severities, tags, max_wait_s, export_uuid,
+                             estados, num_assets, corte_lote)
+    except Exception as e:  # noqa: BLE001
+        return _erro(e)
+
+
+@mcp.tool()
+def mttr_cadence_guard(janelas: list[dict[str, Any]],
+                       datas_de_scan: list[str] | None = None,
+                       corte_alerta_pct: float = 40.0) -> dict[str, Any]:
+    """Diz se o MTTR esta medindo cadencia de scan em vez de tempo de correcao.
+
+    Passe `janelas` = `cadencia_de_scan.JANELAS` de mttr_collect (nao `lotes`:
+    esse ja vem filtrado pelo corte, e sem as janelas unitarias o denominador
+    encolhe e o percentual infla), e `datas_de_scan` = as datas de scan_cadence.
+
+    Dois portoes, e o segundo importa mais:
+      1. pct_em_lote acima do corte de alerta -> M4 e lacuna;
+      2. janelas formadas SO por datas de scan -> M4 e lacuna, mesmo com
+         pct_em_lote abaixo do corte.
+
+    O portao 2 existe porque o percentual depende do corte de lote escolhido:
+    no CSV de referencia o mesmo dado deu 93,5% com corte 2 e 38,7% com corte 5,
+    e o corte 5 passaria pela guarda de 40%. A composicao das datas nao depende
+    de escolha nenhuma.
+    """
+    try:
+        return _mttr_cadence_guard(janelas, datas_de_scan, corte_alerta_pct)
     except Exception as e:  # noqa: BLE001
         return _erro(e)
 
