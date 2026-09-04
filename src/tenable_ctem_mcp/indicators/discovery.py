@@ -24,8 +24,12 @@ from __future__ import annotations
 import json
 from typing import Any
 
-from .. import agora_utc
+from datetime import datetime, timezone
+
+from .. import Indicador, agora_utc
 from ..client import CACHE, ErroApi, chamar, paginar, total_de
+from ..plugins import amostrar_estratificado, plugin_census, plugin_details_batch, taxa_ponderada
+from ..preflight import validar_filters, veredito
 
 # Valores possiveis de exposure_classes. ATENCAO: asset_class NAO e
 # exposure_classes. No sandbox existem ativos com asset_class = IDENTITY, mas
@@ -170,3 +174,145 @@ def descobrir_tenant(usar_cache: bool = True) -> dict[str, Any]:
     }
     CACHE.set(chave, retrato)
     return retrato
+
+
+# ----------------------------------------------------------------------------
+# Indicadores D1 a D4
+# ----------------------------------------------------------------------------
+
+INDICADORES = ("D1", "D2", "D3", "D4")
+
+
+def _agora() -> datetime:
+    return datetime.now(timezone.utc)
+
+
+def _ultimo_run(retrato: dict) -> tuple[int | None, int]:
+    """Devolve (epoch do run mais recente, quantidade de scans consultados).
+
+    Le o historico de cada scan que tem historico. `time_start` e o inicio real
+    do run - e a fonte correta, porque filtro de data em findings e ignorado e
+    o parametro `age` de workbenches e recencia, nao idade.
+    """
+    mais_recente = None
+    consultados = 0
+    for s in retrato["scans"]["scans"]:
+        if not (s.get("runs") or 0):
+            continue
+        consultados += 1
+        try:
+            hist = paginar("GET", f"/scans/{s['scan_id']}/history", campo="history")
+        except ErroApi:
+            continue
+        for r in hist:
+            ts = r.get("time_start")
+            if isinstance(ts, int) and (mais_recente is None or ts > mais_recente):
+                mais_recente = ts
+    return mais_recente, consultados
+
+
+def calcular(indicadores: list[str] | None = None,
+             superficies_licenciadas: list[str] | None = None,
+             corte_vpr_amostra: float = 7.0,
+             n_amostra: int = 30,
+             retrato: dict | None = None,
+             agora: datetime | None = None) -> list[dict]:
+    """D1 a D4. `indicadores=None` calcula os quatro.
+
+    `agora` existe para o golden test poder congelar o relogio: D1 e uma
+    diferenca contra o instante da coleta, entao sem relogio fixo nao ha teste
+    de regressao possivel.
+    """
+    pedidos = [i.upper() for i in (indicadores or INDICADORES)]
+    licenciadas = [s.upper() for s in (superficies_licenciadas or ["VM"])]
+    agora = agora or _agora()
+    retrato = retrato or descobrir_tenant()
+    saida: list[Indicador] = []
+
+    # --- D1: dias desde a ultima avaliacao (invertido) ------------------
+    if "D1" in pedidos:
+        ts, consultados = _ultimo_run(retrato)
+        if ts is None:
+            saida.append(Indicador.lacuna_declarada(
+                "D1", causa="nenhum scan com historico de execucao no tenant.",
+                filtro_literal=f"scan_history de {consultados} scans"))
+        else:
+            inicio = datetime.fromtimestamp(ts, timezone.utc)
+            dias = round((agora - inicio).total_seconds() / 86400.0, 2)
+            saida.append(Indicador.ok(
+                "D1", dias, n=consultados,
+                filtro_literal=(f"scan_history de {consultados} scans com historico; "
+                                f"run mais recente em {inicio.strftime('%Y-%m-%dT%H:%M:%SZ')}"),
+                veredito_preflight="ok",
+                contexto={"run_mais_recente_utc": inicio.strftime("%Y-%m-%dT%H:%M:%SZ"),
+                          "invertido": True}))
+
+    # --- D2: cobertura das superficies licenciadas ----------------------
+    if "D2" in pedidos:
+        presentes = [c for c, n in retrato["exposure_classes"].items() if (n or 0) > 0]
+        cobertas = [c for c in licenciadas if c in presentes]
+        pct = round(100.0 * len(cobertas) / len(licenciadas), 1) if licenciadas else None
+        nao_licenciadas = [c for c in presentes if c not in licenciadas]
+        saida.append(Indicador.ok(
+            "D2", pct, n=len(licenciadas),
+            filtro_literal=("exposure_classes com total > 0, uma consulta por classe "
+                            f"com limit=1; licenciadas={licenciadas}"),
+            veredito_preflight="ok",
+            contexto={"presentes": presentes, "cobertas": cobertas,
+                      "licenciadas": licenciadas,
+                      "presentes_nao_licenciadas": nao_licenciadas,
+                      "nota": ("asset_class nao e exposure_classes: o tenant pode ter "
+                               "ativos com asset_class=IDENTITY e exposure_classes="
+                               "IDENTITY em zero.")}))
+
+    # --- D3: % de ativos DEVICE com agente ------------------------------
+    if "D3" in pedidos:
+        devices = retrato["ativos"]["por_asset_class"].get("DEVICE", 0)
+        ativos = retrato["agentes"]["ativos"]
+        if not devices:
+            saida.append(Indicador.lacuna_declarada(
+                "D3", causa="nenhum ativo com asset_class=DEVICE; denominador zero.",
+                filtro_literal="asset_class=DEVICE"))
+        else:
+            saida.append(Indicador.ok(
+                "D3", round(100.0 * ativos / devices, 1), n=devices,
+                filtro_literal=("agentes com status=on sobre "
+                                "[{\"property\":\"asset_class\",\"operator\":\"=\","
+                                "\"value\":[\"DEVICE\"]}]"),
+                veredito_preflight="ok",
+                contexto={"agentes_ativos": ativos, "devices": devices}))
+
+    # --- D4: % da amostra detectada por plugin local --------------------
+    if "D4" in pedidos:
+        try:
+            censo = plugin_census("critical")
+            am = amostrar_estratificado(censo["plugins"], n=n_amostra,
+                                        corte_vpr=corte_vpr_amostra)
+            ids = [p["plugin_id"] for p in am["amostra"]]
+            lote = plugin_details_batch(ids)
+            detalhes = {d["plugin_id"]: d for d in lote["plugins"]}
+            r = taxa_ponderada(am["amostra"], detalhes,
+                               lambda d: str(d.get("scan_type", "")).lower() == "local",
+                               am["estratos"], base="por_deteccao")
+            saida.append(Indicador.ok(
+                "D4", round(100.0 * r["taxa_ponderada"], 1), n=r["n"],
+                filtro_literal=(f"amostra estratificada de {am['n']} sobre "
+                                f"{censo['plugins_distintos']} plugins criticos, "
+                                f"alocacao proporcional, corte VPR {corte_vpr_amostra}, "
+                                f"semente {am['semente']}"),
+                veredito_preflight="ok",
+                contexto={
+                    "estratos": am["estratos"], "por_estrato": r["por_estrato"],
+                    "ic95_amostra_inteira": r["ic95_amostra_inteira"],
+                    "piso_estrato_b_acionado": am["piso_estrato_b_acionado"],
+                    "plugins_sem_detalhe": lote["lacunas"],
+                    "proxy_declarado": ("plugin de tipo `local` so retorna resultado "
+                                        "com credencial valida ou agente. Nao e leitura "
+                                        "de status de credencial. O parametro "
+                                        "`authenticated` de workbenches e ignorado."),
+                }))
+        except (ErroApi, ValueError) as e:
+            saida.append(Indicador.lacuna_declarada(
+                "D4", causa=str(e), filtro_literal="censo critical + amostra"))
+
+    return [i.para_dict() for i in saida]

@@ -16,7 +16,7 @@ vira **lacuna declarada com causa** — número parcial silencioso é proibido.
 | | Via MCP oficial | Com este servidor |
 |---|---|---|
 | Chamadas para os 17 indicadores | ~40 | ~7 |
-| Detalhe de 20 plugins | 20 chamadas, ~15.000 tokens | 1 chamada, ~1.500 tokens |
+| Detalhe de 20 plugins | 20 chamadas, ~31.900 tokens | 1 chamada, ~900 tokens (**−97,2%**, medido) |
 | MTTR | impossível; exige script Python fora | 1 tool |
 | Cadência (M1) | 12 runs crus, colapsados no cliente | já colapsado em dias distintos |
 
@@ -83,8 +83,8 @@ Onze no total. Contrato completo em `docs/tools.md`.
 | Estado | Tool |
 |---|---|
 | **M0 — pronto** | `ctem_discover_tenant`, `ctem_diagnostico` |
-| M1 | `ctem_scoping`, `ctem_discovery`, `plugin_details_batch` |
-| M2 | `ctem_prioritization`, `ctem_validation`, `plugin_census` |
+| **M1 — pronto** | `ctem_scoping`, `ctem_discovery`, `plugin_details_batch`, `plugin_census` |
+| M2 | `ctem_prioritization`, `ctem_validation` |
 | M3 | `ctem_preflight` |
 | M4 | `mttr_collect`, `mttr_cadence_guard`, `scan_cadence` |
 | M5 | `ctem_mobilization` |

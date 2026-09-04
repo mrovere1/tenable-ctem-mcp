@@ -87,3 +87,189 @@ def test_paginar_para_quando_a_pagina_vem_incompleta(monkeypatch):
     itens = client.paginar("GET", "/qualquer", limite_pagina=200)
     assert len(itens) == 2
     assert len(chamadas) == 1
+
+
+# ===========================================================================
+# GOLDEN TESTS - numeros medidos no sandbox em 2026-09-02/03.
+# Fonte: _docs/execucao-maturidade-sandbox-2026-09-03.md
+#
+# Divergencia e falha. NAO ajuste o numero esperado para passar: investigue.
+# ===========================================================================
+
+from datetime import datetime, timezone
+
+import pytest
+
+MAPEAMENTO = {"categoria_criticidade": "Criticidade", "categoria_owner": "Owner"}
+
+
+def _por_id(lista):
+    return {i["indicador"]: i for i in lista}
+
+
+# --- Retrato do tenant ------------------------------------------------------
+
+def test_retrato_do_tenant_bate_com_o_medido(sandbox):
+    from tenable_ctem_mcp.indicators.discovery import descobrir_tenant
+    r = descobrir_tenant(usar_cache=False)
+
+    assert r["tags"]["quantidade"] == 9
+    assert r["ativos"]["total"] == 30
+    assert r["ativos"]["por_asset_class"]["DEVICE"] == 8
+    assert r["exposure_classes"]["VM"] == 8
+    assert r["exposure_classes"]["WAS"] == 2
+    assert r["exposure_classes"]["CLOUD"] == 0
+    assert r["exposure_classes"]["IDENTITY"] == 0
+    assert r["agentes"]["ativos"] == 7
+
+
+def test_scan_33_tem_12_runs(sandbox):
+    """O scan recorrente do sandbox: 12 runs em 9 dias distintos.
+
+    E o caso que sustenta M1 no marco M5 - mediana 1,42 dia sem colapso,
+    21 dias com colapso.
+    """
+    from tenable_ctem_mcp.indicators.discovery import descobrir_tenant
+    r = descobrir_tenant(usar_cache=False)
+    s33 = next(s for s in r["scans"]["scans"] if s["scan_id"] == 33)
+    assert s33["runs"] == 12
+    assert s33["runs_completed"] == 12
+
+
+# --- Scoping: S1, S2, S3, S4 ------------------------------------------------
+
+@pytest.mark.parametrize("indicador,esperado", [
+    ("S1", 30.0),    # 9 de 30 ativos com ao menos uma tag
+    ("S2", 26.7),    # 8 de 30 com tag de criticidade
+    ("S3", 6.7),     # 2 de 30 com tag de owner
+])
+def test_scoping_bate_com_o_medido(sandbox, indicador, esperado):
+    from tenable_ctem_mcp.indicators.scoping import calcular
+    r = _por_id(calcular(MAPEAMENTO, indicadores=[indicador]))
+    assert r[indicador]["valor"] == esperado
+    assert r[indicador]["veredito_preflight"] == "aplicado"
+
+
+def test_s4_e_informativo_e_nao_pontua(sandbox):
+    from tenable_ctem_mcp.indicators.scoping import calcular
+    s4 = _por_id(calcular(MAPEAMENTO, indicadores=["S4"]))["S4"]
+    assert s4["valor"] is True
+    assert s4["contexto"]["informativo"] is True
+    assert "curadoria" in s4["contexto"]["lacuna_estrutural"]
+
+
+def test_s2_sem_mapeamento_vira_lacuna_e_nao_numero(sandbox):
+    """O servidor nao adivinha o nome da categoria. Sem mapeamento, lacuna."""
+    from tenable_ctem_mcp.indicators.scoping import calcular
+    s2 = _por_id(calcular({}, indicadores=["S2"]))["S2"]
+    assert s2["valor"] is None and s2["lacuna"] is True
+    assert "categoria_criticidade" in s2["causa"]
+
+
+def test_s3_com_categoria_inexistente_lista_as_que_existem(sandbox):
+    from tenable_ctem_mcp.indicators.scoping import calcular
+    s3 = _por_id(calcular({"categoria_owner": "Nao Existe"}, indicadores=["S3"]))["S3"]
+    assert s3["lacuna"] is True
+    assert "Criticidade" in s3["causa"]      # ajuda o consultor a apontar a certa
+
+
+def test_sugestao_de_categoria_nao_decide_sozinha(sandbox):
+    """Sugere, nao escolhe: 'Owner' e 'Team' casam com as pistas de owner."""
+    from tenable_ctem_mcp.indicators.discovery import descobrir_tenant
+    from tenable_ctem_mcp.indicators.scoping import sugerir_categorias
+    s = sugerir_categorias(descobrir_tenant(usar_cache=False)["tags"]["categorias"])
+    assert s["criticidade"] == ["Criticidade"]
+    assert set(s["owner"]) == {"Owner", "Team"}
+
+
+# --- Discovery: D1, D2, D3, D4 ---------------------------------------------
+
+# D1 e uma diferenca contra o instante da coleta. Sem relogio fixo nao existe
+# teste de regressao: o valor cresce sozinho a cada dia. Este instante e o que
+# reproduz os 0,5 dia registrados no documento, sobre o run mais recente da
+# fixture (2026-09-03T00:28:58Z).
+INSTANTE_DA_MEDICAO = datetime(2026, 9, 3, 12, 28, 58, tzinfo=timezone.utc)
+
+
+def test_d1_dias_desde_a_ultima_avaliacao(sandbox):
+    from tenable_ctem_mcp.indicators.discovery import calcular
+    d1 = _por_id(calcular(indicadores=["D1"], agora=INSTANTE_DA_MEDICAO))["D1"]
+    assert d1["valor"] == 0.5
+    assert d1["contexto"]["run_mais_recente_utc"] == "2026-09-03T00:28:58Z"
+    assert d1["contexto"]["invertido"] is True
+
+
+def test_d2_cobertura_das_superficies_licenciadas(sandbox):
+    """Razao percentual, nao contagem absoluta. Um cliente que licencia VM e
+    WAS e cobre as duas nao pode ficar em Defined por ter 'apenas 2'."""
+    from tenable_ctem_mcp.indicators.discovery import calcular
+    d2 = _por_id(calcular(indicadores=["D2"]))["D2"]
+    assert d2["valor"] == 100.0
+    assert d2["contexto"]["presentes"] == ["VM", "WAS"]
+    assert d2["contexto"]["presentes_nao_licenciadas"] == ["WAS"]
+
+
+def test_d3_cobertura_de_agente_sobre_device(sandbox):
+    """Denominador e DEVICE, nao o total de ativos: IDENTITY, ACCOUNT e GROUP
+    nao tem software instalado."""
+    from tenable_ctem_mcp.indicators.discovery import calcular
+    d3 = _por_id(calcular(indicadores=["D3"]))["D3"]
+    assert d3["valor"] == 87.5            # 7 agentes ativos sobre 8 DEVICE
+    assert d3["n"] == 8
+
+
+def test_d4_amostra_detectada_por_plugin_local(sandbox):
+    from tenable_ctem_mcp.indicators.discovery import calcular
+    d4 = _por_id(calcular(indicadores=["D4"]))["D4"]
+    assert d4["valor"] == 100.0
+    assert d4["contexto"]["plugins_sem_detalhe"] == []
+
+
+def test_amostra_de_d4_e_alocada_proporcional_a_populacao(sandbox):
+    """O erro que esta guarda existe para nao repetir: na primeira execucao real
+    a amostra foi 60/40 enquanto a populacao era 65/35. Deu quase certo por
+    coincidencia."""
+    from tenable_ctem_mcp.indicators.discovery import calcular
+    ctx = _por_id(calcular(indicadores=["D4"]))["D4"]["contexto"]
+    a, b = ctx["estratos"]["A"], ctx["estratos"]["B"]
+    assert a["populacao"] + b["populacao"] == 121     # plugins criticos do tenant
+    # a fatia da amostra acompanha a fatia da populacao, dentro de 1 plugin
+    assert abs(a["amostra"] / (a["amostra"] + b["amostra"])
+               - a["share_por_plugin"]) < 1 / (a["amostra"] + b["amostra"])
+
+
+def test_censo_tem_121_plugins_criticos(sandbox):
+    from tenable_ctem_mcp.plugins import plugin_census
+    assert plugin_census("critical")["plugins_distintos"] == 121
+
+
+def test_detalhe_de_plugin_devolve_exatamente_cinco_campos(sandbox):
+    """A economia de token do projeto depende disto. Campo extra aqui e
+    regressao, nao melhoria."""
+    from tenable_ctem_mcp.plugins import (amostrar_estratificado, plugin_census,
+                                          plugin_details_batch)
+    censo = plugin_census("critical")
+    pid = amostrar_estratificado(censo["plugins"])["amostra"][0]["plugin_id"]
+    lote = plugin_details_batch([pid])
+    assert lote["lacunas"] == []       # senao o teste esconde buraco na fixture
+    d = lote["plugins"][0]
+    assert set(d) == {"plugin_id", "scan_type", "published", "exploit_available",
+                      "exploitability", "cisa_known_exploited"}
+    assert d["scan_type"] in ("local", "remote")
+
+
+def test_plugin_sem_detalhe_vira_lacuna_declarada_e_nao_some(sandbox):
+    """Resultado parcial DECLARADO e legitimo; parcial silencioso nao e."""
+    from tenable_ctem_mcp.plugins import plugin_details_batch
+    lote = plugin_details_batch([999999999])
+    assert lote["plugins"] == []
+    assert lote["lacunas"][0]["plugin_id"] == 999999999
+    assert lote["n_pedidos"] == 1 and lote["n_resolvidos"] == 0
+
+
+def test_wilson_reproduz_o_ic_publicado(sandbox):
+    """9 de 20 no KEV deu IC 95% de 25,8% a 65,8% no documento."""
+    from tenable_ctem_mcp.plugins import wilson
+    lo, hi = wilson(9, 20)
+    assert round(lo * 100, 1) == 25.8
+    assert round(hi * 100, 1) == 65.8

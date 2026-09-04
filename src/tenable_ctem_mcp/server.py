@@ -3,10 +3,9 @@
 Transporte: stdio. Nenhum HTTP, nenhuma hospedagem, nenhuma autenticacao de
 rede - decisao fechada.
 
-Estado do marco M0: uma tool registrada, `ctem_discover_tenant`. As outras dez
-entram nos marcos M1 a M5, nesta ordem:
-  M1  ctem_scoping, ctem_discovery, plugin_details_batch
-  M2  ctem_prioritization, ctem_validation, plugin_census
+Estado do marco M1: ctem_discover_tenant, ctem_scoping, ctem_discovery,
+plugin_details_batch, plugin_census. Faltam:
+  M2  ctem_prioritization, ctem_validation
   M3  ctem_preflight
   M4  mttr_collect, mttr_cadence_guard, scan_cadence
   M5  ctem_mobilization
@@ -25,7 +24,10 @@ from mcp.server.mcpserver import MCPServer
 
 from . import __version__, agora_utc
 from .client import ErroApi, origem_tls
+from .indicators import discovery, scoping
 from .indicators.discovery import descobrir_tenant
+from .plugins import plugin_census as _plugin_census
+from .plugins import plugin_details_batch as _plugin_details_batch
 from .preflight import ErroDenyList
 
 mcp = MCPServer(
@@ -74,6 +76,83 @@ def ctem_discover_tenant(usar_cache: bool = True) -> dict[str, Any]:
     try:
         return descobrir_tenant(usar_cache=usar_cache)
     except Exception as e:  # noqa: BLE001 - erro estruturado e o contrato
+        return _erro(e)
+
+
+@mcp.tool()
+def ctem_scoping(mapeamento: dict[str, Any],
+                 indicadores: list[str] | None = None) -> dict[str, Any]:
+    """Estagio 1 - Scoping: S1, S2, S3, S4.
+
+    `mapeamento` e obrigatorio e explicito - o servidor nao adivinha o nome da
+    categoria de tag:
+        {"categoria_criticidade": "Criticidade", "categoria_owner": "Owner"}
+    Sem ele, S2 e S3 viram lacuna e a resposta lista as categorias que existem.
+    Use `ctem_discover_tenant` antes para ver as categorias do tenant.
+
+    S1 % de ativos com ao menos uma tag - S2 % com tag de criticidade
+    S3 % com tag de owner - S4 Crown Jewels declarados (INFORMATIVO, nao pontua)
+
+    `indicadores=["S2","S3"]` calcula so o subconjunto pedido.
+    """
+    try:
+        return {"indicadores": scoping.calcular(mapeamento, indicadores)}
+    except Exception as e:  # noqa: BLE001
+        return _erro(e)
+
+
+@mcp.tool()
+def ctem_discovery(indicadores: list[str] | None = None,
+                   superficies_licenciadas: list[str] | None = None,
+                   corte_vpr_amostra: float = 7.0,
+                   n_amostra: int = 30) -> dict[str, Any]:
+    """Estagio 2 - Discovery: D1, D2, D3, D4.
+
+    D1 dias desde a ultima avaliacao (invertido; fonte: scan_history, nunca
+       filtro de data em findings nem o parametro `age`)
+    D2 % das superficies licenciadas cobertas - passe `superficies_licenciadas`
+       (default ["VM"]). E razao percentual, nao contagem
+    D3 % de ativos DEVICE com agente - denominador e DEVICE, nao o total
+    D4 % da amostra detectada por plugin local, com amostra estratificada de
+       alocacao proporcional e intervalo de Wilson no contexto
+
+    `indicadores=["D1","D3"]` evita as chamadas de plugin que D4 exigiria.
+    """
+    try:
+        return {"indicadores": discovery.calcular(
+            indicadores, superficies_licenciadas, corte_vpr_amostra, n_amostra)}
+    except Exception as e:  # noqa: BLE001
+        return _erro(e)
+
+
+@mcp.tool()
+def plugin_details_batch(plugin_ids: list[int]) -> dict[str, Any]:
+    """Detalhe de varios plugins numa chamada, com CINCO campos por plugin.
+
+    Devolve so: scan_type (local/remote), published, exploit_available,
+    exploitability e as datas de CISA-KNOWN-EXPLOITED.
+
+    O detalhe completo de um plugin tem ~8.200 caracteres e 97 atributos. Vinte
+    plugins pelo caminho completo sao ~15.000 tokens; por aqui, ~1.500. Plugin
+    que falhar entra em `lacunas` com a causa, e os outros continuam.
+    """
+    try:
+        return _plugin_details_batch(plugin_ids)
+    except Exception as e:  # noqa: BLE001
+        return _erro(e)
+
+
+@mcp.tool()
+def plugin_census(severity: str = "critical") -> dict[str, Any]:
+    """Quadro de amostragem: plugin, contagem de deteccoes, VPR e familia.
+
+    Uma chamada, em cache por TTL curto. E o denominador de D4, M3, V1 e V2.
+    Nao existe censo por busca: plugins_search_plugins aceita palavra-chave e
+    CVE, nao lista de IDs de plugin.
+    """
+    try:
+        return _plugin_census(severity)
+    except Exception as e:  # noqa: BLE001
         return _erro(e)
 
 

@@ -55,3 +55,26 @@ quinze minutos depois passou a funcionar.
 
 **Nunca validar escrita por leitura imediata do índice**, e nunca concluir que um filtro está
 quebrado com base em leitura feita logo após uma escrita.
+
+---
+
+## O que a API direta alcança e o MCP oficial não
+
+Medido em 2026-09-03, ao portar as consultas para a API REST. **Nenhum destes itens muda a fórmula
+de indicador por conta própria** — cada mudança é decisão da skill, e está listada aqui para ser
+decidida, não aplicada em silêncio.
+
+| Item | Status pelo MCP oficial | Status pela API direta |
+|---|---|---|
+| `patch_publication_date` | "não alcançável" | **disponível** em `GET /plugins/plugin/{id}` |
+
+**Por que importa.** M3 mede "mediana da idade da correção disponível" e hoje usa `Published` — a
+data de publicação do *plugin de detecção* — como **proxy declarado**, porque a data do patch do
+fabricante era inalcançável. Ela não é mais.
+
+No sandbox as duas datas coincidem na maioria dos plugins da amostra, mas não em todos: o plugin
+294870 tem `Published = 2026/01/21` e `patch_publication_date = 2026/01/20`.
+
+**Não foi aplicado.** `plugin_details_batch` expõe cinco campos, e isso é regra fechada do projeto
+por causa da economia de token. Trocar o proxy de M3 pelo dado real é uma decisão da skill, e custa
+um campo a mais no lote.
