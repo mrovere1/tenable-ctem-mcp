@@ -61,6 +61,10 @@ report would break the operator's ability to find it in the console.
 The dashboard still ships with all three languages available through the header selector — that
 switch is for the reader who receives the file, not for the operator running the assessment.
 
+**The default is EN**, and it applies whenever the operator does not choose: an unanswered Step 0, an
+invocation that names no language, or a request written in another language without naming one. A
+request written in Portuguese is not a request for a Portuguese report.
+
 ---
 
 ## The fact that determines this skill's design
@@ -120,6 +124,20 @@ Use `ask_user_input_v0`. **Every mapping question offers the options found in Ph
 them".** Never free text where a list will do.
 
 ### Phase B.1 — The confirmation screen, before any question
+
+> **Ask in the report language, not in the language of the conversation.** If Step 0 says EN, every
+> question, option label and proposal-table heading below is written in English — even when the
+> operator has been chatting in Portuguese or Spanish, and even when they wrote the request itself in
+> another language. The conversation's language is not a signal; the declared report language is the
+> only one. Getting this backwards was a real defect found on 2026-09-04: the run was invoked with
+> `Report language: EN` and the confirmation questions came back in Portuguese, because the surrounding
+> conversation was Portuguese. An operator who asks for English and is questioned in another language
+> cannot hand the run to a colleague, and cannot trust that the report will come back in the language
+> they asked for.
+>
+> The tenant's own data is the exception, and it is never translated: category names, tag values and
+> scan names are quoted exactly as they exist in the tenant, inside a question written in the report
+> language.
 
 **Do not open with 14 questions.** After Phase A, build **one proposal table** with the 14 fields
 filled in with the best guess from discovery, plus the reason for each guess, and ask **one**
