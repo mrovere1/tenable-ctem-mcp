@@ -221,6 +221,44 @@ detecção e **54,6%** por plugin. Taxa ponderada sem base declarada não é ver
 e `"SEoL"`, deduplicando por `asset_id`. `unsupported_by_vendor` existe na API mas não é alcançável.
 O denominador é DEVICE: no sandbox, 7/30 daria 23% e 7/8 dá 87,5% — dois estágios de distância.
 
+## `ctem_mobilization(mapeamento=None, indicadores=None, ...)`  — M5
+
+Estágio 5: **M1, M2, M3, M4**.
+
+| ID | Fórmula | Nota |
+|---|---|---|
+| M1 | mediana do intervalo entre **dias distintos** de avaliação · invertido | colapso no servidor, sempre |
+| M2 | maior intervalo · invertido | **não muda** com o colapso |
+| M3 | `mediana(agora − Published)` na amostra · invertido | `Published` é proxy declarado |
+| M4 | MTTR, via `mttr_collect`, **com a guarda de cadência aplicada** | vira lacuna quando a guarda dispara |
+
+**`mapeamento["scans_recorrentes"]` é obrigatório para M1 e M2.** O servidor não escolhe quais scans
+representam a cadência de avaliação, e a razão está medida:
+
+| Seleção | Mediana | Máximo |
+|---|---|---|
+| só o scan recorrente | **21,0 d** | **140 d** |
+| todos os scans com histórico | 1,0 d | 89 d |
+
+Um dos scans do sandbox roda quase todo dia e não representa a avaliação dos ativos em escopo. Dois
+estágios de diferença saindo de uma escolha que ninguém declarou é o pior tipo de número. Sem o
+parâmetro, M1 e M2 viram lacuna e a causa lista os scans com histórico.
+
+**M1 traz `mediana_sem_colapso_dias` no contexto, sempre** — 1,42 dia contra os 21 — para o leitor
+ver o que o colapso muda.
+
+**M4 vira lacuna quando a guarda dispara, e isso é resultado correto.** No sandbox as 7 datas que
+formam as 9 janelas são 7 de 7 datas de execução de scan: com cadência dominante, M4 mediria a mesma
+coisa que M1 e M2 — contaria cadência duas vezes chamando de maturidade de remediação o que é
+maturidade de avaliação. Os dois `p50` continuam visíveis no contexto, porque a skill precisa deles
+no texto do relatório.
+
+**M4 não pontua sozinho.** O valor é `{"p50_critical", "p50_high"}` e o estágio é o **menor dos
+dois** — mobilização madura fecha as duas severidades, não compensa uma com a outra. O cálculo do
+estágio é da skill; o servidor entrega os dois números e os cortes.
+
+Se o export estourar `mttr_max_wait_s`, M4 vira **lacuna recuperável** com o `export_uuid` na causa.
+
 ## `plugin_details_batch(plugin_ids)`  — M1
 
 **O maior ganho de token do projeto.** Devolve exatamente cinco campos por plugin: `scan_type`,

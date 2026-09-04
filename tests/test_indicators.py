@@ -425,3 +425,122 @@ def test_amostra_e_reproduzivel_entre_execucoes(sandbox):
     CACHE.limpar()
     b = [p["plugin_id"] for p in amostra_com_detalhes()["amostra"]["amostra"]]
     assert a == b and len(a) == 30
+
+
+# --- Mobilization: M1, M2, M3, M4 ------------------------------------------
+
+SCANS_RECORRENTES = {"scans_recorrentes": [33]}
+
+
+def test_m1_usa_dias_distintos_e_nao_runs_crus(sandbox):
+    """O CRITERIO DE PRONTO DO M5.
+
+    A formula anterior era "mediana do intervalo entre runs completed
+    consecutivos", e estava errada: um scan relancado minutos depois e a MESMA
+    avaliacao. Os 12 runs do scan recorrente caem em 9 dias distintos; a mediana
+    crua da 1,42 dia - numero sem sentido para um tenant que avaliou em 9 dias
+    ao longo de 12 meses. Colapsada, 21 dias: Standardized em vez de Optimized.
+    """
+    from tenable_ctem_mcp.indicators.mobilization import calcular
+    m1 = _por_id(calcular(SCANS_RECORRENTES, indicadores=["M1"]))["M1"]
+    assert m1["valor"] == 21.0
+    assert m1["valor"] != 1.42
+    assert m1["contexto"]["intervalos_dias"] == [140, 40, 2, 89, 1, 1, 85, 1]
+    assert m1["contexto"]["dias_distintos"] == 9
+    # o contraste vai junto, sempre, para o leitor ver o que o colapso muda
+    assert m1["contexto"]["mediana_sem_colapso_dias"]["33"] == 1.42
+
+
+def test_m2_maior_lacuna_nao_muda_com_o_colapso(sandbox):
+    from tenable_ctem_mcp.cadence import scan_cadence
+    from tenable_ctem_mcp.indicators.mobilization import calcular
+    m2 = _por_id(calcular(SCANS_RECORRENTES, indicadores=["M2"]))["M2"]
+    assert m2["valor"] == 140.0
+    assert scan_cadence([33], colapsar_runs_do_mesmo_dia=False)["maximo_dias"] == 140
+
+
+def test_m1_sem_scans_declarados_e_lacuna(sandbox):
+    """O servidor nao escolhe quais scans representam a cadencia, e a razao esta
+    medida: com todos os scans com historico a mediana cai de 21 para 1,0 e o
+    maximo de 140 para 89, porque um deles roda quase todo dia."""
+    from tenable_ctem_mcp.indicators.mobilization import calcular
+    m1 = _por_id(calcular({}, indicadores=["M1"]))["M1"]
+    assert m1["lacuna"] is True and m1["valor"] is None
+    assert "scans_recorrentes" in m1["causa"]
+    assert "33" in m1["causa"]          # lista os scans com historico
+
+
+def test_m3_rotula_published_como_proxy_declarado(sandbox):
+    """`Published` e a data do PLUGIN DE DETECCAO, nao a do patch."""
+    from tenable_ctem_mcp.indicators.mobilization import calcular
+    m3 = _por_id(calcular(SCANS_RECORRENTES, indicadores=["M3"],
+                          agora=INSTANTE_DA_MEDICAO))["M3"]
+    assert m3["valor"] == 1047.0
+    assert m3["contexto"]["invertido"] is True
+    assert "proxy" in m3["contexto"]["proxy_declarado"]
+    assert "patch_publication_date" in m3["contexto"]["proxy_declarado"]
+
+
+def test_m4_vira_lacuna_quando_a_guarda_de_cadencia_dispara(sandbox, monkeypatch):
+    """No sandbox M4 e lacuna POR MERITO: as 7 datas que formam as janelas sao
+    7 de 7 datas de execucao de scan. Com cadencia dominante, M4 mediria a mesma
+    coisa que M1 e M2 - contaria cadencia duas vezes."""
+    import json
+    from pathlib import Path
+
+    from tenable_ctem_mcp import mttr
+    from tenable_ctem_mcp.indicators import mobilization
+
+    d = json.loads((Path(__file__).parent / "fixtures"
+                    / "mttr_export_2026-09-03.json").read_text(encoding="utf-8"))
+    linhas = [dict(zip(d["campos"], l)) for l in d["linhas"]]
+    resumo = mttr.resumir(linhas, d["filtros_pedidos"], "uuid-fixture", d["status"], 2)
+    resumo["status"] = "concluido"
+    monkeypatch.setattr(mobilization, "mttr_collect", lambda **k: resumo)
+
+    m4 = _por_id(mobilization.calcular(SCANS_RECORRENTES, indicadores=["M4"]))["M4"]
+    assert m4["lacuna"] is True and m4["valor"] is None
+    assert "cadencia de avaliacao" in m4["causa"]
+    g = m4["contexto"]["guarda_de_cadencia"]
+    assert g["pct_em_lote"] == 93.5
+    assert g["todas_as_datas_sao_de_scan"] is True
+    # os p50 continuam visiveis mesmo na lacuna: a skill precisa deles no texto
+    assert m4["contexto"]["p50_critical"] == 42.94
+    assert m4["contexto"]["p50_high"] == 85.51
+
+
+def test_m4_pendente_e_lacuna_recuperavel_com_uuid(sandbox, monkeypatch):
+    """Export em andamento nao e falha: e lacuna recuperavel, e a causa carrega
+    o export_uuid para a proxima chamada retomar."""
+    from tenable_ctem_mcp.indicators import mobilization
+
+    monkeypatch.setattr(mobilization, "mttr_collect",
+                        lambda **k: {"status": "pendente", "export_uuid": "u-123",
+                                     "status_do_job": "PROCESSING"})
+    m4 = _por_id(mobilization.calcular(SCANS_RECORRENTES, indicadores=["M4"]))["M4"]
+    assert m4["lacuna"] is True
+    assert "u-123" in m4["causa"] and "409" in m4["causa"]
+
+
+def test_m4_declara_que_e_o_menor_dos_dois_estagios(sandbox, monkeypatch):
+    """Mobilizacao madura fecha as duas severidades, nao compensa uma com a
+    outra. O estagio e da skill; o servidor entrega os dois p50 e os cortes."""
+    from tenable_ctem_mcp.indicators import mobilization
+
+    resumo = {
+        "status": "concluido", "export_uuid": "u",
+        "cadencia_de_scan": {"janelas": [{"ativo": "a", "first_found": "2026-01-05",
+                                          "last_fixed": "2026-01-09", "findings": 1}],
+                             "findings_com_mttr": 1},
+        "mttr_por_severidade": {"critical": {"mttr_dias_p50": 12.0},
+                                "high": {"mttr_dias_p50": 40.0}},
+        "metodo_percentil": "interpolado", "estados_incluidos_no_mttr": ["FIXED"],
+        "severidade_modificada_diferente_de_none": 0,
+    }
+    monkeypatch.setattr(mobilization, "mttr_collect", lambda **k: resumo)
+    m4 = _por_id(mobilization.calcular({"scans_recorrentes": [33]},
+                                       indicadores=["M4"]))["M4"]
+    assert m4.get("lacuna", False) is False
+    assert m4["valor"] == {"p50_critical": 12.0, "p50_high": 40.0}
+    assert m4["contexto"]["cortes"]["critical"] == [90, 30, 15, 7]
+    assert "MENOR dos dois" in m4["contexto"]["como_pontuar"]

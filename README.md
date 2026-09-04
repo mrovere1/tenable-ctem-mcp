@@ -78,7 +78,12 @@ na configuração do cliente — nunca como parâmetro de tool.
 
 ## Tools
 
-Onze no total. Contrato completo em `docs/tools.md`.
+Doze tools de assessment, mais `ctem_diagnostico` para troubleshooting. Contrato completo em
+`docs/tools.md`.
+
+**Execução de aceitação, medida de ponta a ponta pelo transporte stdio:** os 19 indicadores em
+**6 chamadas de tool**, com M4 como única lacuna — e lacuna por mérito, porque a guarda de cadência
+dispara.
 
 | Estado | Tool |
 |---|---|
@@ -87,7 +92,7 @@ Onze no total. Contrato completo em `docs/tools.md`.
 | **M2 — pronto** | `ctem_prioritization`, `ctem_validation` |
 | **M3 — pronto** | `ctem_preflight` |
 | **M4 — pronto** | `mttr_collect`, `mttr_cadence_guard`, `scan_cadence` |
-| M5 | `ctem_mobilization` |
+| **M5 — pronto** | `ctem_mobilization` |
 
 ## Testes
 

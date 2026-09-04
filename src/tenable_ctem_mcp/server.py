@@ -3,7 +3,7 @@
 Transporte: stdio. Nenhum HTTP, nenhuma hospedagem, nenhuma autenticacao de
 rede - decisao fechada.
 
-Estado do marco M4: falta so o M5, ctem_mobilization.
+Estado do marco M5: as 11 tools registradas, mais ctem_diagnostico.
 
 NOTA sobre o SDK: o CLAUDE.md pede "FastMCP se disponivel no SDK". No SDK
 oficial 2.x FastMCP foi renomeado para MCPServer; a ergonomia e a mesma
@@ -19,7 +19,8 @@ from mcp.server.mcpserver import MCPServer
 
 from . import __version__, agora_utc
 from .client import ErroApi, origem_tls
-from .indicators import discovery, prioritization, scoping, validation
+from .indicators import (discovery, mobilization, prioritization, scoping,
+                         validation)
 from .indicators.discovery import descobrir_tenant
 from .cadence import scan_cadence as _scan_cadence
 from .mttr import ErroFiltroDivergente
@@ -203,6 +204,44 @@ def ctem_validation(mapeamento: dict[str, Any] | None = None,
     try:
         return {"indicadores": validation.calcular(
             mapeamento, indicadores, corte_vpr_amostra, n_amostra, ponderar)}
+    except Exception as e:  # noqa: BLE001
+        return _erro(e)
+
+
+@mcp.tool()
+def ctem_mobilization(mapeamento: dict[str, Any] | None = None,
+                      indicadores: list[str] | None = None,
+                      corte_vpr_amostra: float = 7.0, n_amostra: int = 30,
+                      mttr_days: int = 180,
+                      mttr_severities: list[str] | None = None,
+                      mttr_max_wait_s: int = 240,
+                      mttr_export_uuid: str | None = None,
+                      corte_lote: int = 2,
+                      pct_em_lote_max: float = 40.0) -> dict[str, Any]:
+    """Estagio 5 - Mobilization: M1, M2, M3, M4.
+
+    M1 cadencia mediana de avaliacao (invertido) - runs COLAPSADOS em dias
+       distintos, no servidor. Sem colapso a mediana do sandbox e 1,42 dia;
+       com colapso, 21 - dois estagios de diferenca
+    M2 maior lacuna de avaliacao (invertido) - nao muda com o colapso
+    M3 mediana da idade da correcao disponivel (invertido) - `Published` e
+       proxy declarado da data do patch
+    M4 MTTR, via mttr_collect, COM a guarda de cadencia aplicada
+
+    `mapeamento["scans_recorrentes"]` e OBRIGATORIO para M1 e M2: o servidor nao
+    escolhe quais scans representam a cadencia. No sandbox, so o scan recorrente
+    da mediana 21 e maximo 140; somando todos os scans com historico da mediana
+    1,0 e maximo 89, porque um deles roda quase todo dia.
+
+    M4 vira LACUNA quando a guarda dispara - e resultado correto, nao defeito.
+    Se o export estourar `mttr_max_wait_s`, M4 vira lacuna recuperavel com o
+    `export_uuid` na causa; chame de novo passando `mttr_export_uuid`.
+    """
+    try:
+        return {"indicadores": mobilization.calcular(
+            mapeamento, indicadores, corte_vpr_amostra, n_amostra, mttr_days,
+            mttr_severities, mttr_max_wait_s, mttr_export_uuid, corte_lote,
+            pct_em_lote_max)}
     except Exception as e:  # noqa: BLE001
         return _erro(e)
 
