@@ -3,9 +3,8 @@
 Transporte: stdio. Nenhum HTTP, nenhuma hospedagem, nenhuma autenticacao de
 rede - decisao fechada.
 
-Estado do marco M2: os quatro tools de estagio de S a V, mais as primitivas
-de plugin. Faltam:
-  M3  ctem_preflight
+Estado do marco M3: os quatro tools de estagio de S a V, as primitivas de
+plugin e o pre-voo. Faltam:
   M4  mttr_collect, mttr_cadence_guard, scan_cadence
   M5  ctem_mobilization
 
@@ -28,6 +27,7 @@ from .indicators.discovery import descobrir_tenant
 from .plugins import plugin_census as _plugin_census
 from .plugins import plugin_details_batch as _plugin_details_batch
 from .preflight import ErroDenyList
+from .preflight import executar_preflight as _executar_preflight
 
 mcp = MCPServer(
     name="tenable-ctem-mcp",
@@ -75,6 +75,29 @@ def ctem_discover_tenant(usar_cache: bool = True) -> dict[str, Any]:
     try:
         return descobrir_tenant(usar_cache=usar_cache)
     except Exception as e:  # noqa: BLE001 - erro estruturado e o contrato
+        return _erro(e)
+
+
+@mcp.tool()
+def ctem_preflight(severity_workbenches: str = "critical") -> dict[str, Any]:
+    """A tabela PREFLIGHT pronta: cada filtro que a skill usa, testado ao vivo.
+
+    Nenhum veredito e herdado de documento. Tres formas de prova:
+      par_exclusivo     duas consultas mutuamente exclusivas cujos totais tem de
+                        somar o corpus - "reduziu" nao basta, um filtro pode
+                        reduzir por acaso
+      booleano          true e false; totais iguais significam parametro ignorado
+      monotonico        escada de cortes que tem de ser estritamente decrescente
+
+    Devolve tambem `deny_list`: os filtros que o servidor rejeita ANTES de a
+    requisicao sair, com a regra e a prova medida de cada um.
+
+    Rode isto antes de publicar qualquer numero derivado de filtro. Custa
+    consultas com limit=1, porque so o campo `total` importa.
+    """
+    try:
+        return _executar_preflight(severity_workbenches)
+    except Exception as e:  # noqa: BLE001
         return _erro(e)
 
 

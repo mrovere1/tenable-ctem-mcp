@@ -133,3 +133,25 @@ o que prova que o filtro está sendo aplicado.
 **Consequência para o assessment:** P1 continuou 100% e a identidade de soma continuou fechando
 (87 + 492 = 579), então o indicador não mudou. Vale declarar a data da coleta junto do número de
 backlog crítico, porque ele não é reproduzível uma semana depois.
+
+---
+
+## Quatro vereditos da matriz que mudam na API direta
+
+`_docs/matriz-confianca-filtros-mcp.md` foi medida **através do MCP oficial**. Este servidor fala
+direto com a API REST, e ali quatro vereditos são outros. **A matriz não está errada** — ela
+descreve o caminho dela. Rodar `ctem_preflight()` reexecuta tudo e é a fonte para este caminho.
+
+1. **Filtro de data em findings não é ignorado em bloco.** Os operadores relativos (`within last`,
+   `older than`, `newer than`) são ignorados; os de comparação (`<`, `>=`) são aplicados.
+   *Prova:* `older than 3650d` → 50 e `within last 1d` → 50, mutuamente exclusivos e ambos com o
+   corpus inteiro; mas `< 2020-01-01` → 0 e `>= 2020-01-01` → 50, que somam 50.
+2. **`exists` em `finding_vpr_score` funciona.** O HTTP 400 vem de `value` vazio, e a mensagem é
+   *"Missing value in filter"*. *Prova:* `exists` → 4.462 e `not exists` → 1.024, somando 5.486.
+3. **`resolvable` está provado ignorado**, e não apenas presumido: `true` → 121, `false` → 121.
+4. **`age` não é parâmetro desta API.** O nome real é `date_range`, e ele é aplicado
+   (1 → 17, 30 → 118, 90 → 121). `age` é descartado em silêncio — o pior caso.
+
+**Isto não reabre MTTR.** `last_fixed` e `time_taken_to_fix` continuam ausentes das 44 propriedades
+de findings da API de Exposure Management. `mttr_collect` por `POST /vulns/export` segue sendo o
+único caminho.

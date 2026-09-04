@@ -85,7 +85,7 @@ Onze no total. Contrato completo em `docs/tools.md`.
 | **M0 — pronto** | `ctem_discover_tenant`, `ctem_diagnostico` |
 | **M1 — pronto** | `ctem_scoping`, `ctem_discovery`, `plugin_details_batch`, `plugin_census` |
 | **M2 — pronto** | `ctem_prioritization`, `ctem_validation` |
-| M3 | `ctem_preflight` |
+| **M3 — pronto** | `ctem_preflight` |
 | M4 | `mttr_collect`, `mttr_cadence_guard`, `scan_cadence` |
 | M5 | `ctem_mobilization` |
 

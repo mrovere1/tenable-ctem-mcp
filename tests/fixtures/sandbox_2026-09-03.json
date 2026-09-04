@@ -1066,7 +1066,7 @@
     "default_tag": 0
    }
   ],
-  "timestamp": 1788485936
+  "timestamp": 1788488957
  },
  "[\"GET\", \"/scans/31/history\", null, {\"limit\": 200, \"offset\": 0}]": {
   "history": [],
@@ -4367,11 +4367,11 @@
     "distro": "macosx",
     "ip": "redigido-000628",
     "last_scanned": 1788414050,
-    "plugin_feed_id": "202609020523",
+    "plugin_feed_id": "202609031308",
     "core_build": "9",
     "core_version": "11.2.2",
     "linked_on": 1772977818,
-    "last_connect": 1788485506,
+    "last_connect": 1788488816,
     "status": "on",
     "groups": [
      {
@@ -4406,7 +4406,7 @@
     "core_build": "9",
     "core_version": "11.2.2",
     "linked_on": 1788358319,
-    "last_connect": 1788485537,
+    "last_connect": 1788488599,
     "status": "on",
     "groups": [
      {
@@ -4441,7 +4441,7 @@
     "core_build": "9",
     "core_version": "11.2.2",
     "linked_on": 1788359276,
-    "last_connect": 1788485858,
+    "last_connect": 1788488919,
     "status": "on",
     "groups": [
      {
@@ -4476,7 +4476,7 @@
     "core_build": "9",
     "core_version": "11.2.2",
     "linked_on": 1788359896,
-    "last_connect": 1788485759,
+    "last_connect": 1788488821,
     "status": "on",
     "groups": [
      {
@@ -4511,7 +4511,7 @@
     "core_build": "9",
     "core_version": "11.2.2",
     "linked_on": 1788362312,
-    "last_connect": 1788485562,
+    "last_connect": 1788488623,
     "status": "on",
     "groups": [
      {
@@ -4546,7 +4546,7 @@
     "core_build": "9",
     "core_version": "11.2.2",
     "linked_on": 1788360333,
-    "last_connect": 1788485480,
+    "last_connect": 1788488542,
     "status": "on",
     "groups": [
      {
@@ -4581,7 +4581,7 @@
     "core_build": "9",
     "core_version": "11.2.2",
     "linked_on": 1788362134,
-    "last_connect": 1788485658,
+    "last_connect": 1788488720,
     "status": "on",
     "groups": [
      {
@@ -16874,6 +16874,3185 @@
     "order": "desc"
    }
   }
+ },
+ "[\"POST\", \"/api/v1/t1/inventory/findings/search\", {\"filters\": [{\"operator\": \"=\", \"property\": \"state\", \"value\": [\"FIXED\"]}, {\"operator\": \"older than\", \"property\": \"last_updated\", \"value\": [\"3650d\"]}]}, {\"limit\": 1}]": {
+  "data": [
+   {
+    "id": "00000000-0000-0000-0000-000000000313",
+    "name": "macOS 26.x < 26.5 Multiple Vulnerabilities (127115)",
+    "asset_id": "00000000-0000-0000-0000-000000000297",
+    "state": "FIXED",
+    "severity": "HIGH",
+    "extra_properties": {}
+   }
+  ],
+  "pagination": {
+   "total": 50,
+   "offset": 0,
+   "limit": 1,
+   "sort": {
+    "name": "finding_severity",
+    "order": "desc"
+   }
+  }
+ },
+ "[\"POST\", \"/api/v1/t1/inventory/findings/search\", {\"filters\": [{\"operator\": \"=\", \"property\": \"state\", \"value\": [\"FIXED\"]}, {\"operator\": \"within last\", \"property\": \"last_updated\", \"value\": [\"1d\"]}]}, {\"limit\": 1}]": {
+  "data": [
+   {
+    "id": "00000000-0000-0000-0000-000000000313",
+    "name": "macOS 26.x < 26.5 Multiple Vulnerabilities (127115)",
+    "asset_id": "00000000-0000-0000-0000-000000000297",
+    "state": "FIXED",
+    "severity": "HIGH",
+    "extra_properties": {}
+   }
+  ],
+  "pagination": {
+   "total": 50,
+   "offset": 0,
+   "limit": 1,
+   "sort": {
+    "name": "finding_severity",
+    "order": "desc"
+   }
+  }
+ },
+ "[\"POST\", \"/api/v1/t1/inventory/findings/search\", {\"filters\": [{\"operator\": \"=\", \"property\": \"state\", \"value\": [\"FIXED\"]}, {\"operator\": \"<\", \"property\": \"last_updated\", \"value\": [\"2020-01-01\"]}]}, {\"limit\": 1}]": {
+  "data": [],
+  "pagination": {
+   "total": 0,
+   "offset": 0,
+   "limit": 1,
+   "sort": {
+    "name": "finding_severity",
+    "order": "desc"
+   }
+  }
+ },
+ "[\"POST\", \"/api/v1/t1/inventory/findings/search\", {\"filters\": [{\"operator\": \"=\", \"property\": \"state\", \"value\": [\"FIXED\"]}, {\"operator\": \">=\", \"property\": \"last_updated\", \"value\": [\"2020-01-01\"]}]}, {\"limit\": 1}]": {
+  "data": [
+   {
+    "id": "00000000-0000-0000-0000-000000000313",
+    "name": "macOS 26.x < 26.5 Multiple Vulnerabilities (127115)",
+    "asset_id": "00000000-0000-0000-0000-000000000297",
+    "state": "FIXED",
+    "severity": "HIGH",
+    "extra_properties": {}
+   }
+  ],
+  "pagination": {
+   "total": 50,
+   "offset": 0,
+   "limit": 1,
+   "sort": {
+    "name": "finding_severity",
+    "order": "desc"
+   }
+  }
+ },
+ "[\"POST\", \"/api/v1/t1/inventory/findings/search\", {\"filters\": [{\"operator\": \"exists\", \"property\": \"finding_vpr_score\", \"value\": [\"true\"]}]}, {\"limit\": 1}]": {
+  "data": [
+   {
+    "id": "00000000-0000-0000-0000-000000000309",
+    "name": "macOS 26.x < 26.6.1 (148170)",
+    "asset_id": "00000000-0000-0000-0000-000000000297",
+    "state": "ACTIVE",
+    "severity": "CRITICAL",
+    "extra_properties": {}
+   }
+  ],
+  "pagination": {
+   "total": 4462,
+   "offset": 0,
+   "limit": 1,
+   "sort": {
+    "name": "finding_severity",
+    "order": "desc"
+   }
+  }
+ },
+ "[\"POST\", \"/api/v1/t1/inventory/findings/search\", {\"filters\": [{\"operator\": \"not exists\", \"property\": \"finding_vpr_score\", \"value\": [\"true\"]}]}, {\"limit\": 1}]": {
+  "data": [
+   {
+    "id": "00000000-0000-0000-0000-000000000314",
+    "name": "Microsoft Office Unsupported Version Detection",
+    "asset_id": "00000000-0000-0000-0000-000000000311",
+    "state": "ACTIVE",
+    "severity": "CRITICAL",
+    "extra_properties": {}
+   }
+  ],
+  "pagination": {
+   "total": 1024,
+   "offset": 0,
+   "limit": 1,
+   "sort": {
+    "name": "finding_severity",
+    "order": "desc"
+   }
+  }
+ },
+ "[\"POST\", \"/api/v1/t1/inventory/assets/search\", {}, {\"limit\": 1}]": {
+  "data": [
+   {
+    "id": "00000000-0000-0000-0000-000000000001",
+    "asset_class": "APPLICATION",
+    "name": "Juice Shop",
+    "aes": 833,
+    "acr": 9,
+    "extra_properties": {},
+    "connectors": {}
+   }
+  ],
+  "pagination": {
+   "total": 30,
+   "offset": 0,
+   "limit": 1,
+   "sort": {
+    "name": "aes",
+    "order": "desc"
+   }
+  }
+ },
+ "[\"POST\", \"/api/v1/t1/inventory/assets/search\", {\"filters\": [{\"operator\": \"=\", \"property\": \"asset_class\", \"value\": [\"DEVICE\"]}]}, {\"limit\": 1}]": {
+  "data": [
+   {
+    "id": "00000000-0000-0000-0000-000000000002",
+    "asset_class": "DEVICE",
+    "name": "skostation6",
+    "aes": 707,
+    "acr": 5,
+    "extra_properties": {},
+    "connectors": {}
+   }
+  ],
+  "pagination": {
+   "total": 8,
+   "offset": 0,
+   "limit": 1,
+   "sort": {
+    "name": "aes",
+    "order": "desc"
+   }
+  }
+ },
+ "[\"GET\", \"/workbenches/vulnerabilities\", null, {\"authenticated\": \"true\", \"filter.0.filter\": \"severity\", \"filter.0.quality\": \"eq\", \"filter.0.value\": \"critical\", \"filter.search_type\": \"and\"}]": {
+  "vulnerabilities": [
+   {
+    "plugin_id": 314348
+   },
+   {
+    "plugin_id": 306431
+   },
+   {
+    "plugin_id": 301765
+   },
+   {
+    "plugin_id": 301678
+   },
+   {
+    "plugin_id": 298556
+   },
+   {
+    "plugin_id": 294870
+   },
+   {
+    "plugin_id": 283466
+   },
+   {
+    "plugin_id": 277997
+   },
+   {
+    "plugin_id": 274780
+   },
+   {
+    "plugin_id": 261798
+   },
+   {
+    "plugin_id": 249125
+   },
+   {
+    "plugin_id": 249112
+   },
+   {
+    "plugin_id": 242325
+   },
+   {
+    "plugin_id": 242293
+   },
+   {
+    "plugin_id": 238092
+   },
+   {
+    "plugin_id": 235842
+   },
+   {
+    "plugin_id": 234624
+   },
+   {
+    "plugin_id": 234044
+   },
+   {
+    "plugin_id": 232612
+   },
+   {
+    "plugin_id": 216134
+   },
+   {
+    "plugin_id": 214123
+   },
+   {
+    "plugin_id": 212232
+   },
+   {
+    "plugin_id": 210850
+   },
+   {
+    "plugin_id": 208298
+   },
+   {
+    "plugin_id": 206902
+   },
+   {
+    "plugin_id": 205447
+   },
+   {
+    "plugin_id": 202043
+   },
+   {
+    "plugin_id": 200351
+   },
+   {
+    "plugin_id": 197009
+   },
+   {
+    "plugin_id": 193574
+   },
+   {
+    "plugin_id": 193160
+   },
+   {
+    "plugin_id": 193097
+   },
+   {
+    "plugin_id": 192778
+   },
+   {
+    "plugin_id": 191934
+   },
+   {
+    "plugin_id": 190787
+   },
+   {
+    "plugin_id": 190487
+   },
+   {
+    "plugin_id": 187800
+   },
+   {
+    "plugin_id": 186791
+   },
+   {
+    "plugin_id": 185576
+   },
+   {
+    "plugin_id": 184379
+   },
+   {
+    "plugin_id": 184371
+   },
+   {
+    "plugin_id": 184369
+   },
+   {
+    "plugin_id": 182874
+   },
+   {
+    "plugin_id": 182862
+   },
+   {
+    "plugin_id": 179498
+   },
+   {
+    "plugin_id": 178152
+   },
+   {
+    "plugin_id": 177246
+   },
+   {
+    "plugin_id": 175339
+   },
+   {
+    "plugin_id": 174120
+   },
+   {
+    "plugin_id": 172532
+   },
+   {
+    "plugin_id": 171448
+   },
+   {
+    "plugin_id": 169779
+   },
+   {
+    "plugin_id": 168821
+   },
+   {
+    "plugin_id": 168792
+   },
+   {
+    "plugin_id": 167111
+   },
+   {
+    "plugin_id": 166039
+   },
+   {
+    "plugin_id": 164996
+   },
+   {
+    "plugin_id": 163940
+   },
+   {
+    "plugin_id": 162196
+   },
+   {
+    "plugin_id": 159677
+   },
+   {
+    "plugin_id": 156619
+   },
+   {
+    "plugin_id": 147222
+   },
+   {
+    "plugin_id": 142690
+   },
+   {
+    "plugin_id": 137265
+   },
+   {
+    "plugin_id": 137253
+   },
+   {
+    "plugin_id": 135188
+   },
+   {
+    "plugin_id": 134369
+   },
+   {
+    "plugin_id": 132999
+   },
+   {
+    "plugin_id": 132858
+   },
+   {
+    "plugin_id": 128646
+   },
+   {
+    "plugin_id": 128633
+   },
+   {
+    "plugin_id": 127850
+   },
+   {
+    "plugin_id": 123950
+   },
+   {
+    "plugin_id": 123938
+   },
+   {
+    "plugin_id": 119612
+   },
+   {
+    "plugin_id": 119584
+   },
+   {
+    "plugin_id": 119463
+   },
+   {
+    "plugin_id": 119462
+   },
+   {
+    "plugin_id": 119095
+   },
+   {
+    "plugin_id": 119094
+   },
+   {
+    "plugin_id": 118916
+   },
+   {
+    "plugin_id": 117431
+   },
+   {
+    "plugin_id": 117413
+   },
+   {
+    "plugin_id": 59196
+   },
+   {
+    "plugin_id": 56998
+   },
+   {
+    "plugin_id": 22024
+   },
+   {
+    "plugin_id": 327608
+   },
+   {
+    "plugin_id": 326857
+   },
+   {
+    "plugin_id": 326727
+   },
+   {
+    "plugin_id": 202025
+   },
+   {
+    "plugin_id": 190483
+   },
+   {
+    "plugin_id": 178162
+   },
+   {
+    "plugin_id": 177245
+   },
+   {
+    "plugin_id": 172527
+   },
+   {
+    "plugin_id": 171449
+   },
+   {
+    "plugin_id": 163950
+   },
+   {
+    "plugin_id": 130913
+   },
+   {
+    "plugin_id": 334615
+   },
+   {
+    "plugin_id": 334614
+   },
+   {
+    "plugin_id": 342204
+   },
+   {
+    "plugin_id": 337629
+   },
+   {
+    "plugin_id": 342265
+   },
+   {
+    "plugin_id": 342201
+   },
+   {
+    "plugin_id": 339532
+   },
+   {
+    "plugin_id": 338407
+   },
+   {
+    "plugin_id": 337863
+   },
+   {
+    "plugin_id": 337625
+   },
+   {
+    "plugin_id": 335968
+   },
+   {
+    "plugin_id": 334632
+   },
+   {
+    "plugin_id": 333159
+   },
+   {
+    "plugin_id": 330771
+   },
+   {
+    "plugin_id": 330144
+   },
+   {
+    "plugin_id": 329252
+   },
+   {
+    "plugin_id": 328866
+   },
+   {
+    "plugin_id": 327470
+   },
+   {
+    "plugin_id": 326886
+   },
+   {
+    "plugin_id": 326234
+   },
+   {
+    "plugin_id": 322793
+   },
+   {
+    "plugin_id": 315323
+   },
+   {
+    "plugin_id": 305162
+   },
+   {
+    "plugin_id": 303474
+   }
+  ],
+  "total_vulnerability_count": 706,
+  "total_asset_count": 0,
+  "_reduzida": "so a contagem e lida desta resposta; ver tests/fixtures/LEIA-ME.md"
+ },
+ "[\"GET\", \"/workbenches/vulnerabilities\", null, {\"authenticated\": \"false\", \"filter.0.filter\": \"severity\", \"filter.0.quality\": \"eq\", \"filter.0.value\": \"critical\", \"filter.search_type\": \"and\"}]": {
+  "vulnerabilities": [
+   {
+    "plugin_id": 314348
+   },
+   {
+    "plugin_id": 306431
+   },
+   {
+    "plugin_id": 301765
+   },
+   {
+    "plugin_id": 301678
+   },
+   {
+    "plugin_id": 298556
+   },
+   {
+    "plugin_id": 294870
+   },
+   {
+    "plugin_id": 283466
+   },
+   {
+    "plugin_id": 277997
+   },
+   {
+    "plugin_id": 274780
+   },
+   {
+    "plugin_id": 261798
+   },
+   {
+    "plugin_id": 249125
+   },
+   {
+    "plugin_id": 249112
+   },
+   {
+    "plugin_id": 242325
+   },
+   {
+    "plugin_id": 242293
+   },
+   {
+    "plugin_id": 238092
+   },
+   {
+    "plugin_id": 235842
+   },
+   {
+    "plugin_id": 234624
+   },
+   {
+    "plugin_id": 234044
+   },
+   {
+    "plugin_id": 232612
+   },
+   {
+    "plugin_id": 216134
+   },
+   {
+    "plugin_id": 214123
+   },
+   {
+    "plugin_id": 212232
+   },
+   {
+    "plugin_id": 210850
+   },
+   {
+    "plugin_id": 208298
+   },
+   {
+    "plugin_id": 206902
+   },
+   {
+    "plugin_id": 205447
+   },
+   {
+    "plugin_id": 202043
+   },
+   {
+    "plugin_id": 200351
+   },
+   {
+    "plugin_id": 197009
+   },
+   {
+    "plugin_id": 193574
+   },
+   {
+    "plugin_id": 193160
+   },
+   {
+    "plugin_id": 193097
+   },
+   {
+    "plugin_id": 192778
+   },
+   {
+    "plugin_id": 191934
+   },
+   {
+    "plugin_id": 190787
+   },
+   {
+    "plugin_id": 190487
+   },
+   {
+    "plugin_id": 187800
+   },
+   {
+    "plugin_id": 186791
+   },
+   {
+    "plugin_id": 185576
+   },
+   {
+    "plugin_id": 184379
+   },
+   {
+    "plugin_id": 184371
+   },
+   {
+    "plugin_id": 184369
+   },
+   {
+    "plugin_id": 182874
+   },
+   {
+    "plugin_id": 182862
+   },
+   {
+    "plugin_id": 179498
+   },
+   {
+    "plugin_id": 178152
+   },
+   {
+    "plugin_id": 177246
+   },
+   {
+    "plugin_id": 175339
+   },
+   {
+    "plugin_id": 174120
+   },
+   {
+    "plugin_id": 172532
+   },
+   {
+    "plugin_id": 171448
+   },
+   {
+    "plugin_id": 169779
+   },
+   {
+    "plugin_id": 168821
+   },
+   {
+    "plugin_id": 168792
+   },
+   {
+    "plugin_id": 167111
+   },
+   {
+    "plugin_id": 166039
+   },
+   {
+    "plugin_id": 164996
+   },
+   {
+    "plugin_id": 163940
+   },
+   {
+    "plugin_id": 162196
+   },
+   {
+    "plugin_id": 159677
+   },
+   {
+    "plugin_id": 156619
+   },
+   {
+    "plugin_id": 147222
+   },
+   {
+    "plugin_id": 142690
+   },
+   {
+    "plugin_id": 137265
+   },
+   {
+    "plugin_id": 137253
+   },
+   {
+    "plugin_id": 135188
+   },
+   {
+    "plugin_id": 134369
+   },
+   {
+    "plugin_id": 132999
+   },
+   {
+    "plugin_id": 132858
+   },
+   {
+    "plugin_id": 128646
+   },
+   {
+    "plugin_id": 128633
+   },
+   {
+    "plugin_id": 127850
+   },
+   {
+    "plugin_id": 123950
+   },
+   {
+    "plugin_id": 123938
+   },
+   {
+    "plugin_id": 119612
+   },
+   {
+    "plugin_id": 119584
+   },
+   {
+    "plugin_id": 119463
+   },
+   {
+    "plugin_id": 119462
+   },
+   {
+    "plugin_id": 119095
+   },
+   {
+    "plugin_id": 119094
+   },
+   {
+    "plugin_id": 118916
+   },
+   {
+    "plugin_id": 117431
+   },
+   {
+    "plugin_id": 117413
+   },
+   {
+    "plugin_id": 59196
+   },
+   {
+    "plugin_id": 56998
+   },
+   {
+    "plugin_id": 22024
+   },
+   {
+    "plugin_id": 327608
+   },
+   {
+    "plugin_id": 326857
+   },
+   {
+    "plugin_id": 326727
+   },
+   {
+    "plugin_id": 202025
+   },
+   {
+    "plugin_id": 190483
+   },
+   {
+    "plugin_id": 178162
+   },
+   {
+    "plugin_id": 177245
+   },
+   {
+    "plugin_id": 172527
+   },
+   {
+    "plugin_id": 171449
+   },
+   {
+    "plugin_id": 163950
+   },
+   {
+    "plugin_id": 130913
+   },
+   {
+    "plugin_id": 334615
+   },
+   {
+    "plugin_id": 334614
+   },
+   {
+    "plugin_id": 342204
+   },
+   {
+    "plugin_id": 337629
+   },
+   {
+    "plugin_id": 342265
+   },
+   {
+    "plugin_id": 342201
+   },
+   {
+    "plugin_id": 339532
+   },
+   {
+    "plugin_id": 338407
+   },
+   {
+    "plugin_id": 337863
+   },
+   {
+    "plugin_id": 337625
+   },
+   {
+    "plugin_id": 335968
+   },
+   {
+    "plugin_id": 334632
+   },
+   {
+    "plugin_id": 333159
+   },
+   {
+    "plugin_id": 330771
+   },
+   {
+    "plugin_id": 330144
+   },
+   {
+    "plugin_id": 329252
+   },
+   {
+    "plugin_id": 328866
+   },
+   {
+    "plugin_id": 327470
+   },
+   {
+    "plugin_id": 326886
+   },
+   {
+    "plugin_id": 326234
+   },
+   {
+    "plugin_id": 322793
+   },
+   {
+    "plugin_id": 315323
+   },
+   {
+    "plugin_id": 305162
+   },
+   {
+    "plugin_id": 303474
+   }
+  ],
+  "total_vulnerability_count": 706,
+  "total_asset_count": 0,
+  "_reduzida": "so a contagem e lida desta resposta; ver tests/fixtures/LEIA-ME.md"
+ },
+ "[\"GET\", \"/workbenches/vulnerabilities\", null, {\"exploitable\": \"true\", \"filter.0.filter\": \"severity\", \"filter.0.quality\": \"eq\", \"filter.0.value\": \"critical\", \"filter.search_type\": \"and\"}]": {
+  "vulnerabilities": [
+   {
+    "plugin_id": 314348
+   },
+   {
+    "plugin_id": 306431
+   },
+   {
+    "plugin_id": 301765
+   },
+   {
+    "plugin_id": 301678
+   },
+   {
+    "plugin_id": 298556
+   },
+   {
+    "plugin_id": 294870
+   },
+   {
+    "plugin_id": 283466
+   },
+   {
+    "plugin_id": 277997
+   },
+   {
+    "plugin_id": 274780
+   },
+   {
+    "plugin_id": 261798
+   },
+   {
+    "plugin_id": 249125
+   },
+   {
+    "plugin_id": 249112
+   },
+   {
+    "plugin_id": 242325
+   },
+   {
+    "plugin_id": 242293
+   },
+   {
+    "plugin_id": 238092
+   },
+   {
+    "plugin_id": 235842
+   },
+   {
+    "plugin_id": 234624
+   },
+   {
+    "plugin_id": 234044
+   },
+   {
+    "plugin_id": 232612
+   },
+   {
+    "plugin_id": 216134
+   },
+   {
+    "plugin_id": 214123
+   },
+   {
+    "plugin_id": 212232
+   },
+   {
+    "plugin_id": 210850
+   },
+   {
+    "plugin_id": 208298
+   },
+   {
+    "plugin_id": 206902
+   },
+   {
+    "plugin_id": 205447
+   },
+   {
+    "plugin_id": 202043
+   },
+   {
+    "plugin_id": 200351
+   },
+   {
+    "plugin_id": 197009
+   },
+   {
+    "plugin_id": 193574
+   },
+   {
+    "plugin_id": 193160
+   },
+   {
+    "plugin_id": 193097
+   },
+   {
+    "plugin_id": 192778
+   },
+   {
+    "plugin_id": 191934
+   },
+   {
+    "plugin_id": 190787
+   },
+   {
+    "plugin_id": 190487
+   },
+   {
+    "plugin_id": 187800
+   },
+   {
+    "plugin_id": 186791
+   },
+   {
+    "plugin_id": 185576
+   },
+   {
+    "plugin_id": 184379
+   },
+   {
+    "plugin_id": 184371
+   },
+   {
+    "plugin_id": 184369
+   },
+   {
+    "plugin_id": 182874
+   },
+   {
+    "plugin_id": 182862
+   },
+   {
+    "plugin_id": 179498
+   },
+   {
+    "plugin_id": 178152
+   },
+   {
+    "plugin_id": 177246
+   },
+   {
+    "plugin_id": 175339
+   },
+   {
+    "plugin_id": 174120
+   },
+   {
+    "plugin_id": 172532
+   },
+   {
+    "plugin_id": 171448
+   },
+   {
+    "plugin_id": 169779
+   },
+   {
+    "plugin_id": 168821
+   },
+   {
+    "plugin_id": 168792
+   },
+   {
+    "plugin_id": 167111
+   },
+   {
+    "plugin_id": 166039
+   },
+   {
+    "plugin_id": 164996
+   },
+   {
+    "plugin_id": 163940
+   },
+   {
+    "plugin_id": 162196
+   },
+   {
+    "plugin_id": 159677
+   },
+   {
+    "plugin_id": 156619
+   },
+   {
+    "plugin_id": 147222
+   },
+   {
+    "plugin_id": 142690
+   },
+   {
+    "plugin_id": 137265
+   },
+   {
+    "plugin_id": 137253
+   },
+   {
+    "plugin_id": 135188
+   },
+   {
+    "plugin_id": 134369
+   },
+   {
+    "plugin_id": 132999
+   },
+   {
+    "plugin_id": 132858
+   },
+   {
+    "plugin_id": 128646
+   },
+   {
+    "plugin_id": 128633
+   },
+   {
+    "plugin_id": 127850
+   },
+   {
+    "plugin_id": 123950
+   },
+   {
+    "plugin_id": 123938
+   },
+   {
+    "plugin_id": 119612
+   },
+   {
+    "plugin_id": 119584
+   },
+   {
+    "plugin_id": 119463
+   },
+   {
+    "plugin_id": 119462
+   },
+   {
+    "plugin_id": 119095
+   },
+   {
+    "plugin_id": 119094
+   },
+   {
+    "plugin_id": 118916
+   },
+   {
+    "plugin_id": 117431
+   },
+   {
+    "plugin_id": 117413
+   },
+   {
+    "plugin_id": 59196
+   },
+   {
+    "plugin_id": 56998
+   },
+   {
+    "plugin_id": 22024
+   },
+   {
+    "plugin_id": 327608
+   },
+   {
+    "plugin_id": 326857
+   },
+   {
+    "plugin_id": 326727
+   },
+   {
+    "plugin_id": 202025
+   },
+   {
+    "plugin_id": 190483
+   },
+   {
+    "plugin_id": 178162
+   },
+   {
+    "plugin_id": 177245
+   },
+   {
+    "plugin_id": 172527
+   },
+   {
+    "plugin_id": 171449
+   },
+   {
+    "plugin_id": 163950
+   },
+   {
+    "plugin_id": 130913
+   },
+   {
+    "plugin_id": 334615
+   },
+   {
+    "plugin_id": 334614
+   },
+   {
+    "plugin_id": 342204
+   },
+   {
+    "plugin_id": 337629
+   },
+   {
+    "plugin_id": 342265
+   },
+   {
+    "plugin_id": 342201
+   },
+   {
+    "plugin_id": 339532
+   },
+   {
+    "plugin_id": 338407
+   },
+   {
+    "plugin_id": 337863
+   },
+   {
+    "plugin_id": 337625
+   },
+   {
+    "plugin_id": 335968
+   },
+   {
+    "plugin_id": 334632
+   },
+   {
+    "plugin_id": 333159
+   },
+   {
+    "plugin_id": 330771
+   },
+   {
+    "plugin_id": 330144
+   },
+   {
+    "plugin_id": 329252
+   },
+   {
+    "plugin_id": 328866
+   },
+   {
+    "plugin_id": 327470
+   },
+   {
+    "plugin_id": 326886
+   },
+   {
+    "plugin_id": 326234
+   },
+   {
+    "plugin_id": 322793
+   },
+   {
+    "plugin_id": 315323
+   },
+   {
+    "plugin_id": 305162
+   },
+   {
+    "plugin_id": 303474
+   }
+  ],
+  "total_vulnerability_count": 706,
+  "total_asset_count": 0,
+  "_reduzida": "so a contagem e lida desta resposta; ver tests/fixtures/LEIA-ME.md"
+ },
+ "[\"GET\", \"/workbenches/vulnerabilities\", null, {\"exploitable\": \"false\", \"filter.0.filter\": \"severity\", \"filter.0.quality\": \"eq\", \"filter.0.value\": \"critical\", \"filter.search_type\": \"and\"}]": {
+  "vulnerabilities": [
+   {
+    "plugin_id": 314348
+   },
+   {
+    "plugin_id": 306431
+   },
+   {
+    "plugin_id": 301765
+   },
+   {
+    "plugin_id": 301678
+   },
+   {
+    "plugin_id": 298556
+   },
+   {
+    "plugin_id": 294870
+   },
+   {
+    "plugin_id": 283466
+   },
+   {
+    "plugin_id": 277997
+   },
+   {
+    "plugin_id": 274780
+   },
+   {
+    "plugin_id": 261798
+   },
+   {
+    "plugin_id": 249125
+   },
+   {
+    "plugin_id": 249112
+   },
+   {
+    "plugin_id": 242325
+   },
+   {
+    "plugin_id": 242293
+   },
+   {
+    "plugin_id": 238092
+   },
+   {
+    "plugin_id": 235842
+   },
+   {
+    "plugin_id": 234624
+   },
+   {
+    "plugin_id": 234044
+   },
+   {
+    "plugin_id": 232612
+   },
+   {
+    "plugin_id": 216134
+   },
+   {
+    "plugin_id": 214123
+   },
+   {
+    "plugin_id": 212232
+   },
+   {
+    "plugin_id": 210850
+   },
+   {
+    "plugin_id": 208298
+   },
+   {
+    "plugin_id": 206902
+   },
+   {
+    "plugin_id": 205447
+   },
+   {
+    "plugin_id": 202043
+   },
+   {
+    "plugin_id": 200351
+   },
+   {
+    "plugin_id": 197009
+   },
+   {
+    "plugin_id": 193574
+   },
+   {
+    "plugin_id": 193160
+   },
+   {
+    "plugin_id": 193097
+   },
+   {
+    "plugin_id": 192778
+   },
+   {
+    "plugin_id": 191934
+   },
+   {
+    "plugin_id": 190787
+   },
+   {
+    "plugin_id": 190487
+   },
+   {
+    "plugin_id": 187800
+   },
+   {
+    "plugin_id": 186791
+   },
+   {
+    "plugin_id": 185576
+   },
+   {
+    "plugin_id": 184379
+   },
+   {
+    "plugin_id": 184371
+   },
+   {
+    "plugin_id": 184369
+   },
+   {
+    "plugin_id": 182874
+   },
+   {
+    "plugin_id": 182862
+   },
+   {
+    "plugin_id": 179498
+   },
+   {
+    "plugin_id": 178152
+   },
+   {
+    "plugin_id": 177246
+   },
+   {
+    "plugin_id": 175339
+   },
+   {
+    "plugin_id": 174120
+   },
+   {
+    "plugin_id": 172532
+   },
+   {
+    "plugin_id": 171448
+   },
+   {
+    "plugin_id": 169779
+   },
+   {
+    "plugin_id": 168821
+   },
+   {
+    "plugin_id": 168792
+   },
+   {
+    "plugin_id": 167111
+   },
+   {
+    "plugin_id": 166039
+   },
+   {
+    "plugin_id": 164996
+   },
+   {
+    "plugin_id": 163940
+   },
+   {
+    "plugin_id": 162196
+   },
+   {
+    "plugin_id": 159677
+   },
+   {
+    "plugin_id": 156619
+   },
+   {
+    "plugin_id": 147222
+   },
+   {
+    "plugin_id": 142690
+   },
+   {
+    "plugin_id": 137265
+   },
+   {
+    "plugin_id": 137253
+   },
+   {
+    "plugin_id": 135188
+   },
+   {
+    "plugin_id": 134369
+   },
+   {
+    "plugin_id": 132999
+   },
+   {
+    "plugin_id": 132858
+   },
+   {
+    "plugin_id": 128646
+   },
+   {
+    "plugin_id": 128633
+   },
+   {
+    "plugin_id": 127850
+   },
+   {
+    "plugin_id": 123950
+   },
+   {
+    "plugin_id": 123938
+   },
+   {
+    "plugin_id": 119612
+   },
+   {
+    "plugin_id": 119584
+   },
+   {
+    "plugin_id": 119463
+   },
+   {
+    "plugin_id": 119462
+   },
+   {
+    "plugin_id": 119095
+   },
+   {
+    "plugin_id": 119094
+   },
+   {
+    "plugin_id": 118916
+   },
+   {
+    "plugin_id": 117431
+   },
+   {
+    "plugin_id": 117413
+   },
+   {
+    "plugin_id": 59196
+   },
+   {
+    "plugin_id": 56998
+   },
+   {
+    "plugin_id": 22024
+   },
+   {
+    "plugin_id": 327608
+   },
+   {
+    "plugin_id": 326857
+   },
+   {
+    "plugin_id": 326727
+   },
+   {
+    "plugin_id": 202025
+   },
+   {
+    "plugin_id": 190483
+   },
+   {
+    "plugin_id": 178162
+   },
+   {
+    "plugin_id": 177245
+   },
+   {
+    "plugin_id": 172527
+   },
+   {
+    "plugin_id": 171449
+   },
+   {
+    "plugin_id": 163950
+   },
+   {
+    "plugin_id": 130913
+   },
+   {
+    "plugin_id": 334615
+   },
+   {
+    "plugin_id": 334614
+   },
+   {
+    "plugin_id": 342204
+   },
+   {
+    "plugin_id": 337629
+   },
+   {
+    "plugin_id": 342265
+   },
+   {
+    "plugin_id": 342201
+   },
+   {
+    "plugin_id": 339532
+   },
+   {
+    "plugin_id": 338407
+   },
+   {
+    "plugin_id": 337863
+   },
+   {
+    "plugin_id": 337625
+   },
+   {
+    "plugin_id": 335968
+   },
+   {
+    "plugin_id": 334632
+   },
+   {
+    "plugin_id": 333159
+   },
+   {
+    "plugin_id": 330771
+   },
+   {
+    "plugin_id": 330144
+   },
+   {
+    "plugin_id": 329252
+   },
+   {
+    "plugin_id": 328866
+   },
+   {
+    "plugin_id": 327470
+   },
+   {
+    "plugin_id": 326886
+   },
+   {
+    "plugin_id": 326234
+   },
+   {
+    "plugin_id": 322793
+   },
+   {
+    "plugin_id": 315323
+   },
+   {
+    "plugin_id": 305162
+   },
+   {
+    "plugin_id": 303474
+   }
+  ],
+  "total_vulnerability_count": 706,
+  "total_asset_count": 0,
+  "_reduzida": "so a contagem e lida desta resposta; ver tests/fixtures/LEIA-ME.md"
+ },
+ "[\"GET\", \"/workbenches/vulnerabilities\", null, {\"filter.0.filter\": \"severity\", \"filter.0.quality\": \"eq\", \"filter.0.value\": \"critical\", \"filter.search_type\": \"and\", \"resolvable\": \"true\"}]": {
+  "vulnerabilities": [
+   {
+    "plugin_id": 314348
+   },
+   {
+    "plugin_id": 306431
+   },
+   {
+    "plugin_id": 301765
+   },
+   {
+    "plugin_id": 301678
+   },
+   {
+    "plugin_id": 298556
+   },
+   {
+    "plugin_id": 294870
+   },
+   {
+    "plugin_id": 283466
+   },
+   {
+    "plugin_id": 277997
+   },
+   {
+    "plugin_id": 274780
+   },
+   {
+    "plugin_id": 261798
+   },
+   {
+    "plugin_id": 249125
+   },
+   {
+    "plugin_id": 249112
+   },
+   {
+    "plugin_id": 242325
+   },
+   {
+    "plugin_id": 242293
+   },
+   {
+    "plugin_id": 238092
+   },
+   {
+    "plugin_id": 235842
+   },
+   {
+    "plugin_id": 234624
+   },
+   {
+    "plugin_id": 234044
+   },
+   {
+    "plugin_id": 232612
+   },
+   {
+    "plugin_id": 216134
+   },
+   {
+    "plugin_id": 214123
+   },
+   {
+    "plugin_id": 212232
+   },
+   {
+    "plugin_id": 210850
+   },
+   {
+    "plugin_id": 208298
+   },
+   {
+    "plugin_id": 206902
+   },
+   {
+    "plugin_id": 205447
+   },
+   {
+    "plugin_id": 202043
+   },
+   {
+    "plugin_id": 200351
+   },
+   {
+    "plugin_id": 197009
+   },
+   {
+    "plugin_id": 193574
+   },
+   {
+    "plugin_id": 193160
+   },
+   {
+    "plugin_id": 193097
+   },
+   {
+    "plugin_id": 192778
+   },
+   {
+    "plugin_id": 191934
+   },
+   {
+    "plugin_id": 190787
+   },
+   {
+    "plugin_id": 190487
+   },
+   {
+    "plugin_id": 187800
+   },
+   {
+    "plugin_id": 186791
+   },
+   {
+    "plugin_id": 185576
+   },
+   {
+    "plugin_id": 184379
+   },
+   {
+    "plugin_id": 184371
+   },
+   {
+    "plugin_id": 184369
+   },
+   {
+    "plugin_id": 182874
+   },
+   {
+    "plugin_id": 182862
+   },
+   {
+    "plugin_id": 179498
+   },
+   {
+    "plugin_id": 178152
+   },
+   {
+    "plugin_id": 177246
+   },
+   {
+    "plugin_id": 175339
+   },
+   {
+    "plugin_id": 174120
+   },
+   {
+    "plugin_id": 172532
+   },
+   {
+    "plugin_id": 171448
+   },
+   {
+    "plugin_id": 169779
+   },
+   {
+    "plugin_id": 168821
+   },
+   {
+    "plugin_id": 168792
+   },
+   {
+    "plugin_id": 167111
+   },
+   {
+    "plugin_id": 166039
+   },
+   {
+    "plugin_id": 164996
+   },
+   {
+    "plugin_id": 163940
+   },
+   {
+    "plugin_id": 162196
+   },
+   {
+    "plugin_id": 159677
+   },
+   {
+    "plugin_id": 156619
+   },
+   {
+    "plugin_id": 147222
+   },
+   {
+    "plugin_id": 142690
+   },
+   {
+    "plugin_id": 137265
+   },
+   {
+    "plugin_id": 137253
+   },
+   {
+    "plugin_id": 135188
+   },
+   {
+    "plugin_id": 134369
+   },
+   {
+    "plugin_id": 132999
+   },
+   {
+    "plugin_id": 132858
+   },
+   {
+    "plugin_id": 128646
+   },
+   {
+    "plugin_id": 128633
+   },
+   {
+    "plugin_id": 127850
+   },
+   {
+    "plugin_id": 123950
+   },
+   {
+    "plugin_id": 123938
+   },
+   {
+    "plugin_id": 119612
+   },
+   {
+    "plugin_id": 119584
+   },
+   {
+    "plugin_id": 119463
+   },
+   {
+    "plugin_id": 119462
+   },
+   {
+    "plugin_id": 119095
+   },
+   {
+    "plugin_id": 119094
+   },
+   {
+    "plugin_id": 118916
+   },
+   {
+    "plugin_id": 117431
+   },
+   {
+    "plugin_id": 117413
+   },
+   {
+    "plugin_id": 59196
+   },
+   {
+    "plugin_id": 56998
+   },
+   {
+    "plugin_id": 22024
+   },
+   {
+    "plugin_id": 327608
+   },
+   {
+    "plugin_id": 326857
+   },
+   {
+    "plugin_id": 326727
+   },
+   {
+    "plugin_id": 202025
+   },
+   {
+    "plugin_id": 190483
+   },
+   {
+    "plugin_id": 178162
+   },
+   {
+    "plugin_id": 177245
+   },
+   {
+    "plugin_id": 172527
+   },
+   {
+    "plugin_id": 171449
+   },
+   {
+    "plugin_id": 163950
+   },
+   {
+    "plugin_id": 130913
+   },
+   {
+    "plugin_id": 334615
+   },
+   {
+    "plugin_id": 334614
+   },
+   {
+    "plugin_id": 342204
+   },
+   {
+    "plugin_id": 337629
+   },
+   {
+    "plugin_id": 342265
+   },
+   {
+    "plugin_id": 342201
+   },
+   {
+    "plugin_id": 339532
+   },
+   {
+    "plugin_id": 338407
+   },
+   {
+    "plugin_id": 337863
+   },
+   {
+    "plugin_id": 337625
+   },
+   {
+    "plugin_id": 335968
+   },
+   {
+    "plugin_id": 334632
+   },
+   {
+    "plugin_id": 333159
+   },
+   {
+    "plugin_id": 330771
+   },
+   {
+    "plugin_id": 330144
+   },
+   {
+    "plugin_id": 329252
+   },
+   {
+    "plugin_id": 328866
+   },
+   {
+    "plugin_id": 327470
+   },
+   {
+    "plugin_id": 326886
+   },
+   {
+    "plugin_id": 326234
+   },
+   {
+    "plugin_id": 322793
+   },
+   {
+    "plugin_id": 315323
+   },
+   {
+    "plugin_id": 305162
+   },
+   {
+    "plugin_id": 303474
+   }
+  ],
+  "total_vulnerability_count": 706,
+  "total_asset_count": 0,
+  "_reduzida": "so a contagem e lida desta resposta; ver tests/fixtures/LEIA-ME.md"
+ },
+ "[\"GET\", \"/workbenches/vulnerabilities\", null, {\"filter.0.filter\": \"severity\", \"filter.0.quality\": \"eq\", \"filter.0.value\": \"critical\", \"filter.search_type\": \"and\", \"resolvable\": \"false\"}]": {
+  "vulnerabilities": [
+   {
+    "plugin_id": 314348
+   },
+   {
+    "plugin_id": 306431
+   },
+   {
+    "plugin_id": 301765
+   },
+   {
+    "plugin_id": 301678
+   },
+   {
+    "plugin_id": 298556
+   },
+   {
+    "plugin_id": 294870
+   },
+   {
+    "plugin_id": 283466
+   },
+   {
+    "plugin_id": 277997
+   },
+   {
+    "plugin_id": 274780
+   },
+   {
+    "plugin_id": 261798
+   },
+   {
+    "plugin_id": 249125
+   },
+   {
+    "plugin_id": 249112
+   },
+   {
+    "plugin_id": 242325
+   },
+   {
+    "plugin_id": 242293
+   },
+   {
+    "plugin_id": 238092
+   },
+   {
+    "plugin_id": 235842
+   },
+   {
+    "plugin_id": 234624
+   },
+   {
+    "plugin_id": 234044
+   },
+   {
+    "plugin_id": 232612
+   },
+   {
+    "plugin_id": 216134
+   },
+   {
+    "plugin_id": 214123
+   },
+   {
+    "plugin_id": 212232
+   },
+   {
+    "plugin_id": 210850
+   },
+   {
+    "plugin_id": 208298
+   },
+   {
+    "plugin_id": 206902
+   },
+   {
+    "plugin_id": 205447
+   },
+   {
+    "plugin_id": 202043
+   },
+   {
+    "plugin_id": 200351
+   },
+   {
+    "plugin_id": 197009
+   },
+   {
+    "plugin_id": 193574
+   },
+   {
+    "plugin_id": 193160
+   },
+   {
+    "plugin_id": 193097
+   },
+   {
+    "plugin_id": 192778
+   },
+   {
+    "plugin_id": 191934
+   },
+   {
+    "plugin_id": 190787
+   },
+   {
+    "plugin_id": 190487
+   },
+   {
+    "plugin_id": 187800
+   },
+   {
+    "plugin_id": 186791
+   },
+   {
+    "plugin_id": 185576
+   },
+   {
+    "plugin_id": 184379
+   },
+   {
+    "plugin_id": 184371
+   },
+   {
+    "plugin_id": 184369
+   },
+   {
+    "plugin_id": 182874
+   },
+   {
+    "plugin_id": 182862
+   },
+   {
+    "plugin_id": 179498
+   },
+   {
+    "plugin_id": 178152
+   },
+   {
+    "plugin_id": 177246
+   },
+   {
+    "plugin_id": 175339
+   },
+   {
+    "plugin_id": 174120
+   },
+   {
+    "plugin_id": 172532
+   },
+   {
+    "plugin_id": 171448
+   },
+   {
+    "plugin_id": 169779
+   },
+   {
+    "plugin_id": 168821
+   },
+   {
+    "plugin_id": 168792
+   },
+   {
+    "plugin_id": 167111
+   },
+   {
+    "plugin_id": 166039
+   },
+   {
+    "plugin_id": 164996
+   },
+   {
+    "plugin_id": 163940
+   },
+   {
+    "plugin_id": 162196
+   },
+   {
+    "plugin_id": 159677
+   },
+   {
+    "plugin_id": 156619
+   },
+   {
+    "plugin_id": 147222
+   },
+   {
+    "plugin_id": 142690
+   },
+   {
+    "plugin_id": 137265
+   },
+   {
+    "plugin_id": 137253
+   },
+   {
+    "plugin_id": 135188
+   },
+   {
+    "plugin_id": 134369
+   },
+   {
+    "plugin_id": 132999
+   },
+   {
+    "plugin_id": 132858
+   },
+   {
+    "plugin_id": 128646
+   },
+   {
+    "plugin_id": 128633
+   },
+   {
+    "plugin_id": 127850
+   },
+   {
+    "plugin_id": 123950
+   },
+   {
+    "plugin_id": 123938
+   },
+   {
+    "plugin_id": 119612
+   },
+   {
+    "plugin_id": 119584
+   },
+   {
+    "plugin_id": 119463
+   },
+   {
+    "plugin_id": 119462
+   },
+   {
+    "plugin_id": 119095
+   },
+   {
+    "plugin_id": 119094
+   },
+   {
+    "plugin_id": 118916
+   },
+   {
+    "plugin_id": 117431
+   },
+   {
+    "plugin_id": 117413
+   },
+   {
+    "plugin_id": 59196
+   },
+   {
+    "plugin_id": 56998
+   },
+   {
+    "plugin_id": 22024
+   },
+   {
+    "plugin_id": 327608
+   },
+   {
+    "plugin_id": 326857
+   },
+   {
+    "plugin_id": 326727
+   },
+   {
+    "plugin_id": 202025
+   },
+   {
+    "plugin_id": 190483
+   },
+   {
+    "plugin_id": 178162
+   },
+   {
+    "plugin_id": 177245
+   },
+   {
+    "plugin_id": 172527
+   },
+   {
+    "plugin_id": 171449
+   },
+   {
+    "plugin_id": 163950
+   },
+   {
+    "plugin_id": 130913
+   },
+   {
+    "plugin_id": 334615
+   },
+   {
+    "plugin_id": 334614
+   },
+   {
+    "plugin_id": 342204
+   },
+   {
+    "plugin_id": 337629
+   },
+   {
+    "plugin_id": 342265
+   },
+   {
+    "plugin_id": 342201
+   },
+   {
+    "plugin_id": 339532
+   },
+   {
+    "plugin_id": 338407
+   },
+   {
+    "plugin_id": 337863
+   },
+   {
+    "plugin_id": 337625
+   },
+   {
+    "plugin_id": 335968
+   },
+   {
+    "plugin_id": 334632
+   },
+   {
+    "plugin_id": 333159
+   },
+   {
+    "plugin_id": 330771
+   },
+   {
+    "plugin_id": 330144
+   },
+   {
+    "plugin_id": 329252
+   },
+   {
+    "plugin_id": 328866
+   },
+   {
+    "plugin_id": 327470
+   },
+   {
+    "plugin_id": 326886
+   },
+   {
+    "plugin_id": 326234
+   },
+   {
+    "plugin_id": 322793
+   },
+   {
+    "plugin_id": 315323
+   },
+   {
+    "plugin_id": 305162
+   },
+   {
+    "plugin_id": 303474
+   }
+  ],
+  "total_vulnerability_count": 706,
+  "total_asset_count": 0,
+  "_reduzida": "so a contagem e lida desta resposta; ver tests/fixtures/LEIA-ME.md"
+ },
+ "[\"GET\", \"/workbenches/vulnerabilities\", null, {\"date_range\": \"1\", \"filter.0.filter\": \"severity\", \"filter.0.quality\": \"eq\", \"filter.0.value\": \"critical\", \"filter.search_type\": \"and\"}]": {
+  "vulnerabilities": [
+   {
+    "plugin_id": 342265
+   },
+   {
+    "plugin_id": 342201
+   },
+   {
+    "plugin_id": 339532
+   },
+   {
+    "plugin_id": 338407
+   },
+   {
+    "plugin_id": 337863
+   },
+   {
+    "plugin_id": 337625
+   },
+   {
+    "plugin_id": 335968
+   },
+   {
+    "plugin_id": 334632
+   },
+   {
+    "plugin_id": 333159
+   },
+   {
+    "plugin_id": 330771
+   },
+   {
+    "plugin_id": 330144
+   },
+   {
+    "plugin_id": 329252
+   },
+   {
+    "plugin_id": 328866
+   },
+   {
+    "plugin_id": 327470
+   },
+   {
+    "plugin_id": 326886
+   },
+   {
+    "plugin_id": 326234
+   },
+   {
+    "plugin_id": 322793
+   }
+  ],
+  "total_vulnerability_count": 17,
+  "total_asset_count": 0,
+  "_reduzida": "so a contagem e lida desta resposta; ver tests/fixtures/LEIA-ME.md"
+ },
+ "[\"GET\", \"/workbenches/vulnerabilities\", null, {\"date_range\": \"90\", \"filter.0.filter\": \"severity\", \"filter.0.quality\": \"eq\", \"filter.0.value\": \"critical\", \"filter.search_type\": \"and\"}]": {
+  "vulnerabilities": [
+   {
+    "plugin_id": 314348
+   },
+   {
+    "plugin_id": 306431
+   },
+   {
+    "plugin_id": 301765
+   },
+   {
+    "plugin_id": 301678
+   },
+   {
+    "plugin_id": 298556
+   },
+   {
+    "plugin_id": 294870
+   },
+   {
+    "plugin_id": 283466
+   },
+   {
+    "plugin_id": 277997
+   },
+   {
+    "plugin_id": 274780
+   },
+   {
+    "plugin_id": 261798
+   },
+   {
+    "plugin_id": 249125
+   },
+   {
+    "plugin_id": 249112
+   },
+   {
+    "plugin_id": 242325
+   },
+   {
+    "plugin_id": 242293
+   },
+   {
+    "plugin_id": 238092
+   },
+   {
+    "plugin_id": 235842
+   },
+   {
+    "plugin_id": 234624
+   },
+   {
+    "plugin_id": 234044
+   },
+   {
+    "plugin_id": 232612
+   },
+   {
+    "plugin_id": 216134
+   },
+   {
+    "plugin_id": 214123
+   },
+   {
+    "plugin_id": 212232
+   },
+   {
+    "plugin_id": 210850
+   },
+   {
+    "plugin_id": 208298
+   },
+   {
+    "plugin_id": 206902
+   },
+   {
+    "plugin_id": 205447
+   },
+   {
+    "plugin_id": 202043
+   },
+   {
+    "plugin_id": 200351
+   },
+   {
+    "plugin_id": 197009
+   },
+   {
+    "plugin_id": 193574
+   },
+   {
+    "plugin_id": 193160
+   },
+   {
+    "plugin_id": 193097
+   },
+   {
+    "plugin_id": 192778
+   },
+   {
+    "plugin_id": 191934
+   },
+   {
+    "plugin_id": 190787
+   },
+   {
+    "plugin_id": 190487
+   },
+   {
+    "plugin_id": 187800
+   },
+   {
+    "plugin_id": 186791
+   },
+   {
+    "plugin_id": 185576
+   },
+   {
+    "plugin_id": 184379
+   },
+   {
+    "plugin_id": 184371
+   },
+   {
+    "plugin_id": 184369
+   },
+   {
+    "plugin_id": 182874
+   },
+   {
+    "plugin_id": 182862
+   },
+   {
+    "plugin_id": 179498
+   },
+   {
+    "plugin_id": 178152
+   },
+   {
+    "plugin_id": 177246
+   },
+   {
+    "plugin_id": 175339
+   },
+   {
+    "plugin_id": 174120
+   },
+   {
+    "plugin_id": 172532
+   },
+   {
+    "plugin_id": 171448
+   },
+   {
+    "plugin_id": 169779
+   },
+   {
+    "plugin_id": 168821
+   },
+   {
+    "plugin_id": 168792
+   },
+   {
+    "plugin_id": 167111
+   },
+   {
+    "plugin_id": 166039
+   },
+   {
+    "plugin_id": 164996
+   },
+   {
+    "plugin_id": 163940
+   },
+   {
+    "plugin_id": 162196
+   },
+   {
+    "plugin_id": 159677
+   },
+   {
+    "plugin_id": 156619
+   },
+   {
+    "plugin_id": 147222
+   },
+   {
+    "plugin_id": 142690
+   },
+   {
+    "plugin_id": 137265
+   },
+   {
+    "plugin_id": 137253
+   },
+   {
+    "plugin_id": 135188
+   },
+   {
+    "plugin_id": 134369
+   },
+   {
+    "plugin_id": 132999
+   },
+   {
+    "plugin_id": 132858
+   },
+   {
+    "plugin_id": 128646
+   },
+   {
+    "plugin_id": 128633
+   },
+   {
+    "plugin_id": 127850
+   },
+   {
+    "plugin_id": 123950
+   },
+   {
+    "plugin_id": 123938
+   },
+   {
+    "plugin_id": 119612
+   },
+   {
+    "plugin_id": 119584
+   },
+   {
+    "plugin_id": 119463
+   },
+   {
+    "plugin_id": 119462
+   },
+   {
+    "plugin_id": 119095
+   },
+   {
+    "plugin_id": 119094
+   },
+   {
+    "plugin_id": 118916
+   },
+   {
+    "plugin_id": 117431
+   },
+   {
+    "plugin_id": 117413
+   },
+   {
+    "plugin_id": 59196
+   },
+   {
+    "plugin_id": 56998
+   },
+   {
+    "plugin_id": 22024
+   },
+   {
+    "plugin_id": 327608
+   },
+   {
+    "plugin_id": 326857
+   },
+   {
+    "plugin_id": 326727
+   },
+   {
+    "plugin_id": 202025
+   },
+   {
+    "plugin_id": 190483
+   },
+   {
+    "plugin_id": 178162
+   },
+   {
+    "plugin_id": 177245
+   },
+   {
+    "plugin_id": 172527
+   },
+   {
+    "plugin_id": 171449
+   },
+   {
+    "plugin_id": 163950
+   },
+   {
+    "plugin_id": 130913
+   },
+   {
+    "plugin_id": 334615
+   },
+   {
+    "plugin_id": 334614
+   },
+   {
+    "plugin_id": 342204
+   },
+   {
+    "plugin_id": 337629
+   },
+   {
+    "plugin_id": 342265
+   },
+   {
+    "plugin_id": 342201
+   },
+   {
+    "plugin_id": 339532
+   },
+   {
+    "plugin_id": 338407
+   },
+   {
+    "plugin_id": 337863
+   },
+   {
+    "plugin_id": 337625
+   },
+   {
+    "plugin_id": 335968
+   },
+   {
+    "plugin_id": 334632
+   },
+   {
+    "plugin_id": 333159
+   },
+   {
+    "plugin_id": 330771
+   },
+   {
+    "plugin_id": 330144
+   },
+   {
+    "plugin_id": 329252
+   },
+   {
+    "plugin_id": 328866
+   },
+   {
+    "plugin_id": 327470
+   },
+   {
+    "plugin_id": 326886
+   },
+   {
+    "plugin_id": 326234
+   },
+   {
+    "plugin_id": 322793
+   },
+   {
+    "plugin_id": 315323
+   },
+   {
+    "plugin_id": 305162
+   },
+   {
+    "plugin_id": 303474
+   }
+  ],
+  "total_vulnerability_count": 706,
+  "total_asset_count": 0,
+  "_reduzida": "so a contagem e lida desta resposta; ver tests/fixtures/LEIA-ME.md"
+ },
+ "[\"GET\", \"/workbenches/vulnerabilities\", null, {\"age\": \"1\", \"filter.0.filter\": \"severity\", \"filter.0.quality\": \"eq\", \"filter.0.value\": \"critical\", \"filter.search_type\": \"and\"}]": {
+  "vulnerabilities": [
+   {
+    "plugin_id": 314348
+   },
+   {
+    "plugin_id": 306431
+   },
+   {
+    "plugin_id": 301765
+   },
+   {
+    "plugin_id": 301678
+   },
+   {
+    "plugin_id": 298556
+   },
+   {
+    "plugin_id": 294870
+   },
+   {
+    "plugin_id": 283466
+   },
+   {
+    "plugin_id": 277997
+   },
+   {
+    "plugin_id": 274780
+   },
+   {
+    "plugin_id": 261798
+   },
+   {
+    "plugin_id": 249125
+   },
+   {
+    "plugin_id": 249112
+   },
+   {
+    "plugin_id": 242325
+   },
+   {
+    "plugin_id": 242293
+   },
+   {
+    "plugin_id": 238092
+   },
+   {
+    "plugin_id": 235842
+   },
+   {
+    "plugin_id": 234624
+   },
+   {
+    "plugin_id": 234044
+   },
+   {
+    "plugin_id": 232612
+   },
+   {
+    "plugin_id": 216134
+   },
+   {
+    "plugin_id": 214123
+   },
+   {
+    "plugin_id": 212232
+   },
+   {
+    "plugin_id": 210850
+   },
+   {
+    "plugin_id": 208298
+   },
+   {
+    "plugin_id": 206902
+   },
+   {
+    "plugin_id": 205447
+   },
+   {
+    "plugin_id": 202043
+   },
+   {
+    "plugin_id": 200351
+   },
+   {
+    "plugin_id": 197009
+   },
+   {
+    "plugin_id": 193574
+   },
+   {
+    "plugin_id": 193160
+   },
+   {
+    "plugin_id": 193097
+   },
+   {
+    "plugin_id": 192778
+   },
+   {
+    "plugin_id": 191934
+   },
+   {
+    "plugin_id": 190787
+   },
+   {
+    "plugin_id": 190487
+   },
+   {
+    "plugin_id": 187800
+   },
+   {
+    "plugin_id": 186791
+   },
+   {
+    "plugin_id": 185576
+   },
+   {
+    "plugin_id": 184379
+   },
+   {
+    "plugin_id": 184371
+   },
+   {
+    "plugin_id": 184369
+   },
+   {
+    "plugin_id": 182874
+   },
+   {
+    "plugin_id": 182862
+   },
+   {
+    "plugin_id": 179498
+   },
+   {
+    "plugin_id": 178152
+   },
+   {
+    "plugin_id": 177246
+   },
+   {
+    "plugin_id": 175339
+   },
+   {
+    "plugin_id": 174120
+   },
+   {
+    "plugin_id": 172532
+   },
+   {
+    "plugin_id": 171448
+   },
+   {
+    "plugin_id": 169779
+   },
+   {
+    "plugin_id": 168821
+   },
+   {
+    "plugin_id": 168792
+   },
+   {
+    "plugin_id": 167111
+   },
+   {
+    "plugin_id": 166039
+   },
+   {
+    "plugin_id": 164996
+   },
+   {
+    "plugin_id": 163940
+   },
+   {
+    "plugin_id": 162196
+   },
+   {
+    "plugin_id": 159677
+   },
+   {
+    "plugin_id": 156619
+   },
+   {
+    "plugin_id": 147222
+   },
+   {
+    "plugin_id": 142690
+   },
+   {
+    "plugin_id": 137265
+   },
+   {
+    "plugin_id": 137253
+   },
+   {
+    "plugin_id": 135188
+   },
+   {
+    "plugin_id": 134369
+   },
+   {
+    "plugin_id": 132999
+   },
+   {
+    "plugin_id": 132858
+   },
+   {
+    "plugin_id": 128646
+   },
+   {
+    "plugin_id": 128633
+   },
+   {
+    "plugin_id": 127850
+   },
+   {
+    "plugin_id": 123950
+   },
+   {
+    "plugin_id": 123938
+   },
+   {
+    "plugin_id": 119612
+   },
+   {
+    "plugin_id": 119584
+   },
+   {
+    "plugin_id": 119463
+   },
+   {
+    "plugin_id": 119462
+   },
+   {
+    "plugin_id": 119095
+   },
+   {
+    "plugin_id": 119094
+   },
+   {
+    "plugin_id": 118916
+   },
+   {
+    "plugin_id": 117431
+   },
+   {
+    "plugin_id": 117413
+   },
+   {
+    "plugin_id": 59196
+   },
+   {
+    "plugin_id": 56998
+   },
+   {
+    "plugin_id": 22024
+   },
+   {
+    "plugin_id": 327608
+   },
+   {
+    "plugin_id": 326857
+   },
+   {
+    "plugin_id": 326727
+   },
+   {
+    "plugin_id": 202025
+   },
+   {
+    "plugin_id": 190483
+   },
+   {
+    "plugin_id": 178162
+   },
+   {
+    "plugin_id": 177245
+   },
+   {
+    "plugin_id": 172527
+   },
+   {
+    "plugin_id": 171449
+   },
+   {
+    "plugin_id": 163950
+   },
+   {
+    "plugin_id": 130913
+   },
+   {
+    "plugin_id": 334615
+   },
+   {
+    "plugin_id": 334614
+   },
+   {
+    "plugin_id": 342204
+   },
+   {
+    "plugin_id": 337629
+   },
+   {
+    "plugin_id": 342265
+   },
+   {
+    "plugin_id": 342201
+   },
+   {
+    "plugin_id": 339532
+   },
+   {
+    "plugin_id": 338407
+   },
+   {
+    "plugin_id": 337863
+   },
+   {
+    "plugin_id": 337625
+   },
+   {
+    "plugin_id": 335968
+   },
+   {
+    "plugin_id": 334632
+   },
+   {
+    "plugin_id": 333159
+   },
+   {
+    "plugin_id": 330771
+   },
+   {
+    "plugin_id": 330144
+   },
+   {
+    "plugin_id": 329252
+   },
+   {
+    "plugin_id": 328866
+   },
+   {
+    "plugin_id": 327470
+   },
+   {
+    "plugin_id": 326886
+   },
+   {
+    "plugin_id": 326234
+   },
+   {
+    "plugin_id": 322793
+   },
+   {
+    "plugin_id": 315323
+   },
+   {
+    "plugin_id": 305162
+   },
+   {
+    "plugin_id": 303474
+   }
+  ],
+  "total_vulnerability_count": 706,
+  "total_asset_count": 0,
+  "_reduzida": "so a contagem e lida desta resposta; ver tests/fixtures/LEIA-ME.md"
  },
  "[\"GET\", \"/plugins/plugin/342204\", null, null]": {
   "id": 342204,

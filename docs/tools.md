@@ -75,6 +75,44 @@ Nunca imprime a chave, nem parte dela.
 
 ---
 
+## `ctem_preflight(severity_workbenches="critical")`  — M3
+
+A tabela PREFLIGHT pronta: cada filtro que a skill usa, **testado ao vivo**. Nenhum veredito é
+herdado de documento.
+
+Três formas de prova, e a escolha depende do filtro:
+
+| Tipo | O que exige | Por que |
+|---|---|---|
+| `par_exclusivo` | duas consultas mutuamente exclusivas cujos totais **somam o corpus** | "reduziu" não basta — um filtro pode reduzir por acaso |
+| `booleano` | `true` e `false` com totais diferentes | totais iguais significam parâmetro ignorado |
+| `monotonico` | escada de cortes estritamente decrescente | prova que o corte está sendo aplicado |
+
+Devolve também `deny_list`: os filtros que o servidor rejeita **antes de a requisição sair**, cada um
+com a regra e a prova medida.
+
+Resultado no sandbox: **8 aplicados, 5 ignorados, 0 indeterminados**.
+
+### As quatro correções que este pré-voo encontrou
+
+Os vereditos de `_docs/matriz-confianca-filtros-mcp.md` foram medidos **através do MCP oficial**.
+Contra a API REST direta, quatro deles mudam. A matriz não está errada — ela descreve o outro
+caminho.
+
+| # | O que a matriz diz | O que a API direta faz | Prova |
+|---|---|---|---|
+| 1 | filtro de data em findings é ignorado, em todo operador | só os operadores **relativos** são ignorados; os de **comparação** funcionam | `older than 3650d` → 50 e `within last 1d` → 50 (mutuamente exclusivos, ambos o corpus). Mas `< 2020-01-01` → 0 e `>= 2020-01-01` → 50, que **somam** 50 |
+| 2 | `exists` não funciona em `finding_vpr_score` (HTTP 400) | funciona; o 400 vem de `value` **vazio** | `exists` → 4.462 e `not exists` → 1.024, que somam os 5.486 do corpus. A mensagem da API é literalmente *"Missing value in filter"* |
+| 3 | `resolvable` — "presumir ignorado até prova" | **provado** ignorado | `true` → 121 e `false` → 121 |
+| 4 | `age` é aplicado em workbenches | `age` **não é parâmetro** desta API; o nome real é `date_range`, e esse funciona | `age=1` → 121 (o corpus). `date_range`: 1 → 17, 30 → 118, 90 → 121 |
+
+A correção 2 é a mais instrutiva: um HTTP 400 foi lido como *"a propriedade não suporta o
+operador"*, quando a causa era o valor ausente. A regra certa é mais ampla e mais útil — **todo
+operador exige `value` não vazio**.
+
+A semântica de `date_range` continua sendo a que a matriz descreve: **recência da última
+observação**, não idade do finding. Quem usar como "dias em aberto" produz número errado.
+
 ## `ctem_scoping(mapeamento, indicadores=None)`  — M1
 
 Estágio 1: **S1, S2, S3, S4**.
