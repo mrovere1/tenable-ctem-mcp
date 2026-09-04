@@ -18,14 +18,15 @@ classifiers = [
     "Topic :: Security",
 ]
 
-[project.urls]
-Homepage = "https://github.com/OWNER/tenable-ctem-mcp"
-Issues = "https://github.com/OWNER/tenable-ctem-mcp/issues"
 
 # Dependencia unica: o SDK oficial de MCP.
 # O cliente HTTP NAO tem dependencia externa - urllib da stdlib, portado do
 # coletor tenable_mttr_export.py 1.1.0, que ja resolve TLS corporativo e backoff.
 dependencies = ["mcp>=2.1,<3"]
+
+[project.urls]
+Homepage = "https://github.com/OWNER/tenable-ctem-mcp"
+Issues = "https://github.com/OWNER/tenable-ctem-mcp/issues"
 
 [project.scripts]
 tenable-ctem-mcp = "tenable_ctem_mcp.server:main"
