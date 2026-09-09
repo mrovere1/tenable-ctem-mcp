@@ -7417,7 +7417,7 @@
    },
    "updated": "2026-08-26T00:30:04Z"
   },
-  "_completa": "Resposta INTEIRA, guardada como prova do tamanho que justifica plugin_details_batch."
+  "_complete": "Resposta INTEIRA, guardada como prova do tamanho que justifica plugin_details_batch."
  },
  "[\"GET\", \"/plugins/plugin/306431\", null, null]": {
   "id": 306431,
@@ -7490,7 +7490,7 @@
    },
    "updated": "2026-08-28T00:30:04Z"
   },
-  "_enxuta": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
+  "_trimmed": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
  },
  "[\"GET\", \"/plugins/plugin/301765\", null, null]": {
   "id": 301765,
@@ -7555,7 +7555,7 @@
    },
    "updated": "2026-06-30T00:30:03Z"
   },
-  "_enxuta": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
+  "_trimmed": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
  },
  "[\"GET\", \"/plugins/plugin/301678\", null, null]": {
   "id": 301678,
@@ -7608,7 +7608,7 @@
    },
    "updated": "2026-07-02T00:02:18Z"
   },
-  "_enxuta": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
+  "_trimmed": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
  },
  "[\"GET\", \"/plugins/plugin/298556\", null, null]": {
   "id": 298556,
@@ -7677,7 +7677,7 @@
    },
    "updated": "2026-08-30T00:30:04Z"
   },
-  "_enxuta": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
+  "_trimmed": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
  },
  "[\"GET\", \"/plugins/plugin/294870\", null, null]": {
   "id": 294870,
@@ -7726,7 +7726,7 @@
    },
    "updated": "2026-06-25T12:30:04Z"
   },
-  "_enxuta": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
+  "_trimmed": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
  },
  "[\"GET\", \"/plugins/plugin/283466\", null, null]": {
   "id": 283466,
@@ -7794,7 +7794,7 @@
    },
    "updated": "2026-08-26T00:30:04Z"
   },
-  "_enxuta": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
+  "_trimmed": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
  },
  "[\"GET\", \"/plugins/plugin/277997\", null, null]": {
   "id": 277997,
@@ -7855,7 +7855,7 @@
    },
    "updated": "2026-06-15T14:42:57Z"
   },
-  "_enxuta": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
+  "_trimmed": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
  },
  "[\"GET\", \"/plugins/plugin/274780\", null, null]": {
   "id": 274780,
@@ -7916,7 +7916,7 @@
    },
    "updated": "2026-06-15T14:42:57Z"
   },
-  "_enxuta": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
+  "_trimmed": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
  },
  "[\"GET\", \"/plugins/plugin/261798\", null, null]": {
   "id": 261798,
@@ -8049,7 +8049,7 @@
    },
    "updated": "2026-06-15T14:42:57Z"
   },
-  "_enxuta": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
+  "_trimmed": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
  },
  "[\"GET\", \"/plugins/plugin/249125\", null, null]": {
   "id": 249125,
@@ -8170,7 +8170,7 @@
    },
    "updated": "2026-07-18T18:30:03Z"
   },
-  "_enxuta": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
+  "_trimmed": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
  },
  "[\"GET\", \"/plugins/plugin/249112\", null, null]": {
   "id": 249112,
@@ -8215,7 +8215,7 @@
    },
    "updated": "2026-08-12T00:30:08Z"
   },
-  "_enxuta": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
+  "_trimmed": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
  },
  "[\"GET\", \"/plugins/plugin/242325\", null, null]": {
   "id": 242325,
@@ -8260,7 +8260,7 @@
    },
    "updated": "2026-07-15T00:30:02Z"
   },
-  "_enxuta": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
+  "_trimmed": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
  },
  "[\"GET\", \"/plugins/plugin/242293\", null, null]": {
   "id": 242293,
@@ -8309,7 +8309,7 @@
    },
    "updated": "2026-06-15T14:42:57Z"
   },
-  "_enxuta": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
+  "_trimmed": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
  },
  "[\"GET\", \"/plugins/plugin/238092\", null, null]": {
   "id": 238092,
@@ -8434,7 +8434,7 @@
    },
    "updated": "2026-08-31T00:30:05Z"
   },
-  "_enxuta": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
+  "_trimmed": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
  },
  "[\"GET\", \"/plugins/plugin/235842\", null, null]": {
   "id": 235842,
@@ -8587,7 +8587,7 @@
    },
    "updated": "2026-08-12T06:30:05Z"
   },
-  "_enxuta": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
+  "_trimmed": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
  },
  "[\"GET\", \"/plugins/plugin/234624\", null, null]": {
   "id": 234624,
@@ -8640,7 +8640,7 @@
    },
    "updated": "2026-06-15T14:42:57Z"
   },
-  "_enxuta": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
+  "_trimmed": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
  },
  "[\"GET\", \"/plugins/plugin/234044\", null, null]": {
   "id": 234044,
@@ -8789,7 +8789,7 @@
    },
    "updated": "2026-08-21T00:30:06Z"
   },
-  "_enxuta": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
+  "_trimmed": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
  },
  "[\"GET\", \"/plugins/plugin/232612\", null, null]": {
   "id": 232612,
@@ -8926,7 +8926,7 @@
    },
    "updated": "2026-08-29T06:30:04Z"
   },
-  "_enxuta": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
+  "_trimmed": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
  },
  "[\"GET\", \"/plugins/plugin/216134\", null, null]": {
   "id": 216134,
@@ -9047,7 +9047,7 @@
    },
    "updated": "2026-08-12T06:30:05Z"
   },
-  "_enxuta": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
+  "_trimmed": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
  },
  "[\"GET\", \"/plugins/plugin/214123\", null, null]": {
   "id": 214123,
@@ -9216,7 +9216,7 @@
    },
    "updated": "2026-08-28T06:30:04Z"
   },
-  "_enxuta": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
+  "_trimmed": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
  },
  "[\"GET\", \"/plugins/plugin/212232\", null, null]": {
   "id": 212232,
@@ -9285,7 +9285,7 @@
    },
    "updated": "2026-08-19T00:30:08Z"
   },
-  "_enxuta": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
+  "_trimmed": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
  },
  "[\"GET\", \"/plugins/plugin/210850\", null, null]": {
   "id": 210850,
@@ -9354,7 +9354,7 @@
    },
    "updated": "2026-08-19T00:30:08Z"
   },
-  "_enxuta": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
+  "_trimmed": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
  },
  "[\"GET\", \"/plugins/plugin/208298\", null, null]": {
   "id": 208298,
@@ -9423,7 +9423,7 @@
    },
    "updated": "2026-08-19T00:30:08Z"
   },
-  "_enxuta": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
+  "_trimmed": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
  },
  "[\"GET\", \"/plugins/plugin/206902\", null, null]": {
   "id": 206902,
@@ -9492,7 +9492,7 @@
    },
    "updated": "2026-06-28T00:30:01Z"
   },
-  "_enxuta": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
+  "_trimmed": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
  },
  "[\"GET\", \"/plugins/plugin/205447\", null, null]": {
   "id": 205447,
@@ -9565,7 +9565,7 @@
    },
    "updated": "2026-08-19T06:30:05Z"
   },
-  "_enxuta": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
+  "_trimmed": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
  },
  "[\"GET\", \"/plugins/plugin/202043\", null, null]": {
   "id": 202043,
@@ -9633,7 +9633,7 @@
    },
    "updated": "2026-08-24T00:30:03Z"
   },
-  "_enxuta": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
+  "_trimmed": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
  },
  "[\"GET\", \"/plugins/plugin/200351\", null, null]": {
   "id": 200351,
@@ -9709,7 +9709,7 @@
    },
    "updated": "2026-07-12T06:30:02Z"
   },
-  "_enxuta": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
+  "_trimmed": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
  },
  "[\"GET\", \"/plugins/plugin/197009\", null, null]": {
   "id": 197009,
@@ -9777,7 +9777,7 @@
    },
    "updated": "2026-08-27T00:30:05Z"
   },
-  "_enxuta": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
+  "_trimmed": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
  },
  "[\"GET\", \"/plugins/plugin/193574\", null, null]": {
   "id": 193574,
@@ -9829,7 +9829,7 @@
    },
    "updated": "2026-06-21T00:30:02Z"
   },
-  "_enxuta": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
+  "_trimmed": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
  },
  "[\"GET\", \"/plugins/plugin/193160\", null, null]": {
   "id": 193160,
@@ -9877,7 +9877,7 @@
    },
    "updated": "2026-06-15T14:42:57Z"
   },
-  "_enxuta": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
+  "_trimmed": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
  },
  "[\"GET\", \"/plugins/plugin/193097\", null, null]": {
   "id": 193097,
@@ -9941,7 +9941,7 @@
    },
    "updated": "2026-08-30T06:30:04Z"
   },
-  "_enxuta": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
+  "_trimmed": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
  },
  "[\"GET\", \"/plugins/plugin/192778\", null, null]": {
   "id": 192778,
@@ -9957,7 +9957,7 @@
     "attribute_value": "2024/04/02"
    }
   ],
-  "_enxuta": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
+  "_trimmed": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
  },
  "[\"GET\", \"/plugins/plugin/191934\", null, null]": {
   "id": 191934,
@@ -10025,7 +10025,7 @@
    },
    "updated": "2026-07-09T00:30:06Z"
   },
-  "_enxuta": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
+  "_trimmed": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
  },
  "[\"GET\", \"/plugins/plugin/190787\", null, null]": {
   "id": 190787,
@@ -10069,7 +10069,7 @@
    },
    "updated": "2026-06-15T14:42:57Z"
   },
-  "_enxuta": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
+  "_trimmed": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
  },
  "[\"GET\", \"/plugins/plugin/190487\", null, null]": {
   "id": 190487,
@@ -10133,7 +10133,7 @@
    },
    "updated": "2026-06-15T14:42:57Z"
   },
-  "_enxuta": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
+  "_trimmed": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
  },
  "[\"GET\", \"/plugins/plugin/187800\", null, null]": {
   "id": 187800,
@@ -10193,7 +10193,7 @@
    },
    "updated": "2026-06-16T00:30:06Z"
   },
-  "_enxuta": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
+  "_trimmed": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
  },
  "[\"GET\", \"/plugins/plugin/186791\", null, null]": {
   "id": 186791,
@@ -10253,7 +10253,7 @@
    },
    "updated": "2026-06-16T00:30:06Z"
   },
-  "_enxuta": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
+  "_trimmed": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
  },
  "[\"GET\", \"/plugins/plugin/185576\", null, null]": {
   "id": 185576,
@@ -10329,7 +10329,7 @@
    },
    "updated": "2026-07-09T00:30:06Z"
   },
-  "_enxuta": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
+  "_trimmed": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
  },
  "[\"GET\", \"/plugins/plugin/184379\", null, null]": {
   "id": 184379,
@@ -10373,7 +10373,7 @@
    },
    "updated": "2026-06-19T06:30:05Z"
   },
-  "_enxuta": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
+  "_trimmed": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
  },
  "[\"GET\", \"/plugins/plugin/184371\", null, null]": {
   "id": 184371,
@@ -10417,7 +10417,7 @@
    },
    "updated": "2026-06-19T06:30:05Z"
   },
-  "_enxuta": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
+  "_trimmed": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
  },
  "[\"GET\", \"/plugins/plugin/184369\", null, null]": {
   "id": 184369,
@@ -10461,7 +10461,7 @@
    },
    "updated": "2026-07-01T18:30:08Z"
   },
-  "_enxuta": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
+  "_trimmed": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
  },
  "[\"GET\", \"/plugins/plugin/182874\", null, null]": {
   "id": 182874,
@@ -10517,7 +10517,7 @@
    },
    "updated": "2026-08-17T00:30:01Z"
   },
-  "_enxuta": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
+  "_trimmed": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
  },
  "[\"GET\", \"/plugins/plugin/182862\", null, null]": {
   "id": 182862,
@@ -10597,7 +10597,7 @@
    },
    "updated": "2026-08-09T00:30:05Z"
   },
-  "_enxuta": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
+  "_trimmed": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
  },
  "[\"GET\", \"/plugins/plugin/179498\", null, null]": {
   "id": 179498,
@@ -10677,7 +10677,7 @@
    },
    "updated": "2026-08-22T00:30:05Z"
   },
-  "_enxuta": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
+  "_trimmed": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
  },
  "[\"GET\", \"/plugins/plugin/178152\", null, null]": {
   "id": 178152,
@@ -10745,7 +10745,7 @@
    },
    "updated": "2026-06-30T06:30:05Z"
   },
-  "_enxuta": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
+  "_trimmed": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
  },
  "[\"GET\", \"/plugins/plugin/177246\", null, null]": {
   "id": 177246,
@@ -10813,7 +10813,7 @@
    },
    "updated": "2026-08-25T00:30:06Z"
   },
-  "_enxuta": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
+  "_trimmed": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
  },
  "[\"GET\", \"/plugins/plugin/175339\", null, null]": {
   "id": 175339,
@@ -10881,7 +10881,7 @@
    },
    "updated": "2026-08-30T00:30:04Z"
   },
-  "_enxuta": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
+  "_trimmed": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
  },
  "[\"GET\", \"/plugins/plugin/174120\", null, null]": {
   "id": 174120,
@@ -10953,7 +10953,7 @@
    },
    "updated": "2026-08-27T06:30:05Z"
   },
-  "_enxuta": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
+  "_trimmed": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
  },
  "[\"GET\", \"/plugins/plugin/172532\", null, null]": {
   "id": 172532,
@@ -11017,7 +11017,7 @@
    },
    "updated": "2026-07-07T18:30:04Z"
   },
-  "_enxuta": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
+  "_trimmed": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
  },
  "[\"GET\", \"/plugins/plugin/171448\", null, null]": {
   "id": 171448,
@@ -11081,7 +11081,7 @@
    },
    "updated": "2026-06-19T06:30:05Z"
   },
-  "_enxuta": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
+  "_trimmed": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
  },
  "[\"GET\", \"/plugins/plugin/169779\", null, null]": {
   "id": 169779,
@@ -11149,7 +11149,7 @@
    },
    "updated": "2026-08-29T00:30:07Z"
   },
-  "_enxuta": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
+  "_trimmed": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
  },
  "[\"GET\", \"/plugins/plugin/168821\", null, null]": {
   "id": 168821,
@@ -11193,7 +11193,7 @@
    },
    "updated": "2026-06-19T00:30:04Z"
   },
-  "_enxuta": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
+  "_trimmed": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
  },
  "[\"GET\", \"/plugins/plugin/168792\", null, null]": {
   "id": 168792,
@@ -11237,7 +11237,7 @@
    },
    "updated": "2026-06-19T06:30:05Z"
   },
-  "_enxuta": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
+  "_trimmed": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
  },
  "[\"GET\", \"/plugins/plugin/167111\", null, null]": {
   "id": 167111,
@@ -11313,7 +11313,7 @@
    },
    "updated": "2026-06-19T06:30:05Z"
   },
-  "_enxuta": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
+  "_trimmed": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
  },
  "[\"GET\", \"/plugins/plugin/166039\", null, null]": {
   "id": 166039,
@@ -11381,7 +11381,7 @@
    },
    "updated": "2026-07-09T00:30:06Z"
   },
-  "_enxuta": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
+  "_trimmed": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
  },
  "[\"GET\", \"/plugins/plugin/164996\", null, null]": {
   "id": 164996,
@@ -11453,7 +11453,7 @@
    },
    "updated": "2026-06-30T00:30:03Z"
   },
-  "_enxuta": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
+  "_trimmed": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
  },
  "[\"GET\", \"/plugins/plugin/163940\", null, null]": {
   "id": 163940,
@@ -11521,7 +11521,7 @@
    },
    "updated": "2026-08-31T00:30:05Z"
   },
-  "_enxuta": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
+  "_trimmed": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
  },
  "[\"GET\", \"/plugins/plugin/162196\", null, null]": {
   "id": 162196,
@@ -11593,7 +11593,7 @@
    },
    "updated": "2026-06-30T06:30:05Z"
   },
-  "_enxuta": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
+  "_trimmed": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
  },
  "[\"GET\", \"/plugins/plugin/159677\", null, null]": {
   "id": 159677,
@@ -11669,7 +11669,7 @@
    },
    "updated": "2026-08-20T00:30:11Z"
   },
-  "_enxuta": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
+  "_trimmed": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
  },
  "[\"GET\", \"/plugins/plugin/156619\", null, null]": {
   "id": 156619,
@@ -11733,7 +11733,7 @@
    },
    "updated": "2026-07-01T18:30:08Z"
   },
-  "_enxuta": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
+  "_trimmed": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
  },
  "[\"GET\", \"/plugins/plugin/147222\", null, null]": {
   "id": 147222,
@@ -11813,7 +11813,7 @@
    },
    "updated": "2026-08-10T06:30:01Z"
   },
-  "_enxuta": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
+  "_trimmed": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
  },
  "[\"GET\", \"/plugins/plugin/142690\", null, null]": {
   "id": 142690,
@@ -11897,7 +11897,7 @@
    },
    "updated": "2026-08-25T06:30:04Z"
   },
-  "_enxuta": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
+  "_trimmed": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
  },
  "[\"GET\", \"/plugins/plugin/137265\", null, null]": {
   "id": 137265,
@@ -11949,7 +11949,7 @@
    },
    "updated": "2026-06-19T00:30:04Z"
   },
-  "_enxuta": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
+  "_trimmed": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
  },
  "[\"GET\", \"/plugins/plugin/137253\", null, null]": {
   "id": 137253,
@@ -11993,7 +11993,7 @@
    },
    "updated": "2026-06-19T00:30:04Z"
   },
-  "_enxuta": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
+  "_trimmed": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
  },
  "[\"GET\", \"/plugins/plugin/135188\", null, null]": {
   "id": 135188,
@@ -12013,7 +12013,7 @@
     "attribute_value": "2020/04/03"
    }
   ],
-  "_enxuta": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
+  "_trimmed": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
  },
  "[\"GET\", \"/plugins/plugin/134369\", null, null]": {
   "id": 134369,
@@ -12081,7 +12081,7 @@
    },
    "updated": "2026-08-25T00:30:06Z"
   },
-  "_enxuta": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
+  "_trimmed": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
  },
  "[\"GET\", \"/plugins/plugin/132999\", null, null]": {
   "id": 132999,
@@ -12269,7 +12269,7 @@
    },
    "updated": "2026-07-01T18:30:08Z"
   },
-  "_enxuta": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
+  "_trimmed": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
  },
  "[\"GET\", \"/plugins/plugin/132858\", null, null]": {
   "id": 132858,
@@ -12345,7 +12345,7 @@
    },
    "updated": "2026-08-26T06:30:02Z"
   },
-  "_enxuta": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
+  "_trimmed": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
  },
  "[\"GET\", \"/plugins/plugin/128646\", null, null]": {
   "id": 128646,
@@ -12401,7 +12401,7 @@
    },
    "updated": "2026-06-18T18:30:04Z"
   },
-  "_enxuta": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
+  "_trimmed": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
  },
  "[\"GET\", \"/plugins/plugin/128633\", null, null]": {
   "id": 128633,
@@ -12449,7 +12449,7 @@
    },
    "updated": "2026-06-18T18:30:04Z"
   },
-  "_enxuta": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
+  "_trimmed": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
  },
  "[\"GET\", \"/plugins/plugin/127850\", null, null]": {
   "id": 127850,
@@ -12505,7 +12505,7 @@
    },
    "updated": "2026-07-18T00:30:06Z"
   },
-  "_enxuta": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
+  "_trimmed": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
  },
  "[\"GET\", \"/plugins/plugin/123950\", null, null]": {
   "id": 123950,
@@ -12553,7 +12553,7 @@
    },
    "updated": "2026-06-18T12:30:06Z"
   },
-  "_enxuta": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
+  "_trimmed": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
  },
  "[\"GET\", \"/plugins/plugin/123938\", null, null]": {
   "id": 123938,
@@ -12593,7 +12593,7 @@
    },
    "updated": "2026-06-18T12:30:06Z"
   },
-  "_enxuta": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
+  "_trimmed": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
  },
  "[\"GET\", \"/plugins/plugin/119612\", null, null]": {
   "id": 119612,
@@ -12825,7 +12825,7 @@
    },
    "updated": "2026-06-18T12:30:06Z"
   },
-  "_enxuta": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
+  "_trimmed": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
  },
  "[\"GET\", \"/plugins/plugin/119584\", null, null]": {
   "id": 119584,
@@ -12889,7 +12889,7 @@
    },
    "updated": "2026-08-30T00:30:04Z"
   },
-  "_enxuta": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
+  "_trimmed": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
  },
  "[\"GET\", \"/plugins/plugin/119463\", null, null]": {
   "id": 119463,
@@ -12949,7 +12949,7 @@
    },
    "updated": "2026-08-31T06:30:04Z"
   },
-  "_enxuta": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
+  "_trimmed": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
  },
  "[\"GET\", \"/plugins/plugin/119462\", null, null]": {
   "id": 119462,
@@ -13001,7 +13001,7 @@
    },
    "updated": "2026-08-31T06:30:04Z"
   },
-  "_enxuta": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
+  "_trimmed": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
  },
  "[\"GET\", \"/plugins/plugin/119095\", null, null]": {
   "id": 119095,
@@ -13049,7 +13049,7 @@
    },
    "updated": "2026-07-01T18:30:08Z"
   },
-  "_enxuta": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
+  "_trimmed": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
  },
  "[\"GET\", \"/plugins/plugin/119094\", null, null]": {
   "id": 119094,
@@ -13089,7 +13089,7 @@
    },
    "updated": "2026-07-01T18:30:08Z"
   },
-  "_enxuta": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
+  "_trimmed": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
  },
  "[\"GET\", \"/plugins/plugin/118916\", null, null]": {
   "id": 118916,
@@ -13141,7 +13141,7 @@
    },
    "updated": "2026-06-23T18:30:10Z"
   },
-  "_enxuta": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
+  "_trimmed": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
  },
  "[\"GET\", \"/plugins/plugin/117431\", null, null]": {
   "id": 117431,
@@ -13381,7 +13381,7 @@
    },
    "updated": "2026-06-18T18:30:04Z"
   },
-  "_enxuta": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
+  "_trimmed": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
  },
  "[\"GET\", \"/plugins/plugin/117413\", null, null]": {
   "id": 117413,
@@ -13441,7 +13441,7 @@
    },
    "updated": "2026-08-27T00:30:05Z"
   },
-  "_enxuta": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
+  "_trimmed": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
  },
  "[\"GET\", \"/plugins/plugin/59196\", null, null]": {
   "id": 59196,
@@ -13461,7 +13461,7 @@
     "attribute_value": "2012/05/18"
    }
   ],
-  "_enxuta": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
+  "_trimmed": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
  },
  "[\"GET\", \"/plugins/plugin/56998\", null, null]": {
   "id": 56998,
@@ -13481,7 +13481,7 @@
     "attribute_value": "2011/12/02"
    }
   ],
-  "_enxuta": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
+  "_trimmed": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
  },
  "[\"GET\", \"/plugins/plugin/22024\", null, null]": {
   "id": 22024,
@@ -13501,7 +13501,7 @@
     "attribute_value": "2006/07/11"
    }
   ],
-  "_enxuta": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
+  "_trimmed": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
  },
  "[\"GET\", \"/plugins/plugin/327608\", null, null]": {
   "id": 327608,
@@ -13550,7 +13550,7 @@
    },
    "updated": "2026-08-06T00:30:06Z"
   },
-  "_enxuta": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
+  "_trimmed": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
  },
  "[\"GET\", \"/plugins/plugin/326857\", null, null]": {
   "id": 326857,
@@ -13623,7 +13623,7 @@
    },
    "updated": "2026-08-25T06:30:04Z"
   },
-  "_enxuta": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
+  "_trimmed": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
  },
  "[\"GET\", \"/plugins/plugin/326727\", null, null]": {
   "id": 326727,
@@ -13676,7 +13676,7 @@
    },
    "updated": "2026-08-20T00:30:11Z"
   },
-  "_enxuta": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
+  "_trimmed": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
  },
  "[\"GET\", \"/plugins/plugin/202025\", null, null]": {
   "id": 202025,
@@ -13740,7 +13740,7 @@
    },
    "updated": "2026-08-22T00:30:05Z"
   },
-  "_enxuta": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
+  "_trimmed": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
  },
  "[\"GET\", \"/plugins/plugin/190483\", null, null]": {
   "id": 190483,
@@ -13860,7 +13860,7 @@
    },
    "updated": "2026-08-19T00:30:08Z"
   },
-  "_enxuta": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
+  "_trimmed": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
  },
  "[\"GET\", \"/plugins/plugin/178162\", null, null]": {
   "id": 178162,
@@ -13920,7 +13920,7 @@
    },
    "updated": "2026-06-19T06:30:05Z"
   },
-  "_enxuta": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
+  "_trimmed": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
  },
  "[\"GET\", \"/plugins/plugin/177245\", null, null]": {
   "id": 177245,
@@ -13984,7 +13984,7 @@
    },
    "updated": "2026-06-19T00:30:04Z"
   },
-  "_enxuta": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
+  "_trimmed": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
  },
  "[\"GET\", \"/plugins/plugin/172527\", null, null]": {
   "id": 172527,
@@ -14056,7 +14056,7 @@
    },
    "updated": "2026-08-30T00:30:04Z"
   },
-  "_enxuta": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
+  "_trimmed": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
  },
  "[\"GET\", \"/plugins/plugin/171449\", null, null]": {
   "id": 171449,
@@ -14124,7 +14124,7 @@
    },
    "updated": "2026-08-29T00:30:07Z"
   },
-  "_enxuta": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
+  "_trimmed": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
  },
  "[\"GET\", \"/plugins/plugin/163950\", null, null]": {
   "id": 163950,
@@ -14184,7 +14184,7 @@
    },
    "updated": "2026-06-20T18:30:04Z"
   },
-  "_enxuta": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
+  "_trimmed": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
  },
  "[\"GET\", \"/plugins/plugin/130913\", null, null]": {
   "id": 130913,
@@ -14272,7 +14272,7 @@
    },
    "updated": "2026-07-01T12:30:05Z"
   },
-  "_enxuta": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
+  "_trimmed": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
  },
  "[\"GET\", \"/plugins/plugin/334615\", null, null]": {
   "id": 334615,
@@ -14329,7 +14329,7 @@
    },
    "updated": "2026-08-15T18:30:04Z"
   },
-  "_enxuta": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
+  "_trimmed": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
  },
  "[\"GET\", \"/plugins/plugin/334614\", null, null]": {
   "id": 334614,
@@ -14390,7 +14390,7 @@
    },
    "updated": "2026-08-14T00:30:08Z"
   },
-  "_enxuta": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
+  "_trimmed": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
  },
  "[\"GET\", \"/plugins/plugin/342204\", null, null]": {
   "id": 342204,
@@ -14419,7 +14419,7 @@
    }
   ],
   "vpr": {},
-  "_enxuta": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
+  "_trimmed": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
  },
  "[\"GET\", \"/plugins/plugin/337629\", null, null]": {
   "id": 337629,
@@ -14468,7 +14468,7 @@
    },
    "updated": "2026-08-24T18:30:04Z"
   },
-  "_enxuta": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
+  "_trimmed": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
  },
  "[\"GET\", \"/plugins/plugin/342265\", null, null]": {
   "id": 342265,
@@ -14497,7 +14497,7 @@
    }
   ],
   "vpr": {},
-  "_enxuta": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
+  "_trimmed": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
  },
  "[\"GET\", \"/plugins/plugin/342201\", null, null]": {
   "id": 342201,
@@ -14526,7 +14526,7 @@
    }
   ],
   "vpr": {},
-  "_enxuta": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
+  "_trimmed": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
  },
  "[\"GET\", \"/plugins/plugin/339532\", null, null]": {
   "id": 339532,
@@ -14575,7 +14575,7 @@
    },
    "updated": "2026-08-27T00:30:05Z"
   },
-  "_enxuta": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
+  "_trimmed": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
  },
  "[\"GET\", \"/plugins/plugin/338407\", null, null]": {
   "id": 338407,
@@ -14624,7 +14624,7 @@
    },
    "updated": "2026-08-27T00:30:05Z"
   },
-  "_enxuta": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
+  "_trimmed": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
  },
  "[\"GET\", \"/plugins/plugin/337863\", null, null]": {
   "id": 337863,
@@ -14673,7 +14673,7 @@
    },
    "updated": "2026-08-25T00:30:06Z"
   },
-  "_enxuta": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
+  "_trimmed": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
  },
  "[\"GET\", \"/plugins/plugin/337625\", null, null]": {
   "id": 337625,
@@ -14722,7 +14722,7 @@
    },
    "updated": "2026-08-24T18:30:04Z"
   },
-  "_enxuta": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
+  "_trimmed": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
  },
  "[\"GET\", \"/plugins/plugin/335968\", null, null]": {
   "id": 335968,
@@ -14777,7 +14777,7 @@
    },
    "updated": "2026-08-27T00:30:05Z"
   },
-  "_enxuta": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
+  "_trimmed": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
  },
  "[\"GET\", \"/plugins/plugin/334632\", null, null]": {
   "id": 334632,
@@ -14826,7 +14826,7 @@
    },
    "updated": "2026-08-18T00:30:07Z"
   },
-  "_enxuta": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
+  "_trimmed": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
  },
  "[\"GET\", \"/plugins/plugin/333159\", null, null]": {
   "id": 333159,
@@ -14875,7 +14875,7 @@
    },
    "updated": "2026-08-13T00:30:05Z"
   },
-  "_enxuta": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
+  "_trimmed": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
  },
  "[\"GET\", \"/plugins/plugin/330771\", null, null]": {
   "id": 330771,
@@ -14924,7 +14924,7 @@
    },
    "updated": "2026-08-11T06:30:02Z"
   },
-  "_enxuta": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
+  "_trimmed": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
  },
  "[\"GET\", \"/plugins/plugin/330144\", null, null]": {
   "id": 330144,
@@ -14985,7 +14985,7 @@
    },
    "updated": "2026-07-11T00:30:06Z"
   },
-  "_enxuta": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
+  "_trimmed": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
  },
  "[\"GET\", \"/plugins/plugin/329252\", null, null]": {
   "id": 329252,
@@ -15034,7 +15034,7 @@
    },
    "updated": "2026-08-25T00:30:06Z"
   },
-  "_enxuta": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
+  "_trimmed": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
  },
  "[\"GET\", \"/plugins/plugin/328866\", null, null]": {
   "id": 328866,
@@ -15079,7 +15079,7 @@
    },
    "updated": "2026-08-20T00:30:11Z"
   },
-  "_enxuta": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
+  "_trimmed": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
  },
  "[\"GET\", \"/plugins/plugin/327470\", null, null]": {
   "id": 327470,
@@ -15132,7 +15132,7 @@
    },
    "updated": "2026-08-21T00:30:06Z"
   },
-  "_enxuta": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
+  "_trimmed": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
  },
  "[\"GET\", \"/plugins/plugin/326886\", null, null]": {
   "id": 326886,
@@ -15181,7 +15181,7 @@
    },
    "updated": "2026-08-13T00:30:05Z"
   },
-  "_enxuta": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
+  "_trimmed": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
  },
  "[\"GET\", \"/plugins/plugin/326234\", null, null]": {
   "id": 326234,
@@ -15230,7 +15230,7 @@
    },
    "updated": "2026-08-27T06:30:05Z"
   },
-  "_enxuta": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
+  "_trimmed": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
  },
  "[\"GET\", \"/plugins/plugin/322793\", null, null]": {
   "id": 322793,
@@ -15279,7 +15279,7 @@
    },
    "updated": "2026-08-25T00:30:06Z"
   },
-  "_enxuta": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
+  "_trimmed": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
  },
  "[\"GET\", \"/plugins/plugin/315323\", null, null]": {
   "id": 315323,
@@ -15328,7 +15328,7 @@
    },
    "updated": "2026-08-02T06:30:01Z"
   },
-  "_enxuta": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
+  "_trimmed": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
  },
  "[\"GET\", \"/plugins/plugin/305162\", null, null]": {
   "id": 305162,
@@ -15377,7 +15377,7 @@
    },
    "updated": "2026-06-15T14:42:57Z"
   },
-  "_enxuta": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
+  "_trimmed": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
  },
  "[\"GET\", \"/plugins/plugin/303474\", null, null]": {
   "id": 303474,
@@ -15426,7 +15426,7 @@
    },
    "updated": "2026-07-01T00:30:05Z"
   },
-  "_enxuta": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
+  "_trimmed": "So os atributos que _cinco_campos le; ver tests/fixtures/LEIA-ME.md"
  },
  "[\"POST\", \"/api/v1/t1/inventory/findings/search\", {\"filters\": [{\"operator\": \">=\", \"property\": \"finding_vpr_score\", \"value\": [\"9\"]}]}, {\"limit\": 1}]": {
   "data": [
@@ -16633,7 +16633,7 @@
   ],
   "total_vulnerability_count": 706,
   "total_asset_count": 0,
-  "_reduzida": "so a contagem e lida desta resposta; ver tests/fixtures/LEIA-ME.md"
+  "_reduced": "so a contagem e lida desta resposta; ver tests/fixtures/LEIA-ME.md"
  },
  "[\"GET\", \"/workbenches/vulnerabilities\", null, {\"authenticated\": \"false\", \"filter.0.filter\": \"severity\", \"filter.0.quality\": \"eq\", \"filter.0.value\": \"critical\", \"filter.search_type\": \"and\"}]": {
   "vulnerabilities": [
@@ -17003,7 +17003,7 @@
   ],
   "total_vulnerability_count": 706,
   "total_asset_count": 0,
-  "_reduzida": "so a contagem e lida desta resposta; ver tests/fixtures/LEIA-ME.md"
+  "_reduced": "so a contagem e lida desta resposta; ver tests/fixtures/LEIA-ME.md"
  },
  "[\"GET\", \"/workbenches/vulnerabilities\", null, {\"exploitable\": \"true\", \"filter.0.filter\": \"severity\", \"filter.0.quality\": \"eq\", \"filter.0.value\": \"critical\", \"filter.search_type\": \"and\"}]": {
   "vulnerabilities": [
@@ -17373,7 +17373,7 @@
   ],
   "total_vulnerability_count": 706,
   "total_asset_count": 0,
-  "_reduzida": "so a contagem e lida desta resposta; ver tests/fixtures/LEIA-ME.md"
+  "_reduced": "so a contagem e lida desta resposta; ver tests/fixtures/LEIA-ME.md"
  },
  "[\"GET\", \"/workbenches/vulnerabilities\", null, {\"exploitable\": \"false\", \"filter.0.filter\": \"severity\", \"filter.0.quality\": \"eq\", \"filter.0.value\": \"critical\", \"filter.search_type\": \"and\"}]": {
   "vulnerabilities": [
@@ -17743,7 +17743,7 @@
   ],
   "total_vulnerability_count": 706,
   "total_asset_count": 0,
-  "_reduzida": "so a contagem e lida desta resposta; ver tests/fixtures/LEIA-ME.md"
+  "_reduced": "so a contagem e lida desta resposta; ver tests/fixtures/LEIA-ME.md"
  },
  "[\"GET\", \"/workbenches/vulnerabilities\", null, {\"filter.0.filter\": \"severity\", \"filter.0.quality\": \"eq\", \"filter.0.value\": \"critical\", \"filter.search_type\": \"and\", \"resolvable\": \"true\"}]": {
   "vulnerabilities": [
@@ -18113,7 +18113,7 @@
   ],
   "total_vulnerability_count": 706,
   "total_asset_count": 0,
-  "_reduzida": "so a contagem e lida desta resposta; ver tests/fixtures/LEIA-ME.md"
+  "_reduced": "so a contagem e lida desta resposta; ver tests/fixtures/LEIA-ME.md"
  },
  "[\"GET\", \"/workbenches/vulnerabilities\", null, {\"filter.0.filter\": \"severity\", \"filter.0.quality\": \"eq\", \"filter.0.value\": \"critical\", \"filter.search_type\": \"and\", \"resolvable\": \"false\"}]": {
   "vulnerabilities": [
@@ -18483,7 +18483,7 @@
   ],
   "total_vulnerability_count": 706,
   "total_asset_count": 0,
-  "_reduzida": "so a contagem e lida desta resposta; ver tests/fixtures/LEIA-ME.md"
+  "_reduced": "so a contagem e lida desta resposta; ver tests/fixtures/LEIA-ME.md"
  },
  "[\"GET\", \"/workbenches/vulnerabilities\", null, {\"date_range\": \"1\", \"filter.0.filter\": \"severity\", \"filter.0.quality\": \"eq\", \"filter.0.value\": \"critical\", \"filter.search_type\": \"and\"}]": {
   "vulnerabilities": [
@@ -18541,7 +18541,7 @@
   ],
   "total_vulnerability_count": 17,
   "total_asset_count": 0,
-  "_reduzida": "so a contagem e lida desta resposta; ver tests/fixtures/LEIA-ME.md"
+  "_reduced": "so a contagem e lida desta resposta; ver tests/fixtures/LEIA-ME.md"
  },
  "[\"GET\", \"/workbenches/vulnerabilities\", null, {\"date_range\": \"90\", \"filter.0.filter\": \"severity\", \"filter.0.quality\": \"eq\", \"filter.0.value\": \"critical\", \"filter.search_type\": \"and\"}]": {
   "vulnerabilities": [
@@ -18911,7 +18911,7 @@
   ],
   "total_vulnerability_count": 706,
   "total_asset_count": 0,
-  "_reduzida": "so a contagem e lida desta resposta; ver tests/fixtures/LEIA-ME.md"
+  "_reduced": "so a contagem e lida desta resposta; ver tests/fixtures/LEIA-ME.md"
  },
  "[\"GET\", \"/workbenches/vulnerabilities\", null, {\"age\": \"1\", \"filter.0.filter\": \"severity\", \"filter.0.quality\": \"eq\", \"filter.0.value\": \"critical\", \"filter.search_type\": \"and\"}]": {
   "vulnerabilities": [
@@ -19281,6 +19281,6 @@
   ],
   "total_vulnerability_count": 706,
   "total_asset_count": 0,
-  "_reduzida": "so a contagem e lida desta resposta; ver tests/fixtures/LEIA-ME.md"
+  "_reduced": "so a contagem e lida desta resposta; ver tests/fixtures/LEIA-ME.md"
  }
 }

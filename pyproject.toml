@@ -19,9 +19,9 @@ classifiers = [
 ]
 
 
-# Dependencia unica: o SDK oficial de MCP.
-# O cliente HTTP NAO tem dependencia externa - urllib da stdlib, portado do
-# coletor tenable_mttr_export.py 1.1.0, que ja resolve TLS corporativo e backoff.
+# One dependency only: the MCP SDK.
+# The HTTP client has NO external dependency - urllib from the stdlib, ported from
+# the tenable_mttr_export.py 1.1.0 collector, which already solves corporate TLS and backoff.
 dependencies = ["mcp>=2.1,<3"]
 
 [project.urls]

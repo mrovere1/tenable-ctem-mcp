@@ -97,6 +97,13 @@ in a configuration file is exactly what this project forbids. Export them in the
 client from it — a child process inherits its parent's environment. Step by step in
 `docs/client-setup.md`.
 
+In **Claude Desktop** the same rule holds and the mechanism changes: the application is started by
+the desktop environment, not by your shell, so it inherits no exports — and the `env` block of
+`claude_desktop_config.json` is a configuration file holding the keys, which is refused here for the
+same reason `--env` is. A small launcher script supplies the environment instead, and the JSON entry
+carries only a path. The script, the config path on each platform and the log to read when it does
+not connect are in `docs/client-setup.md`.
+
 ## Tools
 
 Twelve assessment tools, plus `ctem_diagnostics` for troubleshooting — thirteen in total. The full

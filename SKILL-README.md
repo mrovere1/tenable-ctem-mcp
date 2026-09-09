@@ -32,7 +32,16 @@ ctem_diagnostics()      → expect verdict: ok
 ## Invocation
 
 Ask in plain language — *"run a CTEM maturity assessment"*, *"what stage is my customer at"*,
-*"avaliação de maturidade CTEM"*, *"evaluación de madurez CTEM"*.
+*"avaliação de maturidade CTEM"*, *"evaluación de madurez CTEM"*. This is the primary path, and the
+one the skill is written for: the description matches on all three languages.
+
+The explicit form works too, when you want to name the skill instead of describing the task:
+
+```
+/tenable-ctem-maturity-assessment
+```
+
+Both reach the same place.
 
 The skill opens by discovering the tenant and proposing a mapping — which tag category is
 criticality, which is owner, which scans represent the recurring assessment — and asks you to
