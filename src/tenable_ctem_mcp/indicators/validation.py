@@ -214,7 +214,9 @@ def compute(mapping: dict | None = None, indicators: list[str] | None = None,
 
     # --- V4: % of DEVICE with out-of-support software -------------------
     if "V4" in requested:
-        devices = snapshot["assets"]["by_asset_class"].get("DEVICE", 0)
+        # Licensed DEVICE, not every DEVICE in the Inventory - same reason as
+        # D3 and S1. See discovery.LICENSED_CLASSES.
+        devices = snapshot["assets"]["licensed_by_class"].get("DEVICE", 0)
         if not devices:
             out.append(Indicator.declared_gap(
                 "V4", cause="no DEVICE asset; denominator zero.",

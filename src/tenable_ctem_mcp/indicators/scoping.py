@@ -147,21 +147,29 @@ def compute(mapping: dict, indicators: list[str] | None = None,
     requested = [i.upper() for i in (indicators or INDICATORS)]
     out: list[Indicator] = []
 
-    from .discovery import discover_tenant
+    from .discovery import discover_tenant, licensed_filters
     snapshot = snapshot or discover_tenant()
     categories = snapshot["tags"]["categories"]
-    total_assets = snapshot["assets"]["total"]
+    # The denominator is the LICENSED base, not the whole Inventory corpus:
+    # Active Directory objects loaded for attack paths are assets there and
+    # consume no licence. See discovery.LICENSED_CLASSES.
+    total_assets = snapshot["assets"]["licensed_total"]
+    corpus_assets = snapshot["assets"]["total"]
 
     # --- S1: % of assets with at least one tag --------------------------
     if "S1" in requested:
-        f = [{"property": "tag_count", "operator": ">=", "value": ["1"]}]
+        f = licensed_filters(
+            [{"property": "tag_count", "operator": ">=", "value": ["1"]}])
         try:
             tagged = _count(f)
             out.append(Indicator.ok(
                 "S1", _pct(tagged, total_assets), n=total_assets,
-                literal_filter=f"{_literal(f)} over a corpus of {total_assets} assets",
+                literal_filter=(f"{_literal(f)} over a licensed base of "
+                                f"{total_assets} assets"),
                 preflight_verdict=verdict(total_assets, tagged),
-                context={"tagged": tagged, "total": total_assets}))
+                context={"tagged": tagged, "total": total_assets,
+                         "corpus_all_classes": corpus_assets,
+                         "by_asset_class": snapshot["assets"]["by_asset_class"]}))
         except ApiError as e:
             out.append(Indicator.declared_gap("S1", cause=str(e),
                                               literal_filter=_literal(f)))
@@ -203,7 +211,8 @@ def compute(mapping: dict, indicators: list[str] | None = None,
 
     # --- S4: declared Crown Jewels (informational) ----------------------
     if "S4" in requested:
-        f = [{"property": "acr", "operator": ">=", "value": ["9"]}]
+        f = licensed_filters(
+            [{"property": "acr", "operator": ">=", "value": ["9"]}])
         crit_name, _ = _by_category(mapping, "criticality_category", categories)
         try:
             high_acr = _count(f)

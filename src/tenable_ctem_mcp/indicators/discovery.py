@@ -39,6 +39,24 @@ EXPOSURE_CLASSES = ("VM", "WAS", "CLOUD", "IDENTITY", "OT", "AI", "CODE")
 ASSET_CLASSES = ("DEVICE", "IDENTITY", "ACCOUNT", "GROUP", "WEB_APPLICATION",
                  "CLOUD_RESOURCE")
 
+# The classes that consume licence. IDENTITY, ACCOUNT and GROUP are out on
+# purpose: a VM scan template that reads Active Directory to build attack paths
+# loads them into the Inventory by the tens of thousands without any of them
+# consuming a licence. Measured in production on 2026-09-08: they were 94% of a
+# 104,205-asset corpus, and counting them dragged the tagging rate from 100%
+# down to 25.3%. See _docs/pendencia-denominador-licenciado-2026-09-08.md.
+LICENSED_CLASSES = ("DEVICE", "WEB_APPLICATION", "CLOUD_RESOURCE")
+
+
+def licensed_filters(extra: list[dict] | None = None) -> list[dict]:
+    """The two filters that isolate the licensed base, plus whatever else the
+    caller needs. `is_licensed` ALONE is not enough - it comes back true on
+    identities and accounts too - so the class filter is not optional."""
+    base = [{"property": "asset_class", "operator": "=",
+             "value": list(LICENSED_CLASSES)},
+            {"property": "is_licensed", "operator": "=", "value": ["true"]}]
+    return base + list(extra or [])
+
 ASSETS_SEARCH = "/api/v1/t1/inventory/assets/search"
 
 
@@ -142,6 +160,7 @@ def discover_tenant(use_cache: bool = True) -> dict[str, Any]:
             return dict(value, served_from_cache=True)
 
     total_assets = _count_assets()
+    licensed_total = _count_assets(licensed_filters())
 
     by_asset_class = {}
     for cls in ASSET_CLASSES:
@@ -157,11 +176,24 @@ def discover_tenant(use_cache: bool = True) -> dict[str, Any]:
         f = [{"property": "exposure_classes", "operator": "=", "value": [cls]}]
         exposure[cls] = _count_assets(f)
 
+    licensed_by_class = {}
+    for cls in LICENSED_CLASSES:
+        n = _count_assets(licensed_filters(
+            [{"property": "asset_class", "operator": "=", "value": [cls]}]))
+        if n:
+            licensed_by_class[cls] = n
+
     snapshot = {
         "tags": _categories_and_values(),
         "assets": {
+            # The licensed base is the denominator of every rate. The whole
+            # corpus stays beside it, and so does the breakdown by class:
+            # a reader who sees only one of the two numbers misreads the other.
+            "licensed_total": licensed_total,
+            "licensed_by_class": licensed_by_class,
             "total": total_assets,
             "by_asset_class": by_asset_class,
+            "literal_filter_licensed": _literal_filter(licensed_filters()),
             "literal_filter_total": _literal_filter(None),
         },
         "exposure_classes": exposure,
@@ -270,20 +302,25 @@ def compute(indicators: list[str] | None = None,
 
     # --- D3: % of DEVICE assets with an agent ---------------------------
     if "D3" in requested:
-        devices = snapshot["assets"]["by_asset_class"].get("DEVICE", 0)
+        devices = snapshot["assets"]["licensed_by_class"].get("DEVICE", 0)
         active = snapshot["agents"]["active"]
         if not devices:
             out.append(Indicator.declared_gap(
-                "D3", cause="no asset with asset_class=DEVICE; denominator zero.",
-                literal_filter="asset_class=DEVICE"))
+                "D3", cause="no licensed asset with asset_class=DEVICE; "
+                            "denominator zero.",
+                literal_filter=_literal_filter(licensed_filters(
+                    [{"property": "asset_class", "operator": "=",
+                      "value": ["DEVICE"]}]))))
         else:
             out.append(Indicator.ok(
                 "D3", round(100.0 * active / devices, 1), n=devices,
-                literal_filter=("agents with status=on over "
-                                "[{\"property\":\"asset_class\",\"operator\":\"=\","
-                                "\"value\":[\"DEVICE\"]}]"),
+                literal_filter=("agents with status=on over " + _literal_filter(
+                    licensed_filters([{"property": "asset_class",
+                                       "operator": "=", "value": ["DEVICE"]}]))),
                 preflight_verdict="ok",
-                context={"active_agents": active, "devices": devices}))
+                context={"active_agents": active, "devices": devices,
+                         "devices_all_classes":
+                             snapshot["assets"]["by_asset_class"].get("DEVICE", 0)}))
 
     # --- D4: % of the set detected by a local plugin --------------------
     if "D4" in requested:
