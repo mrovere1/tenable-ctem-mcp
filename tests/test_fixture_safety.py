@@ -80,7 +80,11 @@ def test_fixture_contains_no_secret_nor_tenant_data(path):
 
 def test_the_patterns_actually_catch_things():
     """A guard for the guard itself: a broken regex would pass everything in
-    silence, and the test would stay green while protecting nothing."""
+    silence, and the test would stay green while protecting nothing.
+
+    The literals below are decoys, not credentials - they are shaped like the
+    things the patterns must catch, which is exactly why a generic secret
+    scanner flags them. See `.gitleaks.toml` at the repository root."""
     assert KEY_PATTERN.search("key=0123456789abcdef0123456789abcdef")
     assert PRIVATE_IP_PATTERN.search("host 192.168.1.10 up")
     assert not DOCUMENTATION_IP.match("31.0.0.148")     # the one that got through

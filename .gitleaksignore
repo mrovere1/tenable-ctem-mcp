@@ -1,0 +1,10 @@
+# Fingerprints of the synthetic decoys in the fixture-safety guard's self-test.
+# See .gitleaks.toml for why they are not credentials - that file is the durable
+# mechanism, because a fingerprint breaks as soon as the line moves or the
+# rule id changes between gitleaks versions. This one is kept because the
+# scanners some reviewers run consult it and not the config.
+
+# tests/test_fixture_safety.py - the 32-hex key decoy
+bf4d8e8eab5cb56af089eac0c8bc2e2bf3141965:tests/test_fixture_safety.py:generic-api-key:63
+# tests/test_fixture_safety.py - the long-hex decoy, the UUID-with-a-tail case
+d1d606b4b9a6a724003996476fed3ea301c373a4:tests/test_fixture_safety.py:generic-api-key:89

@@ -1,0 +1,30 @@
+# gitleaks configuration for tenable-ctem-mcp
+#
+# The repository has no credentials in it, by design: keys live only in the
+# TIO_ACCESS_KEY / TIO_SECRET_KEY environment variables, never in a file.
+#
+# What a generic scanner does flag is `tests/test_fixture_safety.py`, and it is
+# right to look: that file is the guard that keeps a real key out of a fixture,
+# and `test_the_patterns_actually_catch_things` proves the guard works by
+# feeding it synthetic strings shaped exactly like the things it must catch.
+# A 32-hex literal is the point of the test - a scanner cannot tell the decoy
+# from the real thing, which is precisely why the test exists.
+#
+# So the two literals below are allowlisted BY VALUE and only inside that one
+# file. Anything else in it - a real key pasted in by accident - still trips.
+#
+# gitleaks reads this file automatically when it scans this directory.
+
+title = "tenable-ctem-mcp"
+
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Synthetic decoys in the fixture-safety guard's own self-test"
+condition = "AND"
+paths = ['''tests/test_fixture_safety\.py$''']
+regexes = [
+    '''0123456789abcdef0123456789abcdef''',
+    '''01df1e4e-be08-f5f8-8a71-fc947e0b74a80cbae7b9b9a52612''',
+]
