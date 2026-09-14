@@ -489,7 +489,30 @@ def test_v4_device_with_out_of_support_software(sandbox):
     v4 = _by_id(compute(indicators=["V4"]))["V4"]
     assert v4["value"] == 100.0
     assert v4["n"] == 7
+    # 8 DEVICE in the Inventory, 7 licensed: at most 1 counted may be unlicensed
+    assert v4["context"]["numerator_not_licence_filtered"][
+        "unlicensed_devices_in_tenant"] == 1
     assert v4["context"]["devices_with_eol"] == 7
+
+
+def test_v4_follows_the_pages_instead_of_truncating(monkeypatch):
+    """The first page used to be all V4 read. 1,200 matches over pages of 500
+    must yield every asset, not the first 500 findings' worth."""
+    from tenable_ctem_mcp.indicators import validation
+    rows = [{"asset_id": f"a{i}"} for i in range(1200)]
+    sent = []
+
+    def call(method, path, body=None, params=None, **kw):
+        sent.append(dict(params))
+        off, lim = params.get("offset", 0), params["limit"]
+        return {"data": rows[off:off + lim], "pagination": {"total": 1200}}
+
+    monkeypatch.setattr(validation, "call", call)
+    items = validation._search([{"property": "finding_name", "operator": "contains",
+                                 "value": ["SEoL"]}])
+    assert len({i["asset_id"] for i in items}) == 1200
+    assert sent[0] == {"limit": 500}          # the recorded signature is unchanged
+    assert [p.get("offset") for p in sent[1:]] == [500, 1000]
 
 
 def test_v1_is_informational_and_declares_the_weight_base(sandbox):

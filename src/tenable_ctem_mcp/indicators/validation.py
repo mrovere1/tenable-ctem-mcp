@@ -39,9 +39,7 @@ def _count(filters: list[dict] | None) -> int | None:
     return total_of(call("POST", FINDINGS_SEARCH, body=body, params={"limit": 1}))
 
 
-def _search(filters: list[dict], limit: int = 500) -> list[dict]:
-    body = {"filters": validate_filters(filters, target="findings")}
-    resp = call("POST", FINDINGS_SEARCH, body=body, params={"limit": limit})
+def _items(resp: dict) -> list[dict]:
     d = resp.get("data")
     if isinstance(d, list):
         return d
@@ -50,6 +48,30 @@ def _search(filters: list[dict], limit: int = 500) -> list[dict]:
             if isinstance(d.get(k), list):
                 return d[k]
     return []
+
+
+def _search(filters: list[dict], limit: int = 500) -> list[dict]:
+    """Every matching finding, following the pages.
+
+    It used to return the first page only. A term matching more than `limit`
+    findings lost the rest silently, and V4 counted fewer devices than exist -
+    in production, 781 devices were counted from what may have been a
+    truncated list. The first request is unchanged; further pages go out only
+    when `pagination.total` says there is more.
+    """
+    body = {"filters": validate_filters(filters, target="findings")}
+    resp = call("POST", FINDINGS_SEARCH, body=body, params={"limit": limit})
+    items = list(_items(resp))
+    declared = total_of(resp)
+    while declared is not None and len(items) < declared:
+        page = _items(call("POST", FINDINGS_SEARCH, body=body,
+                           params={"limit": limit, "offset": len(items)}))
+        if not page:
+            raise ApiError(
+                f"findings search declared {declared} results and stopped "
+                f"returning pages at {len(items)}: the list is incomplete.")
+        items.extend(page)
+    return items
 
 
 def _literal(filters: list[dict] | None) -> str:
@@ -235,6 +257,7 @@ def compute(mapping: dict | None = None, indicators: list[str] | None = None,
                     ids = {i.get("asset_id") for i in items if i.get("asset_id")}
                     by_term[term] = len(ids)
                     eol_assets |= ids
+                devices_all = snapshot["assets"]["by_asset_class"].get("DEVICE", 0)
                 out.append(Indicator.ok(
                     "V4", round(100.0 * len(eol_assets) / devices, 1), n=devices,
                     literal_filter=" UNION ".join(used),
@@ -249,6 +272,17 @@ def compute(mapping: dict | None = None, indicators: list[str] | None = None,
                                         "an unlicensed DEVICE is outside the base. In "
                                         "the sandbox: 7/30 gives 23%, 7/7 licensed "
                                         "DEVICE gives 100%."),
+                        # /findings/search rejects `is_licensed` with HTTP 400
+                        # (sandbox, 2026-09-14), so the numerator cannot carry
+                        # the licence filter. The overcount has a known ceiling.
+                        "numerator_not_licence_filtered": {
+                            "unlicensed_devices_in_tenant": max(devices_all - devices, 0),
+                            "reading": (
+                                "the numerator counts every DEVICE with an "
+                                "out-of-support finding; /findings/search does not "
+                                "accept is_licensed (HTTP 400). At most this many "
+                                "of the devices counted may be unlicensed."),
+                        },
                         "path": ("`unsupported_by_vendor` exists in the API but is "
                                  "not reachable. A text search on finding_name is a "
                                  "provably applied filter."),

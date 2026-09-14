@@ -533,6 +533,60 @@ def mttr_collect(days: int = 180, severities: list[str] | None = None,
         raise
 
 
+# Batch verification (gate 1 only). Closing in batch distorts the MTTR only if
+# batch windows carry a different time-to-fix than single findings do. Both
+# numbers are declared in the result, never implicit.
+MIN_FINDINGS_OUT_OF_BATCH = 30
+MAX_RELATIVE_MEDIAN_GAP = 0.25
+
+
+def _weighted_median(windows: list[dict]) -> float | None:
+    values = sorted(v for w in windows
+                    for v in [float(w["days_to_fix"])] * int(w.get("findings") or 0)
+                    if w.get("days_to_fix") is not None)
+    return percentile(values, 50) if values else None
+
+
+def batch_distortion(windows: list[dict]) -> dict[str, Any]:
+    """Does batch closing change the time-to-fix, or only the percentage?
+
+    Measured in production on 2026-09-09: 48.7% of findings in batch fired gate
+    1, but the median out of batch was 3.99 days and in batch 4.03, over 332
+    distinct close dates in 365 days. The batches were real closing, not scan
+    intervals - the gap was a false positive, and the report overrode it by
+    hand. This makes that check reproducible instead of a judgment call.
+
+    A windowed finding carries its window's days_to_fix, so the medians are
+    weighted by findings.
+    """
+    in_batch = [w for w in windows if int(w.get("findings") or 0) >= 2]
+    single = [w for w in windows if int(w.get("findings") or 0) == 1]
+    n_single = sum(int(w["findings"]) for w in single)
+    med_in, med_out = _weighted_median(in_batch), _weighted_median(single)
+    gap = (abs(med_in - med_out) / med_out
+           if med_in is not None and med_out else None)
+    enough = n_single >= MIN_FINDINGS_OUT_OF_BATCH
+    not_distorting = bool(enough and gap is not None
+                          and gap <= MAX_RELATIVE_MEDIAN_GAP)
+    return {
+        "median_in_batch_days": med_in,
+        "median_out_of_batch_days": med_out,
+        "findings_out_of_batch": n_single,
+        "relative_median_gap": round(gap, 3) if gap is not None else None,
+        "distinct_close_dates": len({str(w.get("last_fixed"))[:10] for w in windows
+                                     if w.get("last_fixed")}),
+        "min_findings_out_of_batch": MIN_FINDINGS_OUT_OF_BATCH,
+        "max_relative_median_gap": MAX_RELATIVE_MEDIAN_GAP,
+        "batch_does_not_distort": not_distorting,
+        "reading": (
+            "medians in and out of batch agree: the batches are real closing, "
+            "not scan intervals" if not_distorting else
+            "too few findings out of batch to compare"
+            if not enough else
+            "medians in and out of batch disagree: batch closing is shaping the MTTR"),
+    }
+
+
 def mttr_cadence_guard(windows: list[dict], scan_dates: list[str] | None = None,
                        alert_cutoff_pct: float = 40.0) -> dict[str, Any]:
     """Takes the MTTR windows and says whether it is measuring scan cadence.
@@ -545,6 +599,10 @@ def mttr_cadence_guard(windows: list[dict], scan_dates: list[str] | None = None,
     Gate 2 exists because the percentage depends on the chosen batch cutoff, and
     cutoff 5 would let the same data through. The composition of the dates
     depends on no choice at all.
+
+    Gate 1 is verified before it becomes a gap (decision of 2026-09-14): if the
+    median out of batch agrees with the median in batch, batch closing is not
+    distorting the number and M4 can score. Gate 2 is never verified away.
     """
     rows = [dict(w) for w in (windows or [])]
     total = sum(int(w.get("findings") or 0) for w in rows)
@@ -565,9 +623,13 @@ def mttr_cadence_guard(windows: list[dict], scan_dates: list[str] | None = None,
     sens = {str(c): pct(c) for c in (2, 3, 4, 5)}
 
     reasons = []
+    verification = None
     if sens["2"] >= alert_cutoff_pct:
-        reasons.append(f"pct_in_batch with cutoff 2 is {sens['2']}%, above the alert "
-                       f"cutoff of {alert_cutoff_pct}%")
+        verification = batch_distortion(rows)
+        if not verification["batch_does_not_distort"]:
+            reasons.append(f"pct_in_batch with cutoff 2 is {sens['2']}%, above the "
+                           f"alert cutoff of {alert_cutoff_pct}%, and "
+                           f"{verification['reading']}")
     if all_from_scan:
         reasons.append(f"the {len(dates)} dates forming the windows are ALL scan "
                        "execution dates: the MTTR here is the interval between scans")
@@ -583,6 +645,7 @@ def mttr_cadence_guard(windows: list[dict], scan_dates: list[str] | None = None,
         "all_dates_are_scan_dates": all_from_scan,
         "verdict": "gap" if reasons else "can_score",
         "reasons": reasons,
+        "batch_verification": verification,
         "note": ("The percentage depends on the chosen batch cutoff - with cutoff 5 "
                  "the same data would pass the guard. The composition of the dates "
                  "depends on no choice at all, which is why it is the stronger gate."),
