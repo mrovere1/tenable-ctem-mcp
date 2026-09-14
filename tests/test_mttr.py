@@ -177,6 +177,52 @@ def test_the_guard_clears_when_the_dates_are_not_scan_dates():
     assert g["reasons"] == []
 
 
+def _windows(single_days, batch_days, batch_size=5, start=0):
+    """Windows on distinct dates that are never scan dates, so only gate 1 can fire."""
+    w = [{"asset": f"s{i}", "first_found": "2026-01-01",
+          "last_fixed": f"2026-02-{(i % 28) + 1:02d}", "findings": 1,
+          "days_to_fix": d} for i, d in enumerate(single_days)]
+    w += [{"asset": f"b{i}", "first_found": "2026-01-01",
+           "last_fixed": f"2026-03-{(i % 28) + 1:02d}", "findings": batch_size,
+           "days_to_fix": d} for i, d in enumerate(batch_days)]
+    return w
+
+
+def test_gate_one_is_verified_away_when_the_medians_agree():
+    """The production case of 2026-09-09: most findings in batch, medians 3.99
+    against 4.03. Batch closing was real closing, and M4 scores."""
+    w = _windows([4.0] * 40, [4.0] * 20)          # 40 single vs 100 in batch
+    g = mttr_cadence_guard(w, scan_dates=["2025-01-01"])
+    assert g["pct_in_batch"] > 40
+    assert g["verdict"] == "can_score"
+    v = g["batch_verification"]
+    assert v["batch_does_not_distort"] is True
+    assert v["findings_out_of_batch"] == 40
+
+
+def test_gate_one_stays_a_gap_when_the_medians_disagree():
+    w = _windows([4.0] * 40, [60.0] * 20)
+    g = mttr_cadence_guard(w, scan_dates=["2025-01-01"])
+    assert g["verdict"] == "gap"
+    assert "disagree" in g["reasons"][0]
+
+
+def test_gate_one_stays_a_gap_with_too_few_findings_out_of_batch():
+    w = _windows([4.0] * 10, [4.0] * 20)
+    g = mttr_cadence_guard(w, scan_dates=["2025-01-01"])
+    assert g["verdict"] == "gap"
+    assert "too few" in g["reasons"][0]
+
+
+def test_the_sandbox_is_still_a_gap_on_both_gates(collection):
+    """The verification must not rescue the sandbox: its dates are scan dates."""
+    _, rows = collection
+    g = mttr_cadence_guard(detect_batches(rows, cutoff=2)["windows"],
+                           scan_dates=SCAN_DATES)
+    assert g["verdict"] == "gap"
+    assert g["batch_verification"]["batch_does_not_distort"] is False
+
+
 # ===========================================================================
 # The THREE mandatory locks of mttr_collect.
 # None of them may be lost in the port from the collector - decision 2 of the
