@@ -248,3 +248,29 @@ APPLICATION: 1}` e que a quebra por classe soma o corpus.
   `asset_class = DEVICE`; um DEVICE não licenciado com finding de EOL entraria no numerador. No
   sandbox, 7/7 ao vivo. Verificar se a busca de findings aceita `is_licensed` antes de mexer.
 - Os itens 2 (D3 com papel Basic), 3 (ASM) e as tags de S2/S3 em produção seguem como estavam.
+
+---
+
+## Adendo de 2026-09-14 (tarde) — o que os testes ponta a ponta encontraram
+
+Depois do recálculo dos golden tests, duas execuções no sandbox (direto pelo servidor e pela skill no
+cliente) e a revisão do relatório de produção de 2026-09-09 levaram a mais estas mudanças. Todas estão
+no PR mrovere1/tenable-ctem-mcp#1, com testes.
+
+| Mudança | Por quê |
+|---|---|
+| Catálogo de tags compara o listado com o total declarado (`tags.visibility`) | sem permissão na tag a API devolve 200 com lista menor — o total 47 com lista vazia de produção |
+| S2, S3 e P1 aceitam `criticality_values` / `owner_values` declarados; catálogo parcial sem eles vira lacuna citando a permissão | o S2 de produção saiu de uma consulta feita fora da ferramenta |
+| Deny-list rejeita `contains` em `tag_names` nos findings | medido no sandbox: `contains` devolve os 579 do corpus, `= Alta` devolve 85. Foi o que derrubou o P1 de produção |
+| P1 consulta o complemento `!=`; V4 tira o veredito da busca por texto | P1 em 100% e V4 em 7/7 saíam como `ignored` |
+| V4 pagina a busca de findings e declara o teto de devices não licenciados | lia só os primeiros 500 findings; `is_licensed` responde 400 em findings |
+| Guard do M4 verifica o portão 1 comparando medianas dentro e fora de lote (≥ 30 fora de lote, ≤ 25% de diferença) | em produção o M4 foi liberado à mão (3,99 contra 4,03 dias); agora é reproduzível. Portão 2 não muda |
+| `ctem_diagnostics` mostra o papel da chave, o catálogo e avisos | três papéis em dois dias em produção, cada um fechando indicadores diferentes |
+| Snapshot expõe `schedule_rrules`, `schedule_enabled`, `last_completed_epoch` | a regra alternativa de scans recorrentes pegou um scan aposentado e levou o M1 de 21 para 1 dia |
+| Linha `tag_count` do pré-voo prova o par na base licenciada | ainda dizia que o denominador era o corpus |
+| `conftest.py` intercepta `call` em todos os módulos | com chave no ambiente, testes batiam no tenant real; sem chave, 8 falhavam |
+| `docs/permissions.md`, mapeamento default e regras de entrega do dashboard na skill | Basic [16] não bastava; e sete correções de formatação já tinham regredido |
+
+**Continua aberto:** teste com chave restrita (Scan Manager + All Tags / Can Use) para confirmar o
+`docs/permissions.md` na prática; prazo total por chamada no `client.py` (ver
+`docs/troubleshooting.md`); ASM fora da v1.

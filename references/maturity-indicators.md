@@ -313,7 +313,9 @@ small an `n`, and the scoring total drops from 17 to 16. The gates are in Step 2
 are mandatory.
 
 **The gate that matters most: scan cadence.** `time_taken_to_fix` measures detection to detection.
-If `scan_cadence.pct_in_batch` is 40% or more, M4 becomes a **gap** — not a label. With cadence
+If `scan_cadence.pct_in_batch` is 40% or more, M4 becomes a **gap** — not a label — unless the
+server's batch verification shows batch closing is not distorting the number (at least 30 findings
+out of batch, medians in and out of batch no more than 25% apart; see `cadence_guard.batch_verification`). With cadence
 dominating, M4 would measure the same thing as M1 and M2, counting cadence twice and calling
 remediation maturity what is assessment maturity. The same principle that stopped P3 from scoring on
 the raw delta.

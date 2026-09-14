@@ -205,6 +205,8 @@ The deny-list must reject before reaching the API. Confirmed cases:
 - an operator with an empty `value` → answers 400 "Missing value in filter". Rejected before sending.
 - the relative date operators on findings → accepted and silently ignored.
 - `authenticated`, `exploitable`, `resolvable`, `age` in workbenches → accepted and not applied.
+- `contains` / `not contains` on `tag_names` or `tag_ids` in findings → accepted and ignored (on assets
+  the same operator IS applied). Use `=` with the exact tag values.
 
 Consult `_docs/matriz-confianca-filtros-mcp.md` for the source list, and `docs/limitations.md` for
 the **four verdicts that differ on the direct API**. Do not duplicate the list here — import it and

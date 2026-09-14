@@ -73,8 +73,9 @@ export TIO_SECRET_KEY=...
 export TIO_URL=https://cloud.tenable.com     # optional, this is the default
 ```
 
-Permission required: the **Basic [16]** role, or the `VM.VM_EXPLORE` and
-`ASSET_INVENTORY.CYBER_ASSET_MANAGEMENT.READ` privileges.
+Permission required: **Administrator [64]**, or **Scan Manager [40]** with `Can View` on all assets
+and on the scans used, and `Can Use` on all tags. Basic [16] is not enough, and a missing per-object
+permission returns a shorter list rather than a 403. See `docs/permissions.md`.
 
 On a network that inspects TLS, point at the corporate bundle:
 
