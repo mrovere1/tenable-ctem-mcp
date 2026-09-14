@@ -310,7 +310,8 @@ customer_mapping:
 
 **The v1 scope is the whole tenant.** The profile has no `environment_category`,
 `production_values` or `exclude` because no indicator would apply them: the server measures the
-complete corpus, always. Fields the operator fills in and nobody consumes are worse than absent
+whole tenant, always — over its licensed base, so Active Directory objects loaded for attack paths
+do not dilute the asset rates. Fields the operator fills in and nobody consumes are worse than absent
 fields — the operator excludes LAB and SANDBOX, checks the YAML, and receives a whole-tenant report
 believing the scope held. If a customer needs a scope by environment or a laboratory exclusion, that
 is v2 and enters as a tag filter inside the indicators, not as a profile field.

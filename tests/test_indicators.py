@@ -116,6 +116,9 @@ def test_tenant_snapshot_matches_the_measurement(sandbox):
     assert r["tags"]["count"] == 9
     assert r["assets"]["total"] == 30
     assert r["assets"]["by_asset_class"]["DEVICE"] == 8
+    assert sum(r["assets"]["by_asset_class"].values()) == 30   # no class left out
+    assert r["assets"]["licensed_total"] == 8
+    assert r["assets"]["licensed_by_class"] == {"DEVICE": 7, "APPLICATION": 1}
     assert r["exposure_classes"]["VM"] == 8
     assert r["exposure_classes"]["WAS"] == 2
     assert r["exposure_classes"]["CLOUD"] == 0
@@ -138,10 +141,17 @@ def test_scan_33_has_12_runs(sandbox):
 
 # --- Scoping: S1, S2, S3, S4 ------------------------------------------------
 
+# Recalculated on 2026-09-14, deliberately: the denominator became the licensed
+# base (asset_class in LICENSED_CLASSES AND is_licensed=true), 8 of the 30
+# Inventory assets - 7 DEVICE + 1 APPLICATION. The 2026-09-03 values were
+# S1 30.0 (9/30), S2 26.7 (8/30), S3 6.7 (2/30), over a corpus where 22 of
+# the 30 are Active Directory objects. The counts over the licensed base were
+# recorded live from the sandbox on 2026-09-14; see
+# _docs/pendencia-denominador-licenciado-2026-09-08.md.
 @pytest.mark.parametrize("indicator,expected", [
-    ("S1", 30.0),    # 9 of 30 assets with at least one tag
-    ("S2", 26.7),    # 8 of 30 with a criticality tag
-    ("S3", 6.7),     # 2 of 30 with an owner tag
+    ("S1", 100.0),   # 8 of 8 licensed assets with at least one tag; complement 0
+    ("S2", 87.5),    # 7 of 8 with a criticality tag
+    ("S3", 12.5),    # 1 of 8 with an owner tag
 ])
 def test_scoping_matches_the_measurement(sandbox, indicator, expected):
     from tenable_ctem_mcp.indicators.scoping import compute
@@ -154,6 +164,9 @@ def test_s4_is_informational_and_does_not_score(sandbox):
     from tenable_ctem_mcp.indicators.scoping import compute
     s4 = _by_id(compute(MAPPING, indicators=["S4"]))["S4"]
     assert s4["value"] is True
+    # The only ACR 9 asset is the WAS application, asset_class=APPLICATION.
+    # Leaving that class out of the licensed base turned S4 false (2026-09-14).
+    assert s4["context"]["assets_with_acr_gte_9"] == 1
     assert s4["context"]["informational"] is True
     assert "curation" in s4["context"]["structural_gap"]
 
@@ -248,12 +261,18 @@ def test_d2_coverage_of_the_licensed_surfaces(sandbox):
 
 
 def test_d3_agent_coverage_over_device(sandbox):
-    """The denominator is DEVICE, not the total of assets: IDENTITY, ACCOUNT and
-    GROUP have no software installed."""
+    """The denominator is licensed DEVICE, not the total of assets: IDENTITY,
+    ACCOUNT and GROUP have no software installed, and an unlicensed DEVICE is
+    not in the base the customer pays for.
+
+    Recalculated on 2026-09-14: 87.5 (7 agents over 8 DEVICE) became 100.0,
+    because 1 of the 8 DEVICE is not licensed. Measured live the same day:
+    7 active agents, 7 licensed DEVICE - the fixture mix reproduces it."""
     from tenable_ctem_mcp.indicators.discovery import compute
     d3 = _by_id(compute(indicators=["D3"]))["D3"]
-    assert d3["value"] == 87.5            # 7 active agents over 8 DEVICE
-    assert d3["n"] == 8
+    assert d3["value"] == 100.0           # 7 active agents over 7 licensed DEVICE
+    assert d3["n"] == 7
+    assert d3["context"]["devices_all_classes"] == 8
 
 
 def test_d4_detected_by_a_local_plugin(sandbox):
@@ -409,12 +428,15 @@ def test_v3_is_reported_as_a_percentage_not_a_fraction(sandbox):
 
 
 def test_v4_device_with_out_of_support_software(sandbox):
-    """87.5% = 7 of 8 DEVICE. With the total of assets it would be 23% - two
-    stages apart. The denominator is DEVICE."""
+    """The denominator is licensed DEVICE. With the total of assets it would be
+    23% - two stages apart.
+
+    Recalculated on 2026-09-14: 87.5 (7 of 8 DEVICE) became 100.0 (7 of 7
+    licensed DEVICE). Measured live the same day: 7 of 7."""
     from tenable_ctem_mcp.indicators.validation import compute
     v4 = _by_id(compute(indicators=["V4"]))["V4"]
-    assert v4["value"] == 87.5
-    assert v4["n"] == 8
+    assert v4["value"] == 100.0
+    assert v4["n"] == 7
     assert v4["context"]["devices_with_eol"] == 7
 
 

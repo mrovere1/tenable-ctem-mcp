@@ -19,6 +19,19 @@ only covered the private ranges.
 
 Without what stays there is no golden test. `tests/test_fixture_safety.py` fails if anything escapes.
 
+## Counts added on 2026-09-14
+
+The licensed-base denominator sends asset searches the 2026-09-03 recording never made. Eleven
+counts were recorded live from the same sandbox on 2026-09-14 by
+`_ferramentas/record-fixture/record_missing_queries.py`, which only sends a missing `limit=1` asset
+count and re-checks every count already recorded before writing.
+
+- **`data` is empty** in those entries, marked `_reduced`: only `pagination.total` is read.
+- **One accepted drift.** The two old `tag_count` counts moved (`>= 1`: 9 → 8, `= 0`: 20 → 8). No
+  indicator reads them any more — S1 now counts over the licensed base — so they stay as recorded.
+  Every other count matched. D3 and V4 were also computed live that day and gave the same 7/7 the
+  fixture mix gives.
+
 ## One declared reduction
 
 The preflight calls `/workbenches/vulnerabilities` ten times varying parameters, and from every one

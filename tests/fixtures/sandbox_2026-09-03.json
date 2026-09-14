@@ -19282,5 +19282,148 @@
   "total_vulnerability_count": 706,
   "total_asset_count": 0,
   "_reduced": "so a contagem e lida desta resposta; ver tests/fixtures/LEIA-ME.md"
+ },
+ "[\"POST\", \"/api/v1/t1/inventory/assets/search\", {\"filters\": [{\"operator\": \"=\", \"property\": \"asset_class\", \"value\": [\"DEVICE\", \"APPLICATION\", \"WEB_APPLICATION\", \"CLOUD_RESOURCE\"]}, {\"operator\": \"=\", \"property\": \"is_licensed\", \"value\": [\"true\"]}]}, {\"limit\": 1, \"offset\": 0}]": {
+  "data": [],
+  "pagination": {
+   "total": 8,
+   "offset": 0,
+   "limit": 1,
+   "sort": {
+    "name": "aes",
+    "order": "desc"
+   }
+  },
+  "_reduced": "data dropped at recording: only pagination.total is read from an asset count"
+ },
+ "[\"POST\", \"/api/v1/t1/inventory/assets/search\", {\"filters\": [{\"operator\": \"=\", \"property\": \"asset_class\", \"value\": [\"APPLICATION\"]}]}, {\"limit\": 1, \"offset\": 0}]": {
+  "data": [],
+  "pagination": {
+   "total": 2,
+   "offset": 0,
+   "limit": 1,
+   "sort": {
+    "name": "aes",
+    "order": "desc"
+   }
+  },
+  "_reduced": "data dropped at recording: only pagination.total is read from an asset count"
+ },
+ "[\"POST\", \"/api/v1/t1/inventory/assets/search\", {\"filters\": [{\"operator\": \"=\", \"property\": \"asset_class\", \"value\": [\"DEVICE\", \"APPLICATION\", \"WEB_APPLICATION\", \"CLOUD_RESOURCE\"]}, {\"operator\": \"=\", \"property\": \"is_licensed\", \"value\": [\"true\"]}, {\"operator\": \"=\", \"property\": \"asset_class\", \"value\": [\"DEVICE\"]}]}, {\"limit\": 1, \"offset\": 0}]": {
+  "data": [],
+  "pagination": {
+   "total": 7,
+   "offset": 0,
+   "limit": 1,
+   "sort": {
+    "name": "aes",
+    "order": "desc"
+   }
+  },
+  "_reduced": "data dropped at recording: only pagination.total is read from an asset count"
+ },
+ "[\"POST\", \"/api/v1/t1/inventory/assets/search\", {\"filters\": [{\"operator\": \"=\", \"property\": \"asset_class\", \"value\": [\"DEVICE\", \"APPLICATION\", \"WEB_APPLICATION\", \"CLOUD_RESOURCE\"]}, {\"operator\": \"=\", \"property\": \"is_licensed\", \"value\": [\"true\"]}, {\"operator\": \"=\", \"property\": \"asset_class\", \"value\": [\"APPLICATION\"]}]}, {\"limit\": 1, \"offset\": 0}]": {
+  "data": [],
+  "pagination": {
+   "total": 1,
+   "offset": 0,
+   "limit": 1,
+   "sort": {
+    "name": "aes",
+    "order": "desc"
+   }
+  },
+  "_reduced": "data dropped at recording: only pagination.total is read from an asset count"
+ },
+ "[\"POST\", \"/api/v1/t1/inventory/assets/search\", {\"filters\": [{\"operator\": \"=\", \"property\": \"asset_class\", \"value\": [\"DEVICE\", \"APPLICATION\", \"WEB_APPLICATION\", \"CLOUD_RESOURCE\"]}, {\"operator\": \"=\", \"property\": \"is_licensed\", \"value\": [\"true\"]}, {\"operator\": \"=\", \"property\": \"asset_class\", \"value\": [\"WEB_APPLICATION\"]}]}, {\"limit\": 1, \"offset\": 0}]": {
+  "data": [],
+  "pagination": {
+   "total": 0,
+   "offset": 0,
+   "limit": 1,
+   "sort": {
+    "name": "aes",
+    "order": "desc"
+   }
+  },
+  "_reduced": "data dropped at recording: only pagination.total is read from an asset count"
+ },
+ "[\"POST\", \"/api/v1/t1/inventory/assets/search\", {\"filters\": [{\"operator\": \"=\", \"property\": \"asset_class\", \"value\": [\"DEVICE\", \"APPLICATION\", \"WEB_APPLICATION\", \"CLOUD_RESOURCE\"]}, {\"operator\": \"=\", \"property\": \"is_licensed\", \"value\": [\"true\"]}, {\"operator\": \"=\", \"property\": \"asset_class\", \"value\": [\"CLOUD_RESOURCE\"]}]}, {\"limit\": 1, \"offset\": 0}]": {
+  "data": [],
+  "pagination": {
+   "total": 0,
+   "offset": 0,
+   "limit": 1,
+   "sort": {
+    "name": "aes",
+    "order": "desc"
+   }
+  },
+  "_reduced": "data dropped at recording: only pagination.total is read from an asset count"
+ },
+ "[\"POST\", \"/api/v1/t1/inventory/assets/search\", {\"filters\": [{\"operator\": \"=\", \"property\": \"asset_class\", \"value\": [\"DEVICE\", \"APPLICATION\", \"WEB_APPLICATION\", \"CLOUD_RESOURCE\"]}, {\"operator\": \"=\", \"property\": \"is_licensed\", \"value\": [\"true\"]}, {\"operator\": \">=\", \"property\": \"tag_count\", \"value\": [\"1\"]}]}, {\"limit\": 1}]": {
+  "data": [],
+  "pagination": {
+   "total": 8,
+   "offset": 0,
+   "limit": 1,
+   "sort": {
+    "name": "aes",
+    "order": "desc"
+   }
+  },
+  "_reduced": "data dropped at recording: only pagination.total is read from an asset count"
+ },
+ "[\"POST\", \"/api/v1/t1/inventory/assets/search\", {\"filters\": [{\"operator\": \"=\", \"property\": \"asset_class\", \"value\": [\"DEVICE\", \"APPLICATION\", \"WEB_APPLICATION\", \"CLOUD_RESOURCE\"]}, {\"operator\": \"=\", \"property\": \"is_licensed\", \"value\": [\"true\"]}, {\"operator\": \"=\", \"property\": \"tag_count\", \"value\": [\"0\"]}]}, {\"limit\": 1}]": {
+  "data": [],
+  "pagination": {
+   "total": 0,
+   "offset": 0,
+   "limit": 1,
+   "sort": {
+    "name": "aes",
+    "order": "desc"
+   }
+  },
+  "_reduced": "data dropped at recording: only pagination.total is read from an asset count"
+ },
+ "[\"POST\", \"/api/v1/t1/inventory/assets/search\", {\"filters\": [{\"operator\": \"=\", \"property\": \"asset_class\", \"value\": [\"DEVICE\", \"APPLICATION\", \"WEB_APPLICATION\", \"CLOUD_RESOURCE\"]}, {\"operator\": \"=\", \"property\": \"is_licensed\", \"value\": [\"true\"]}, {\"operator\": \"=\", \"property\": \"tag_names\", \"value\": [\"Alta\", \"Baixa\", \"Crown Jewel\", \"Média\"]}]}, {\"limit\": 1}]": {
+  "data": [],
+  "pagination": {
+   "total": 7,
+   "offset": 0,
+   "limit": 1,
+   "sort": {
+    "name": "aes",
+    "order": "desc"
+   }
+  },
+  "_reduced": "data dropped at recording: only pagination.total is read from an asset count"
+ },
+ "[\"POST\", \"/api/v1/t1/inventory/assets/search\", {\"filters\": [{\"operator\": \"=\", \"property\": \"asset_class\", \"value\": [\"DEVICE\", \"APPLICATION\", \"WEB_APPLICATION\", \"CLOUD_RESOURCE\"]}, {\"operator\": \"=\", \"property\": \"is_licensed\", \"value\": [\"true\"]}, {\"operator\": \"=\", \"property\": \"tag_names\", \"value\": [\"Banco de Dados\", \"Infra de TI\", \"TI Infra\"]}]}, {\"limit\": 1}]": {
+  "data": [],
+  "pagination": {
+   "total": 1,
+   "offset": 0,
+   "limit": 1,
+   "sort": {
+    "name": "aes",
+    "order": "desc"
+   }
+  },
+  "_reduced": "data dropped at recording: only pagination.total is read from an asset count"
+ },
+ "[\"POST\", \"/api/v1/t1/inventory/assets/search\", {\"filters\": [{\"operator\": \"=\", \"property\": \"asset_class\", \"value\": [\"DEVICE\", \"APPLICATION\", \"WEB_APPLICATION\", \"CLOUD_RESOURCE\"]}, {\"operator\": \"=\", \"property\": \"is_licensed\", \"value\": [\"true\"]}, {\"operator\": \">=\", \"property\": \"acr\", \"value\": [\"9\"]}]}, {\"limit\": 1}]": {
+  "data": [],
+  "pagination": {
+   "total": 1,
+   "offset": 0,
+   "limit": 1,
+   "sort": {
+    "name": "aes",
+    "order": "desc"
+   }
+  },
+  "_reduced": "data dropped at recording: only pagination.total is read from an asset count"
  }
 }

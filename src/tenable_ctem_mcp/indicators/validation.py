@@ -243,11 +243,12 @@ def compute(mapping: dict | None = None, indicators: list[str] | None = None,
                         "devices_with_eol": len(eol_assets), "devices": devices,
                         "distinct_assets_per_term": by_term,
                         "inverted": True,
-                        "denominator": ("DEVICE, not the total of assets: the "
-                                        "inventory includes IDENTITY, ACCOUNT and "
-                                        "GROUP, which have no software installed. In "
-                                        "the sandbox the difference is two stages - "
-                                        "7/30 gives 23%, 7/8 gives 87.5%."),
+                        "denominator": ("licensed DEVICE, not the total of assets: "
+                                        "the inventory includes IDENTITY, ACCOUNT and "
+                                        "GROUP, which have no software installed, and "
+                                        "an unlicensed DEVICE is outside the base. In "
+                                        "the sandbox: 7/30 gives 23%, 7/7 licensed "
+                                        "DEVICE gives 100%."),
                         "path": ("`unsupported_by_vendor` exists in the API but is "
                                  "not reachable. A text search on finding_name is a "
                                  "provably applied filter."),
