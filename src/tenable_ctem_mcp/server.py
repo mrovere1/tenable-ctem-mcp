@@ -408,12 +408,54 @@ def ctem_diagnostics() -> dict[str, Any]:
 
     from .client import call
     try:
-        call("GET", "/tags/categories")
+        session = call("GET", "/session")
         d["verdict"] = "ok"
     except Exception as e:  # noqa: BLE001
         d["verdict"] = "failure"
         d.update(_error(e))
+        return d
+
+    d.update(_permission_check(session, call))
     return d
+
+
+ROLES = {16: "Basic", 24: "Scan Operator", 32: "Standard", 40: "Scan Manager",
+         64: "Administrator"}
+
+
+def _permission_check(session: dict, call) -> dict[str, Any]:
+    """What the key can see, before an assessment depends on it.
+
+    The role comes from /session. Per-object permissions (`Can View` on tags,
+    scans, assets) do not show there - of those only the tag catalog can be
+    checked cheaply, by comparing what it lists against what it declares.
+    See docs/permissions.md.
+    """
+    role = session.get("permissions")
+    out: dict[str, Any] = {"api_key_role": {"permissions": role,
+                                            "name": ROLES.get(role, "custom or unknown")}}
+    warnings = []
+    if isinstance(role, int) and role < 40:
+        warnings.append(
+            f"role {ROLES.get(role, role)} [{role}] is below Scan Manager [40]: the "
+            "agent list answers 403 and D3 becomes a gap"
+            + ("; below Scan Operator [24] the scan history answers 403 too "
+               "(D1, M1, M2)" if role < 24 else ""))
+    if role != 64:
+        warnings.append(
+            "not Administrator: scans, assets and tags without `Can View` are "
+            "left out of the answers without a 403. Confirm the grants in "
+            "docs/permissions.md")
+    try:
+        from .indicators.discovery import _categories_and_values
+        vis = _categories_and_values()["visibility"]
+        out["tag_catalog"] = vis
+        if not vis["complete"]:
+            warnings.append(vis["cause"])
+    except Exception as e:  # noqa: BLE001
+        out["tag_catalog"] = {"undetermined": str(e)}
+    out["permission_warnings"] = warnings
+    return out
 
 
 def main() -> None:

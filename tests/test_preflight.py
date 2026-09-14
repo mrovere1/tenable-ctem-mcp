@@ -241,3 +241,26 @@ def test_a_complement_that_neither_saturates_nor_empties_is_indeterminate():
 
 def test_an_ordinary_filter_does_not_need_the_complement():
     assert verdict(104205, 26307) == "applied"
+
+
+# ---------------------------------------------------------------------------
+# `contains` on tag_names is applied on assets and ignored on findings.
+# Measured in the sandbox on 2026-09-14; it is what took P1 down in production.
+# ---------------------------------------------------------------------------
+
+def test_contains_on_tag_names_is_rejected_on_findings():
+    with pytest.raises(DenyListError) as e:
+        validate_filters([{"property": "tag_names", "operator": "contains",
+                           "value": ["Alta"]}], target="findings")
+    assert e.value.rule == "substring_operator_ignored_on_findings"
+    assert "579" in e.value.proof
+
+
+def test_contains_on_tag_names_stays_allowed_on_assets():
+    f = [{"property": "tag_names", "operator": "contains", "value": ["Alta"]}]
+    assert validate_filters(f) == f
+
+
+def test_exact_tag_names_is_allowed_on_findings():
+    f = [{"property": "tag_names", "operator": "=", "value": ["Alta"]}]
+    assert validate_filters(f, target="findings") == f

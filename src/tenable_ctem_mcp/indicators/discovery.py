@@ -80,9 +80,35 @@ def _literal_filter(filters: list[dict] | None) -> str:
     return json.dumps(filters, separators=(",", ":"), ensure_ascii=False) if filters else "no filter"
 
 
+def _visibility(resp: dict, listed: int) -> dict[str, Any]:
+    """Compares what the endpoint listed with the total it declares.
+
+    A key without `Can View` on a tag does not get a 403: it gets a 200 with the
+    tag left out of the list, while `pagination.total` still counts it. Measured
+    in production on 2026-09-09: total 47, list empty, at Basic [16] and at
+    Scan Manager [40] alike. Reading that as "no tags" is a silent wrong answer.
+    """
+    declared = total_of(resp)
+    partial = declared is not None and declared > listed
+    return {"listed": listed, "declared_total": declared,
+            "complete": not partial}
+
+
 def _categories_and_values() -> dict[str, Any]:
-    cats = call("GET", "/tags/categories").get("categories", []) or []
-    vals = call("GET", "/tags/values").get("values", []) or []
+    cats_resp = call("GET", "/tags/categories")
+    vals_resp = call("GET", "/tags/values")
+    cats = cats_resp.get("categories", []) or []
+    vals = vals_resp.get("values", []) or []
+    visibility = {"categories": _visibility(cats_resp, len(cats)),
+                  "values": _visibility(vals_resp, len(vals))}
+    visibility["complete"] = (visibility["categories"]["complete"]
+                              and visibility["values"]["complete"])
+    if not visibility["complete"]:
+        visibility["cause"] = (
+            "the tag catalog lists fewer items than it declares: the API key's "
+            "user lacks `Can View` on some tags. Categories or values missing here "
+            "exist in the tenant. Grant the permission (docs/permissions.md) or "
+            "declare the values in the mapping.")
     by_category: dict[str, list[str]] = {}
     for c in cats:
         name = c.get("name")
@@ -96,6 +122,7 @@ def _categories_and_values() -> dict[str, Any]:
     return {
         "count": len(by_category),
         "categories": {k: sorted(x for x in v if x) for k, v in sorted(by_category.items())},
+        "visibility": visibility,
     }
 
 
@@ -117,6 +144,11 @@ def _scans_with_history() -> dict[str, Any]:
             "name": s.get("name"),
             "status": s.get("status"),
             "last_modification_epoch": s.get("last_modification_date"),
+            # A schedule is `rrules`; `schedule_uuid` is present on every scan,
+            # scheduled or not, so it says nothing. `enabled` is whether that
+            # schedule is currently active.
+            "schedule_rrules": s.get("rrules"),
+            "schedule_enabled": s.get("enabled"),
             "runs": None,
         }
         try:

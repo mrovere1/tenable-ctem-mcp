@@ -118,6 +118,12 @@ PROOFS = {
         "`within last 1d` also 50 - mutually exclusive, both with the whole corpus. "
         "Whereas `< 2020-01-01` gives 0 and `>= 2020-01-01` gives 50, summing to 50: "
         "the comparison operators ARE applied.",
+    "tag_names_contains_on_findings":
+        "On /findings/search `tag_names` lists only = != exists and not exists. "
+        "Measured in the sandbox on 2026-09-14 over VPR >= 9 (579 findings): "
+        "`contains Alta` -> 579, `not contains Alta` -> 579, `contains` a "
+        "nonexistent value -> 579; `= Alta` -> 85 and `=` a nonexistent value -> 0. "
+        "The same `contains` took P1 down in production on 2026-09-09.",
     "age_is_not_age":
         "The sandbox's last scan was 84 days before collection, and the cutoff fell "
         "between age=80 (zero) and age=90 (20) - on the date of the last scan, not on "
@@ -125,7 +131,13 @@ PROOFS = {
 }
 
 
-def validate_filters(filters: Any) -> list[dict]:
+# Properties whose substring operators are accepted and ignored on the findings
+# endpoint. On assets the same `tag_names contains` IS applied.
+SUBSTRING_OPERATORS = {"contains", "not contains"}
+EXACT_ONLY_ON_FINDINGS = {"tag_names", "tag_ids"}
+
+
+def validate_filters(filters: Any, target: str = "assets") -> list[dict]:
     """Validates the `filters` parameter and returns the normalised array.
 
     The cheapest and most valuable validation in the server: reject a string.
@@ -160,6 +172,14 @@ def validate_filters(filters: Any) -> list[dict]:
         op = str(clause.get("operator", ""))
         _deny_property(prop)
         _deny_operator(prop, op)
+        if (target == "findings" and prop.lower() in EXACT_ONLY_ON_FINDINGS
+                and op.lower() in SUBSTRING_OPERATORS):
+            raise DenyListError(
+                f"`{op}` on `{prop}` is accepted by /findings/search and silently "
+                "ignored: the query returns the unfiltered total. Use `=` with the "
+                "exact tag values.",
+                rule="substring_operator_ignored_on_findings",
+                proof=PROOFS["tag_names_contains_on_findings"])
         _require_value(prop, op, clause.get("value"))
     return filters
 
@@ -428,6 +448,8 @@ def run_preflight(workbenches_severity: str = "critical") -> dict[str, Any]:
         ("`authenticated` on workbenches", lambda: validate_workbenches_params(
             {"authenticated": True})),
         ("`age` on workbenches", lambda: validate_workbenches_params({"age": 90})),
+        ("`contains` on tag_names in findings", lambda: validate_filters(
+            [_f("tag_names", "contains", "Alta")], target="findings")),
     ):
         try:
             attempt()

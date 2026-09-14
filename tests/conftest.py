@@ -28,9 +28,10 @@ def sandbox(monkeypatch):
     """
     recorded = json.loads(FIXTURE.read_text(encoding="utf-8"))
 
-    from tenable_ctem_mcp import client
-    from tenable_ctem_mcp.indicators import discovery, scoping
-    from tenable_ctem_mcp import plugins
+    from tenable_ctem_mcp import cadence, client, mttr, plugins, preflight
+    from tenable_ctem_mcp.indicators import (discovery, mobilization,
+                                             prioritization, scoping,
+                                             validation)
 
     def call(method, path, body=None, params=None, **kw):
         a = _signature(method, path, body, params)
@@ -52,7 +53,11 @@ def sandbox(monkeypatch):
             offset += page_size
         return items
 
-    for module in (client, discovery, scoping, plugins):
+    # EVERY module that binds `call` or `paginate` at import. Leaving one out
+    # is invisible while it happens to be imported after this patch - and
+    # sends the test to the live tenant when another test imports it first.
+    for module in (client, discovery, scoping, plugins, prioritization,
+                   validation, mobilization, preflight, cadence, mttr):
         if hasattr(module, "call"):
             monkeypatch.setattr(module, "call", call)
         if hasattr(module, "paginate"):
