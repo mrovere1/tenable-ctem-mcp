@@ -127,9 +127,16 @@ def compute(mapping: dict, indicators: list[str] | None = None,
             f_denominator = [_vpr(">=", "9")]
             f_numerator = f_denominator + [
                 {"property": "tag_names", "operator": "=", "value": list(values)}]
+            # `!=` is the exact complement of `=` on findings, untagged assets
+            # included: over every finding of the sandbox, `= Alta` 793 plus
+            # `!= Alta` 4,693 is the 5,486 corpus. Without it a 100% P1 - every
+            # critical finding on a tagged asset - reads as an ignored filter.
+            f_complement = f_denominator + [
+                {"property": "tag_names", "operator": "!=", "value": list(values)}]
             try:
                 den = _count(f_denominator)
                 num = _count(f_numerator)
+                comp = _count(f_complement)
                 if not den:
                     out.append(Indicator.declared_gap(
                         "P1", cause="no finding with VPR >= 9; denominator zero.",
@@ -140,11 +147,14 @@ def compute(mapping: dict, indicators: list[str] | None = None,
                         for v in values}
                     out.append(Indicator.ok(
                         "P1", round(100.0 * num / den, 1), n=den,
-                        literal_filter=f"{_literal(f_numerator)} over {_literal(f_denominator)}",
-                        preflight_verdict=verdict(den, num),
+                        literal_filter=(f"{_literal(f_numerator)} over "
+                                        f"{_literal(f_denominator)}; complement "
+                                        f"{_literal(f_complement)} = {comp}"),
+                        preflight_verdict=verdict(den, num, comp),
                         context={
                             "backlog_vpr_gte_9": den,
                             "on_asset_with_criticality": num,
+                            "not_on_asset_with_criticality": comp,
                             "by_tag_value": by_value,
                             "category": crit_name,
                             "values": list(values),

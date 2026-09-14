@@ -159,6 +159,14 @@ def _scans_with_history() -> dict[str, Any]:
             runs = paginate("GET", f"/scans/{sid}/history", field="history")
             item["runs"] = len(runs)
             item["runs_completed"] = sum(1 for r in runs if r.get("status") == "completed")
+            # What separates a recurring scan from a retired one with a long
+            # history. Sandbox, 2026-09-14: scan 13 has 138 completed runs, the
+            # last on 2026-01-22; proposing it as recurring took M1 from 21
+            # days to 1.
+            starts = [int(r["time_start"]) for r in runs
+                      if r.get("status") == "completed"
+                      and str(r.get("time_start", "")).isdigit()]
+            item["last_completed_epoch"] = max(starts) if starts else None
         except ApiError as e:
             # A per-scan failure does not contaminate the rest: it becomes a
             # named cause on the item.

@@ -19425,5 +19425,31 @@
    }
   },
   "_reduced": "data dropped at recording: only pagination.total is read from an asset count"
+ },
+ "[\"POST\", \"/api/v1/t1/inventory/findings/search\", {\"filters\": [{\"operator\": \">=\", \"property\": \"finding_vpr_score\", \"value\": [\"9\"]}, {\"operator\": \"!=\", \"property\": \"tag_names\", \"value\": [\"Alta\", \"Baixa\", \"Crown Jewel\", \"Média\"]}]}, {\"limit\": 1}]": {
+  "data": [],
+  "pagination": {
+   "total": 0,
+   "offset": 0,
+   "limit": 1,
+   "sort": {
+    "name": "finding_severity",
+    "order": "desc"
+   }
+  },
+  "_reduced": "data dropped at recording: only pagination.total is read from an asset count"
+ },
+ "[\"POST\", \"/api/v1/t1/inventory/findings/search\", {\"filters\": [{\"operator\": \"=\", \"property\": \"asset_class\", \"value\": [\"DEVICE\"]}]}, {\"limit\": 1}]": {
+  "data": [],
+  "pagination": {
+   "total": 5142,
+   "offset": 0,
+   "limit": 1,
+   "sort": {
+    "name": "finding_severity",
+    "order": "desc"
+   }
+  },
+  "_reduced": "data dropped at recording: only pagination.total is read from an asset count"
  }
 }

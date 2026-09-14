@@ -12,8 +12,8 @@ What it does, in order:
 
   1. Runs the whole `pytest` suite against the fixture. Every query the fixture
      already holds is answered from it. A query it does not hold is sent to the
-     tenant ONLY if it is a `POST /api/v1/t1/inventory/assets/search` with
-     `limit=1` - a read-only count. Anything else stays a test failure.
+     tenant ONLY if it is a `POST` to `/api/v1/t1/inventory/assets/search` or
+     `/findings/search` with `limit=1` - a read-only count. Anything else stays a test failure.
   2. Re-sends every asset count ALREADY in the fixture and compares the totals.
      If any differs, the tenant has moved since 2026-09-03 and mixing today's
      licensed counts with that day's corpus would make a golden test out of
@@ -59,9 +59,14 @@ def _signature(method, path, body, params):
                       ensure_ascii=False)
 
 
+FINDINGS_SEARCH = "/api/v1/t1/inventory/findings/search"
+
+
 def _is_count(method, path, params) -> bool:
-    return (method == "POST" and path == ASSETS_SEARCH
-            and (params or {}).get("limit") == 1)
+    return (method == "POST" and path in (ASSETS_SEARCH, FINDINGS_SEARCH)
+            and (params or {}).get("limit") == 1 and "offset" not in (params or {})
+            or method == "POST" and path == ASSETS_SEARCH
+            and (params or {}) == {"limit": 1, "offset": 0})
 
 
 def _sanitise(resp: dict) -> dict:
