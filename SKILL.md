@@ -170,6 +170,21 @@ guess there is a coin toss: the **highest-criticality values** (the skill does n
 order of `Alta`, `Tier 1`, `Gold` or `Class A`), the **customer's prioritisation criterion**, and
 the **report language**.
 
+**Default mapping — what the proposal starts from.** Discovery overrides a default whenever the
+tenant shows something better, and every default row is labelled `default` in the "how I got there"
+column, so nobody mistakes it for something the tenant confirmed.
+
+| Field | Default | Rule |
+|---|---|---|
+| Report language | **EN** | **Always asked**, even with a default — it is one of the three fields never assumed silently |
+| Measurement base | **computed** | The licensed base returned by the server (`assets.licensed_total`), with the corpus and the per-class breakdown beside it. Not a question |
+| Criticality category | **`Criticidade`** | Proposed when a category with that name exists, matching accents and case and its equivalents `Criticality` / `Criticidad`. Otherwise the proposal lists the candidates found |
+| Owner category | **`Responsável`** | Same rule, with `Owner` / `Responsable` |
+| Recurring scans | **every scan with an active schedule** | `schedule_rrules` set and `schedule_enabled = true` in the snapshot. If no scan qualifies, fall back to the scans with at least two completed runs and say so in the row — a tenant whose scans are launched by hand or by trigger has history but no schedule |
+| Licensed surfaces | **every surface with assets, except ASM** | Pre-tick the `exposure_classes` with a non-zero count. ASM never enters: it needs its own base URL and its own keys |
+| Prioritisation criterion | **`VPR >= 7`** | Keeps `confirmed: false` until the operator actively confirms it (Question 10) |
+| Scope | **licensed base of the whole tenant** | No environment filter, no exclusion by tag |
+
 **A category may be something the skill did not expect, and the way through is to offer, not to
 guess.** If the tenant has `Location` with values `Site 1` and `Site 2`, the proposal offers
 `Location` as a candidate for **locality** — not for environment. Locality is *where* the asset is;
@@ -306,7 +321,15 @@ customer_mapping:
   owner_category: "CI Owner"
   recurring_scans: [33, 40]
   uses_exceptions: "uses_a_little"
+  # only when the tag catalog was partial; recorded so a reassessment uses the same values
+  criticality_values: []
+  owner_values: []
 ```
+
+**Save it every time, not only when asked.** Write the YAML next to the report, with the same base
+name (`<report>.profile.yaml`), and link it from the Methodology tab. On 2026-09-09 a production
+report's mapping survived only inside the HTML, and a reassessment would have had to reconstruct it
+from prose.
 
 **The v1 scope is the whole tenant.** The profile has no `environment_category`,
 `production_values` or `exclude` because no indicator would apply them: the server measures the
@@ -409,7 +432,17 @@ ctem_mobilization(mapping)        → M1, M2, M3, M4
 criticality_category: "<category name>"   # mandatory for S2, S4 and P1
 owner_category:       "<category name>"   # mandatory for S3
 recurring_scans:      [<scan_id>, ...]    # mandatory for M1 and M2
+criticality_values:   ["<value>", ...]    # only when the tag catalog is partial
+owner_values:         ["<value>", ...]    # only when the tag catalog is partial
 ```
+
+**The two `*_values` keys exist for one situation:** `ctem_discover_tenant` returns
+`tags.visibility.complete = false` — the catalog lists fewer items than it declares, because the API
+key lacks a permission on the tags. Then the category values cannot be read, and the findings side
+matches tags only with `=` and the exact value. Ask the operator for the values exactly as the
+console shows them, and say in the report that they were **declared, not read**
+(`values_source: operator_declared`). Better still, ask for the permission first — the grant is in
+the server's `docs/permissions.md`. With a complete catalog, leave both keys out.
 
 **The server guesses none of these.** Without them the indicator becomes a gap and the cause lists
 the options that exist in the tenant, so the consultant can point at the right one. This is
@@ -984,6 +1017,8 @@ maturity_config:
   licensed_surfaces: [VM]
   customer_mapping:             # answers from Phase B of Step 0, reuse at reassessment
     criticality_category: null
+    criticality_values: []      # only when the tag catalog is partial - declared, not read
+    owner_values: []            # same
     highest_criticality_values: []
     owner_category: null
     locality_category: null         # only groups the roadmap; does not filter scope

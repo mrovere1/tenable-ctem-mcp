@@ -130,8 +130,10 @@ ctem_validation(mapping=None, indicators=None, ...)   → V1–V4
 ctem_mobilization(mapping=None, indicators=None, ...) → M1–M4
 ```
 
-`mapping` carries exactly three keys, and the server guesses none of them:
-`criticality_category`, `owner_category`, `recurring_scans`.
+`mapping` carries three keys, and the server guesses none of them:
+`criticality_category`, `owner_category`, `recurring_scans`. Two optional keys, `criticality_values`
+and `owner_values`, exist only for a partial tag catalog (a key without permission on the tags):
+the operator declares the values, and the indicator reports `values_source: operator_declared`.
 
 ### Primitives and diagnostics
 

@@ -120,6 +120,11 @@ def ctem_scoping(mapping: dict[str, Any],
     Without it, S2 and S3 become gaps and the answer lists the categories that
     exist. Use `ctem_discover_tenant` first to see the tenant's categories.
 
+    When the tag catalog is partial (the key lacks a permission on the tags,
+    see `tags.visibility` in the snapshot), add the values as the console shows
+    them - `criticality_values`, `owner_values` - or S2/S3 become gaps naming
+    the permission. Declared values are reported as declared, not read.
+
     S1 % of assets with at least one tag - S2 % with a criticality tag
     S3 % with an owner tag - S4 declared Crown Jewels (INFORMATIONAL, no score)
 
