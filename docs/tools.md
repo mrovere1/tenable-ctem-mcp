@@ -137,6 +137,12 @@ Stage 1: S1, S2, S3, S4.
 Without it, S2 and S3 become gaps and the cause lists the categories that exist in the tenant. The
 server does not guess the name — a customer may call it `Tier`, `BIA` or `Business Impact`.
 
+Optional, and only when the snapshot's `tags.visibility.complete` is `false`: `criticality_values`
+and `owner_values`, the values as the console shows them. They also feed P1. The indicator's
+context carries `values_source` (`catalog` or `operator_declared`). With a partial catalog and no
+declared values, S2, S3 and P1 are gaps whose cause names the missing permission
+(`docs/permissions.md`).
+
 | ID | What it measures | Note |
 |---|---|---|
 | S1 | % of assets with at least one tag | over the licensed base; verdict uses the `tag_count = 0` complement |

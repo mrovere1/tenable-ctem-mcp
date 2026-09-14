@@ -27,6 +27,30 @@ happened.**
 
 The server rejects all of them before the request leaves.
 
+## `tag_names contains` on findings is ignored
+
+On `/api/v1/t1/inventory/findings/search`, `tag_names` and `tag_ids` list only `=`, `!=`, `exists`
+and `not exists`. A `contains` is accepted and not applied. Measured in the sandbox on 2026-09-14,
+over the 579 findings with VPR >= 9:
+
+| Filter added | Total |
+|---|---:|
+| `tag_names contains Alta` | 579 |
+| `tag_names not contains Alta` | 579 |
+| `tag_names contains` a value that does not exist | 579 |
+| `tag_names = Alta` | **85** |
+| `tag_names =` a value that does not exist | **0** |
+
+On **assets** the same `contains` is applied. The deny-list rejects it on findings only. This is
+what took P1 down in a production run on 2026-09-09: the tag filter in findings works, with `=`
+and the exact values — which is why P1 needs the tag catalog, or declared values.
+
+## `is_licensed` does not exist on findings
+
+`/findings/search` answers HTTP 400 for `is_licensed` (sandbox, 2026-09-14). V4's numerator
+therefore cannot carry the licence filter; the indicator declares, in its context, the most
+unlicensed devices that could be in it.
+
 ## Date comparison against an absolute date works
 
 **This corrects the matrix, which denied date filters on findings wholesale.** The relative
