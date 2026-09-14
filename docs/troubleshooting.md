@@ -70,6 +70,20 @@ as pending and reassess later.
 the sandbox, the 9 `(first_found, last_fixed)` windows were all pairs drawn from 7 dates — the
 tenant's scan dates. The skill declares M4 a gap on purpose in that case.
 
+## A collection that hangs for tens of minutes
+
+Seen once on 2026-09-14 in the sandbox: a run that normally takes about 3 minutes stayed 41 minutes
+with 1.7 s of CPU and a single established HTTPS connection receiving nothing. It did not reproduce.
+
+The likely mechanism is in `client.py`: each call waits up to 180 s per socket read and retries up to
+5 times with growing pauses, so one call on a stalled network can take about 16 minutes, and there is
+no total deadline across calls. A normal run is dominated by call count, not volume — about 1 s per
+call, with the 121-plugin census in D4 as the largest block.
+
+What to do: stop the client and run `ctem_diagnostics()`. If it answers quickly, run the stage again
+with `indicators=[...]` for the ones missing. A total per-call deadline is an open decision, because it
+must not cut legitimate `retry-after` waits.
+
 ## `429 Too Many Requests`
 
 Tenable's limit is **dynamic**: the platform computes how many requests it accepts per minute

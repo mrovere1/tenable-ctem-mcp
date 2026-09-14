@@ -62,10 +62,10 @@ A snapshot of the tenant in one call. Replaces ~10 calls of Phase A of the skill
 
 | Field | Content |
 |---|---|
-| `tags` | the `count` of categories and, in `categories`, the values of each |
-| `assets` | `total` and `by_asset_class` |
+| `tags` | the `count` of categories, the values of each in `categories`, and `visibility`: what `/tags/categories` and `/tags/values` listed against the total they declare. `complete: false` means the key lacks permission on some tags — see `docs/permissions.md` |
+| `assets` | `licensed_total` and `licensed_by_class` (the denominator of every asset rate), `total` and `by_asset_class` (the whole Inventory, for context), and the literal filters of both |
 | `exposure_classes` | the total per class: `VM`, `WAS`, `CLOUD`, `IDENTITY`, `OT`, `AI`, `CODE` |
-| `scans` | `total_scans`, `with_history`, and per scan: `runs` and `runs_completed` |
+| `scans` | `total_scans`, `with_history`, and per scan: `runs`, `runs_completed`, `last_completed_epoch`, `schedule_rrules` (the schedule; `schedule_uuid` exists on every scan and says nothing) and `schedule_enabled` |
 | `agents` | `total`, `active`, `by_status` |
 | `served_from_cache` | `true` when it came from the short-TTL cache |
 
@@ -85,7 +85,16 @@ three causes that look identical from the client: credential missing, credential
 intercepted by a corporate proxy.
 
 It never prints the key, nor any part of it. Returns `version`, `tio_url`,
-`credentials_in_environment`, `tls_ca_origin` and `verdict`.
+`credentials_in_environment`, `tls_ca_origin` and `verdict`, and — when the credential works —
+the permission check:
+
+| Field | Content |
+|---|---|
+| `api_key_role` | `permissions` from `/session` and its name: 16 Basic, 24 Scan Operator, 32 Standard, 40 Scan Manager, 64 Administrator |
+| `tag_catalog` | the same `visibility` block as the snapshot |
+| `permission_warnings` | a role below Scan Manager (D3 closes), below Scan Operator (scan history closes), any role other than Administrator (per-object permissions can hide objects silently), and a partial tag catalog |
+
+Run it before an assessment. The minimum grants are in `docs/permissions.md`.
 
 ---
 
@@ -176,7 +185,7 @@ Stage 3: P1, P2, P3, plus the three compared queues.
 
 | ID | What it measures | Note |
 |---|---|---|
-| P1 | % of the VPR >= 9 backlog on assets with declared criticality | NOT the agreement between score models |
+| P1 | % of the VPR >= 9 backlog on assets with declared criticality | NOT the agreement between score models. Matches tags with `=` and the exact values (`contains` is ignored on findings); the `!=` complement decides the verdict, so a saturated 100% reads `applied` |
 | P2 | % of the ACTIVE backlog with VPR available | `>= 0.1`; `exists` needs a non-empty value |
 | P3 | fitness of the prioritisation criterion | composite; depends on P2 |
 
@@ -201,6 +210,12 @@ Stage 4: V1, V2, V3, V4.
 | V3 | recurrence rate RESURFACED/(RESURFACED+FIXED) | inverted. Returned as a **percentage** — the skill's cutoffs are `[25, 15, 8, 3]` |
 | V4 | % of DEVICE with out-of-support software | inverted; the denominator is licensed DEVICE |
 
+V4 follows every page of the findings search — it used to read only the first 500. Its verdict comes
+from the text search being narrower than all DEVICE findings (`context.discriminant`), not from the
+ratio, which can saturate legitimately. The findings search rejects `is_licensed`, so the numerator
+is not licence-filtered; `context.numerator_not_licence_filtered` declares the most unlicensed
+devices that could be in it.
+
 V1 and V2 come from the **same set** as D4, so the report does not describe three different sets
 under a single declared size.
 
@@ -222,7 +237,8 @@ represent the cadence, and the reason is measured: in the sandbox, the recurring
 median of 21 days and a maximum of 140; adding every scan with history gives a median of 1.0 and a
 maximum of 89, because one of them runs almost daily.
 
-M4 becomes a **gap** when the cadence guard fires — that is a correct result, not a defect. If the
+M4 becomes a **gap** when the cadence guard fires — that is a correct result, not a defect. Gate 1 is
+verified before it becomes a gap: when `pct_in_batch` is above the cutoff, the server compares the median time-to-fix of findings closed in a batch with that of single findings. With at least 30 findings out of batch and medians no more than 25% apart, batch closing is real closing and M4 scores; the evidence is in `cadence_guard.batch_verification`. If the
 export exceeds `mttr_max_wait_s`, M4 becomes a **recoverable** gap with the `export_uuid` in the
 cause; call again passing `mttr_export_uuid`. Never open a new export while one is open: the API
 answers 409.
@@ -346,11 +362,20 @@ disappeared.
 
 Two gates, and the second matters more:
 
-1. `pct_in_batch` above the alert cutoff → M4 is a gap;
+1. `pct_in_batch` above the alert cutoff → M4 is a gap, **unless the batch verification clears it**;
 2. windows formed **only** by scan dates → M4 is a gap, even with `pct_in_batch` below the cutoff.
+   Never verified away.
 
 Gate 2 exists because the percentage depends on the chosen batch cutoff. The composition of the
 dates depends on no choice at all.
+
+**Batch verification (gate 1 only, since 2026-09-14).** Closing in a batch distorts the MTTR only if
+batch windows carry a different time-to-fix than single findings. `batch_verification` returns
+`median_in_batch_days`, `median_out_of_batch_days`, `findings_out_of_batch`,
+`relative_median_gap`, `distinct_close_dates`, the two thresholds (`min_findings_out_of_batch` 30,
+`max_relative_median_gap` 0.25) and `batch_does_not_distort`. Measured in production: 48.7% in batch,
+medians 4.03 and 3.99 days, 332 distinct close dates in 365 days — real closing, and M4 scores. In
+the sandbox only 1 finding closed out of batch, so gate 1 stands (and gate 2 fires anyway).
 
 ---
 

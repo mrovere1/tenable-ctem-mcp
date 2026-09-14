@@ -527,8 +527,9 @@ parameter, and the skill never asks for a credential.
 the dates from `scan_cadence` of the declared `recurring_scans`, and returns M4 as a gap when either
 gate fires:
 
-1. `pct_in_batch` above `CONFIG.mttr.max_batch_pct`;
-2. windows formed **only** by scan dates — even with `pct_in_batch` below the cutoff.
+1. `pct_in_batch` above `CONFIG.mttr.max_batch_pct`, **and** the server's batch verification did not
+   clear it (`cadence_guard.batch_verification.batch_does_not_distort` is `false`);
+2. windows formed **only** by scan dates — even with `pct_in_batch` below the cutoff. Never cleared.
 
 Gate 2 is the stronger one, and that is why it exists: the percentage depends on the chosen batch
 cutoff — in the sandbox the same data gives 93.5% with cutoff 2 and 38.7% with cutoff 5, and cutoff
@@ -573,7 +574,8 @@ severities, it does not offset one with the other.
 | both severities below the minimum | **M4 = gap**, with each `n` declared |
 | `mttr_source = derived` on more than `max_derived_pct` (default 30%) | M4 scores, with a composition ⚠️ in the report |
 | `filters_diverged = true` | **M4 = gap.** Job reused after a 409: the slice is not the request. **Read the boolean**, never compare the dictionaries — the API normalises and adds defaults, so a literal comparison reports a mismatch on every run |
-| `pct_in_batch >= CONFIG.mttr.max_batch_pct` (default 40), **computed by the server with `min_batch_per_window`** | **M4 = gap with a named cause:** *"MTTR dominated by scan cadence (X% of findings closed in a batch); M1 and M2 already measure cadence"*. See below |
+| `pct_in_batch >= CONFIG.mttr.max_batch_pct` (default 40), **computed by the server with `min_batch_per_window`**, and `batch_verification.batch_does_not_distort = false` | **M4 = gap with a named cause:** *"MTTR dominated by scan cadence (X% of findings closed in a batch); M1 and M2 already measure cadence"*. See below |
+| `pct_in_batch >= max_batch_pct` but `batch_verification.batch_does_not_distort = true` | M4 **scores**. The report says so, with both medians, the out-of-batch `n` and the distinct close dates: batch closing was real closing, not scan intervals. **Never** override this by hand in either direction |
 | windows `(first_found, last_fixed)` formed only by pairs of scan dates | **M4 = gap**, even with `pct_in_batch` below the cutoff: the number is the interval between scans |
 | `FIXED` rows with an empty `days_to_fix` | out of the calculation, count declared. **Never** impute a value |
 | `modified_severity != NONE` on any row | M4 scores, with the caveat that the severity was adjusted by a recast |
