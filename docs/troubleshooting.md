@@ -16,8 +16,10 @@ Two causes, in this order of frequency:
 
 ## `403 forbidden`
 
-The key needs the **Basic [16]** role, or the `VM.VM_EXPLORE` (Vulnerability Management) and
-`ASSET_INVENTORY.CYBER_ASSET_MANAGEMENT.READ` (Exposure Management) privileges.
+A 403 names a role that is too low: the agent list (D3) needs **Scan Manager [40]**, the scan
+history **Scan Operator [24]**. The opposite case is worse — a missing `Can View` on tags, scans or
+assets answers 200 with a shorter list. The tag catalog returning an empty list while
+`pagination.total` is not zero is that case. See [`permissions.md`](permissions.md).
 
 ## `409` on the MTTR export
 

@@ -100,6 +100,7 @@ mcp-ctem/
     limitations.md            # what the API does not deliver, with proof
     troubleshooting.md        # real cases: 401, 409, TLS, empty collection, ignored filters
     client-setup.md           # registering the server without writing keys to a config file
+    permissions.md            # the minimum role and per-object permissions for the API key
 ```
 
 ---
