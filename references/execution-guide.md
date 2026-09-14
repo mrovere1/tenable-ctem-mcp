@@ -28,7 +28,9 @@ needs before the first run.
    it. Launching the client from the Dock or from a different shell means the server does not see
    them. The keys come from the tenant, under **Settings > My Account > API Keys**.
 
-3. **A key with the Basic [16] role or the VM.VM_EXPLORE privilege.** Anything less answers 403.
+3. **A key with Administrator [64], or Scan Manager [40] plus `Can View` on all assets, tags and
+   scans.** Basic [16] leaves D3 closed, and a missing `Can View` does not answer 403 — it returns a
+   shorter list. See `docs/permissions.md` in the server repository.
 
 4. **On a network that inspects TLS**, point at the corporate bundle before starting:
 
