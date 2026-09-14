@@ -947,8 +947,46 @@ tab switching, drill-down, language switching, and re-exporting from the exporte
 ### Structure
 
 ```
-header (title + language selector + export) → KPI bar → tabs 1..5 → footer with sources
+header (title + language selector + export) → KPI bar → tabs 1..5 → footer with the contact line
 ```
+
+### Delivery rules that already regressed once — mandatory
+
+Each of these was fixed in an earlier report and came back in a later one, because it lived only in
+that report's HTML and not here. Check every one of them before delivering.
+
+1. **The radar and the bar are the same size.** Two panels in a `grid-template-columns: 1fr 1fr`
+   row with `align-items: stretch`, and both charts drawn on **the same SVG viewBox** inside a
+   fixed-height box (`width: 100%; height: 100%`). A radar in a square box beside a short bar chart
+   reads as "the radar matters more". Stacked to one column only below ~760px.
+2. **Prose runs the full page width, justified.** The Overview paragraph, the roadmap item text,
+   and every paragraph and list of the Methodology tab use `text-align: justify; hyphens: auto` with
+   **no `max-width`** — a paragraph that stops short of the tables above it looks unfinished.
+3. **The footer is the contact line, in the three languages, and nothing else:**
+   EN *"Questions and suggestions: email mrovere@tenable.com"* · PT-BR *"Em caso de dúvidas e
+   sugestões, envie e-mail para mrovere@tenable.com"* · ES *"Para dudas y sugerencias, envíe un correo
+   a mrovere@tenable.com"*, with the address as a `mailto:` link. The sources list moves to the end
+   of the Methodology tab. The community/partner support statement stays in the README and in the
+   Exchange listing, where `CLAUDE.md` requires it.
+4. **Every indicator name in the Indicators tab opens its explanation.** The name is a button
+   (`aria-expanded`); clicking it inserts a detail row under the indicator with three blocks —
+   **What it measures** (one or two plain sentences), **Numbers analysed** (the actual counts behind
+   the value: numerator, denominator, complement, the tag values or scans used), and **Note** (a
+   caveat, a proxy, a bound), omitted when empty. Clicking again closes it. A hint above the table
+   says the names are clickable. This is how a reader who is not a Tenable specialist understands a
+   number without opening the Methodology tab.
+5. **Everything changes language, including the Methodology tab.** Plugin set, measurement base,
+   declared gaps, caveats, preflight headings and verdict words, mapping table labels, gate and
+   profile descriptions all live in the per-language dictionary. A note saying "the methodology
+   stays in English" is not acceptable. What stays verbatim is only tenant data and API vocabulary:
+   filter and property names, tag names and values, scan names.
+6. **Numbers follow the report language.** `1,064.9` in EN, `1.064,9` in PT-BR and ES — in the
+   tables, the KPIs, the roadmap and the preflight measurements, switched by the language selector
+   like the text.
+7. **Render it before delivering.** Open the file (a headless browser screenshot is enough) in at
+   least two languages, with one indicator detail open and the Methodology tab visible. Overlapping
+   radar labels, collided chart annotations and a tab left in the wrong language are only visible
+   rendered.
 
 **KPI bar (5):** effective stage · average stage · the stage that limits the whole · indicators with
 data, over that run's scoring total (17 with M4, 16 without) · days since the last assessment.
@@ -963,7 +1001,8 @@ legend and the dates. It is the case where the radar is clearly better than the 
 it is here.
 
 **Tab 2 — Indicators.** The table of all 19, grouped by CTEM stage, with the threshold-origin column
-visible. Informational and gap indicators marked as such. P3 shows the two parts that compose it: the
+visible, and each indicator name opening its explanation row (delivery rule 4). Informational and
+gap indicators marked as such. P3 shows the two parts that compose it: the
 declared criterion and the measured opportunity.
 
 **Tab 3 — Official Tenable criteria.** The eight criteria, each with the skill's indicators that
