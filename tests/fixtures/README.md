@@ -32,6 +32,11 @@ count and re-checks every count already recorded before writing.
   Every other count matched. D3 and V4 were also computed live that day and gave the same 7/7 the
   fixture mix gives.
 
+Two more counts on the same day, for the complements the end-to-end run showed were missing: P1's
+`tag_names !=` over VPR >= 9 (0) and every DEVICE finding (5,142), which V4's verdict compares the
+text search against. Accepted drift that time: `tag_count` as above, and `finding_vpr_score >= 7`
+1,261 → 1,262 — VPR counts fluctuate (`docs/limitations.md`), and neither new count reads it.
+
 ## One declared reduction
 
 The preflight calls `/workbenches/vulnerabilities` ten times varying parameters, and from every one

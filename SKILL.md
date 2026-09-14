@@ -180,8 +180,8 @@ column, so nobody mistakes it for something the tenant confirmed.
 | Measurement base | **computed** | The licensed base returned by the server (`assets.licensed_total`), with the corpus and the per-class breakdown beside it. Not a question |
 | Criticality category | **`Criticidade`** | Proposed when a category with that name exists, matching accents and case and its equivalents `Criticality` / `Criticidad`. Otherwise the proposal lists the candidates found |
 | Owner category | **`Responsável`** | Same rule, with `Owner` / `Responsable` |
-| Recurring scans | **every scan with an active schedule** | `schedule_rrules` set and `schedule_enabled = true` in the snapshot. If no scan qualifies, fall back to the scans with at least two completed runs and say so in the row — a tenant whose scans are launched by hand or by trigger has history but no schedule |
-| Licensed surfaces | **every surface with assets, except ASM** | Pre-tick the `exposure_classes` with a non-zero count. ASM never enters: it needs its own base URL and its own keys |
+| Recurring scans | **every scan with an active schedule** | `schedule_rrules` set and `schedule_enabled = true` in the snapshot. If no scan qualifies, fall back to the scans with **at least two completed runs and one of them in the last 90 days** (`last_completed_epoch`), and say so in the row — a tenant whose scans are launched by hand or by trigger has history but no schedule. The recency is not optional: in the sandbox a retired scan with 138 completed runs, the last in January, entered the fallback and took M1 from 21 days to 1 |
+| Licensed surfaces | **every surface with assets, except ASM** — **always confirmed with the customer's contract** | Pre-tick the `exposure_classes` with a non-zero count, then ask. Never accept this row silently: D2 is "licensed surfaces that have data", and a list built from the data makes D2 100% by construction. The contract is the source; the data only pre-fills. ASM never enters: it needs its own base URL and its own keys |
 | Prioritisation criterion | **`VPR >= 7`** | Keeps `confirmed: false` until the operator actively confirms it (Question 10) |
 | Scope | **licensed base of the whole tenant** | No environment filter, no exclusion by tag |
 
@@ -257,8 +257,10 @@ Question 8 — Does the customer use exception rules (accept or recast) in Tenab
 
 Question 9 — Surfaces licensed by the customer?
   type: multi_select
-  options: ["VM","WAS","Cloud Security","Identity Exposure","OT Security","ASM","AI","Source Code"]
-  → pre-tick the ones Phase A found in exposure_classes; the operator confirms or corrects.
+  options: ["VM","WAS","Cloud Security","Identity Exposure","OT Security","AI","Source Code"]
+  → pre-tick the ones Phase A found in exposure_classes, and ALWAYS ask, even on "Proceed as is":
+    the answer must come from the contract. Pre-ticked from data and never confirmed, D2 compares
+    the data with itself and reads 100%. ASM is not offered: it is outside v1 (own URL, own keys).
 
 Question 10 — Which prioritisation criterion does the customer use TODAY?
   options: ["VPR >= 7 (default)","VPR >= 9","CVSSv3 >= 7","CVSSv3 >= 9","Other — I will say","I do

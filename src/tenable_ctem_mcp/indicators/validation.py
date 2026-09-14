@@ -51,6 +51,11 @@ def _items(resp: dict) -> list[dict]:
 
 
 def _search(filters: list[dict], limit: int = 500) -> list[dict]:
+    return _search_with_total(filters, limit)[0]
+
+
+def _search_with_total(filters: list[dict], limit: int = 500
+                       ) -> tuple[list[dict], int | None]:
     """Every matching finding, following the pages.
 
     It used to return the first page only. A term matching more than `limit`
@@ -71,7 +76,7 @@ def _search(filters: list[dict], limit: int = 500) -> list[dict]:
                 f"findings search declared {declared} results and stopped "
                 f"returning pages at {len(items)}: the list is incomplete.")
         items.extend(page)
-    return items
+    return items, declared
 
 
 def _literal(filters: list[dict] | None) -> str:
@@ -248,22 +253,36 @@ def compute(mapping: dict | None = None, indicators: list[str] | None = None,
             eol_assets: set[str] = set()
             by_term: dict[str, int] = {}
             used = []
+            findings_per_term: dict[str, int | None] = {}
             try:
                 for term in EOL_TERMS:
                     f = [{"property": "finding_name", "operator": "contains",
                           "value": [term]}, f_device]
                     used.append(_literal(f))
-                    items = _search(f)
+                    items, declared = _search_with_total(f)
+                    findings_per_term[term] = declared
                     ids = {i.get("asset_id") for i in items if i.get("asset_id")}
                     by_term[term] = len(ids)
                     eol_assets |= ids
+                # The discriminant is on the text search, not on the ratio: a
+                # ratio of 7/7 saturates legitimately. `finding_name contains`
+                # is applied when each term returns fewer findings than every
+                # DEVICE finding does.
+                device_findings = _count([f_device])
+                v4_verdict = ("undetermined" if device_findings is None
+                              or any(v is None for v in findings_per_term.values())
+                              else "ignored" if any(v >= device_findings
+                                                    for v in findings_per_term.values())
+                              else "applied")
                 devices_all = snapshot["assets"]["by_asset_class"].get("DEVICE", 0)
                 out.append(Indicator.ok(
                     "V4", round(100.0 * len(eol_assets) / devices, 1), n=devices,
                     literal_filter=" UNION ".join(used),
-                    preflight_verdict=verdict(devices, len(eol_assets)),
+                    preflight_verdict=v4_verdict,
                     context={
                         "devices_with_eol": len(eol_assets), "devices": devices,
+                        "discriminant": {"findings_per_term": findings_per_term,
+                                         "device_findings": device_findings},
                         "distinct_assets_per_term": by_term,
                         "inverted": True,
                         "denominator": ("licensed DEVICE, not the total of assets: "

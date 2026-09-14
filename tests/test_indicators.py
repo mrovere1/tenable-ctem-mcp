@@ -126,6 +126,11 @@ def test_tenant_snapshot_matches_the_measurement(sandbox):
     assert r["agents"]["active"] == 7
 
 
+def _history(scan_id):
+    from tenable_ctem_mcp.client import paginate
+    return paginate("GET", f"/scans/{scan_id}/history", field="history")
+
+
 def test_scan_33_has_12_runs(sandbox):
     """The sandbox's recurring scan: 12 runs across 9 distinct days.
 
@@ -137,6 +142,9 @@ def test_scan_33_has_12_runs(sandbox):
     s33 = next(s for s in r["scans"]["scans"] if s["scan_id"] == 33)
     assert s33["runs"] == 12
     assert s33["runs_completed"] == 12
+    # the recency the default mapping's fallback needs, with no extra call
+    assert s33["last_completed_epoch"] == max(
+        int(r["time_start"]) for r in _history(33) if r.get("status") == "completed")
 
 
 # --- Scoping: S1, S2, S3, S4 ------------------------------------------------
@@ -410,6 +418,10 @@ def test_p1_all_critical_backlog_sits_on_assets_with_criticality(sandbox):
     from tenable_ctem_mcp.indicators.prioritization import compute
     p1 = _by_id(compute(MAPPING, indicators=["P1"]))["P1"]
     assert p1["value"] == 100.0
+    # Saturated and applied: the `!=` complement is zero. Without it the
+    # end-to-end run of 2026-09-14 reported this 100% as `ignored`.
+    assert p1["preflight_verdict"] == "applied"
+    assert p1["context"]["not_on_asset_with_criticality"] == 0
     ctx = p1["context"]
     # the per-tag-value sum cannot exceed the total: an asset may carry two
     assert ctx["on_asset_with_criticality"] == ctx["backlog_vpr_gte_9"]
@@ -489,6 +501,9 @@ def test_v4_device_with_out_of_support_software(sandbox):
     v4 = _by_id(compute(indicators=["V4"]))["V4"]
     assert v4["value"] == 100.0
     assert v4["n"] == 7
+    # 7/7 saturates; the verdict comes from the text search being narrower than
+    # every DEVICE finding, not from the ratio.
+    assert v4["preflight_verdict"] == "applied"
     # 8 DEVICE in the Inventory, 7 licensed: at most 1 counted may be unlicensed
     assert v4["context"]["numerator_not_licence_filtered"][
         "unlicensed_devices_in_tenant"] == 1
