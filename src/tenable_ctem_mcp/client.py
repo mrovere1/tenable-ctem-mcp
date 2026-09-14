@@ -288,8 +288,10 @@ def call(method: str, path: str, body: Any = None,
                     cause="credential_invalid")
             if e.code == 403:
                 raise CredentialError(
-                    "403 forbidden. The key needs the Basic [16] role or the "
-                    f"VM.VM_EXPLORE privilege. Response: {text}",
+                    f"403 forbidden on {path}. The key's role is too low for this "
+                    "endpoint - the agent list needs Scan Manager [40], the scan "
+                    "history Scan Operator [24]; see docs/permissions.md. "
+                    f"Response: {text}",
                     cause="no_permission")
             if e.code in (429, 500, 502, 503, 504) and attempt < attempts:
                 last = f"HTTP {e.code}: {text}"
