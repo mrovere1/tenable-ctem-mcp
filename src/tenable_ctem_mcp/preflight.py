@@ -396,14 +396,30 @@ def run_preflight(workbenches_severity: str = "critical") -> dict[str, Any]:
         corpus_a = n_assets()
         tagged = n_assets([_f("tag_count", ">=", "1")])
         untagged = n_assets([_f("tag_count", "=", "0")])
-        record("tag_count", "assets", "tag_count `>=` / `=`", "exclusive_pair",
-               verdict(corpus_a, tagged),
-               f">= 1 -> {tagged}; = 0 -> {untagged}; summing {tagged + untagged} "
-               f"against corpus {corpus_a}"
+        # S1 reads the pair over the LICENSED base, so that is where it is
+        # proven. The corpus pair stays as context: objects outside the base
+        # (Active Directory identities, accounts, groups) may lack the property,
+        # and they are in no denominator.
+        from .indicators.discovery import _count_assets, licensed_filters
+        base = _count_assets(licensed_filters())
+        tagged_l = n_assets(licensed_filters([_f("tag_count", ">=", "1")]))
+        untagged_l = n_assets(licensed_filters([_f("tag_count", "=", "0")]))
+        closes = (None not in (base, tagged_l, untagged_l)
+                  and tagged_l + untagged_l == base)
+        record("tag_count", "assets", "tag_count `>=` / `=` over the licensed base",
+               "exclusive_pair", verdict(base, tagged_l, untagged_l),
+               f"licensed base {base}: >= 1 -> {tagged_l}; = 0 -> {untagged_l}; "
+               f"summing {(tagged_l or 0) + (untagged_l or 0)}"
+               + (" - the pair closes, S1 uses this base" if closes else
+                  " - the pair does NOT close over the licensed base: some licensed "
+                  "asset lacks the `tag_count` property, and S1's verdict must not "
+                  "be read as applied")
+               + f". Whole Inventory corpus, for context: {tagged} + {untagged} = "
+               f"{tagged + untagged} of {corpus_a}"
                + ("" if tagged + untagged == corpus_a else
-                  ". They do NOT close: some asset lacks the `tag_count` property, "
-                  "and the correct denominator remains the corpus"),
-               use=True)
+                  "; the assets without the property are outside the licensed base "
+                  "unless the licensed pair says otherwise"),
+               use=closes)
         device = n_assets([_f("asset_class", "=", "DEVICE")])
         record("asset_class", "assets", "asset_class `=`", "corpus_vs_filtered",
                verdict(corpus_a, device), f"corpus {corpus_a}, DEVICE -> {device}",

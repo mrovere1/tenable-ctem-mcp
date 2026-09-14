@@ -170,6 +170,27 @@ guess there is a coin toss: the **highest-criticality values** (the skill does n
 order of `Alta`, `Tier 1`, `Gold` or `Class A`), the **customer's prioritisation criterion**, and
 the **report language**.
 
+**Below the proposal table, show everything the choice was made from.** A row that says
+`Criticidade` does not tell the operator what `Criticidade` contains, nor what was passed over. So
+the confirmation screen always carries two more tables, built from the Phase A snapshot with no
+extra call:
+
+1. **The tag catalog, whole** — every category, with **every** value, exactly as spelled in the
+   tenant, and a column marking what the proposal uses (`criticality`, `owner`, `locality`, or
+   blank). Never truncate to "and N more": the values of the chosen category are what S2, S3 and P1
+   count, and a value the operator cannot see is a value they cannot object to. If
+   `tags.visibility.complete` is `false`, say so above the table, with the listed and declared
+   totals — the table is then known to be incomplete.
+2. **The scans, whole** — every scan with its name, completed runs, last completed run date,
+   schedule (`schedule_rrules`, and whether it is enabled), and a column marking the ones proposed as
+   recurring and the rule that picked them (active schedule, or the fallback). A retired scan with a
+   long history belongs in the list, visibly *not* selected, with the reason.
+
+```
+<table: Category | Values (all) | Used as>
+<table: Scan | Completed runs | Last completed run | Schedule | Proposed as recurring | Why>
+```
+
 **Default mapping — what the proposal starts from.** Discovery overrides a default whenever the
 tenant shows something better, and every default row is labelled `default` in the "how I got there"
 column, so nobody mistakes it for something the tenant confirmed.

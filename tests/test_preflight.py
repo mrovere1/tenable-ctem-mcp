@@ -200,14 +200,20 @@ def test_preflight_separates_age_from_date_range(sandbox):
     assert _row(t, "date_range")["verdict"] == "applied"
 
 
-def test_preflight_flags_that_the_tag_count_pair_does_not_close(sandbox):
-    """tag_count >= 1 (9) + = 0 (20) sum to 29, not the corpus's 30: one asset
-    lacks the property. The detail must say so, otherwise the reader concludes
-    the denominator is 29."""
+def test_preflight_proves_tag_count_over_the_licensed_base(sandbox):
+    """S1 counts over the licensed base, so the pair is proven there: 8 + 0 = 8.
+    The whole-corpus pair (9 + 20 = 29 of 30 at the recording) stays as context.
+
+    Before 2026-09-14 the row proved the pair on the corpus and said "the correct
+    denominator remains the corpus" - true when S1 used the corpus, wrong since
+    the licensed base, and printed as such in the end-to-end report."""
     from tenable_ctem_mcp.preflight import run_preflight
     r = _row(run_preflight(), "tag_count")
     assert r["verdict"] == "applied"
-    assert "do NOT close" in r["detail"]
+    assert r["use"] is True
+    assert "licensed base 8: >= 1 -> 8; = 0 -> 0; summing 8" in r["detail"]
+    assert "remains the corpus" not in r["detail"]
+    assert "29 of 30" in r["detail"]
 
 
 def test_preflight_proves_the_deny_list_rejects_before_leaving(sandbox):
