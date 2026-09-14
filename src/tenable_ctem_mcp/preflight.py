@@ -222,19 +222,46 @@ def validate_workbenches_params(params: dict[str, Any]) -> dict[str, Any]:
     return params
 
 
-def verdict(corpus_total: int | None, filtered_total: int | None) -> str:
-    """The discriminant test in one line.
+def verdict(corpus_total: int | None, filtered_total: int | None,
+            complement_total: int | None = None) -> str:
+    """The discriminant test.
 
-    If the filtered total is identical to the corpus, the filter is ignored and
-    the indicator is a gap - the number is never published.
+    A filtered total identical to the corpus has two possible causes, and they
+    mean opposite things:
+
+      - the API ignored the filter, so the number is worthless; or
+      - the filter was applied and every asset really does match.
+
+    Only the COMPLEMENT separates them. Two mutually exclusive filters both
+    returning the corpus is the signature of an ignored filter - it is how the
+    preflight table catches the relative date operators. A complement of zero
+    that sums back to the corpus is the signature of an applied filter over a
+    population that happens to be uniform.
+
+    Measured in production on 2026-09-09: over the licensed base,
+    `tag_count >= 1` returns all 5,885 and `tag_count = 0` returns 0. Without
+    the complement this read as `ignored` and threw away a legitimate 100%
+    - the correct reading is stage 5, not a gap. Restricting the denominator
+    to the licensed base made saturation an ordinary outcome, so the
+    complement stopped being optional in practice.
+
+    `complement_total=None` keeps the old conservative answer: with no evidence
+    either way, a saturated filter is reported as `ignored` rather than
+    published as a number.
     """
     if corpus_total is None or filtered_total is None:
         return "undetermined"
     if corpus_total == 0:
         return "empty_corpus"
-    if filtered_total == corpus_total:
+    if filtered_total != corpus_total:
+        return "applied"
+    if complement_total is None:
         return "ignored"
-    return "applied"
+    if complement_total == corpus_total:
+        return "ignored"
+    if complement_total == 0:
+        return "applied"
+    return "indeterminate"
 
 
 # ----------------------------------------------------------------------------

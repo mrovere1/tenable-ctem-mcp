@@ -139,9 +139,9 @@ server does not guess the name — a customer may call it `Tier`, `BIA` or `Busi
 
 | ID | What it measures | Note |
 |---|---|---|
-| S1 | % of assets with at least one tag | |
-| S2 | % with a criticality tag | needs `criticality_category` |
-| S3 | % with an owner tag | needs `owner_category` |
+| S1 | % of assets with at least one tag | over the licensed base; verdict uses the `tag_count = 0` complement |
+| S2 | % with a criticality tag | needs `criticality_category`; licensed base |
+| S3 | % with an owner tag | needs `owner_category`; licensed base |
 | S4 | declared Crown Jewels | **informational**, does not score a stage |
 
 `tag_names` holds the tag VALUE, not "Category:Value". An array of values has OR semantics and
@@ -157,7 +157,7 @@ Stage 2: D1, D2, D3, D4.
 |---|---|---|
 | D1 | days since the last assessment | inverted. Source: scan history, never a date filter on findings |
 | D2 | % of licensed surfaces covered | pass `licensed_surfaces` (default `["VM"]`). A percentage ratio, not a count |
-| D3 | % of DEVICE assets with an agent | the denominator is DEVICE, not the total |
+| D3 | % of DEVICE assets with an agent | the denominator is licensed DEVICE, not the total |
 | D4 | % of the set detected by a local plugin | uses `plugin_details_batch` internally |
 
 `indicators=["D1","D3"]` avoids the plugin calls D4 would require.
@@ -193,7 +193,7 @@ Stage 4: V1, V2, V3, V4.
 | V1 | % of the set with an available exploit | **informational**, does not score |
 | V2 | median days in the CISA KEV | inverted; cutoffs anchored in CISA BOD 26-04 |
 | V3 | recurrence rate RESURFACED/(RESURFACED+FIXED) | inverted. Returned as a **percentage** — the skill's cutoffs are `[25, 15, 8, 3]` |
-| V4 | % of DEVICE with out-of-support software | inverted; the denominator is DEVICE |
+| V4 | % of DEVICE with out-of-support software | inverted; the denominator is licensed DEVICE |
 
 V1 and V2 come from the **same set** as D4, so the report does not describe three different sets
 under a single declared size.

@@ -215,3 +215,29 @@ def test_preflight_proves_the_deny_list_rejects_before_leaving(sandbox):
     for d in run_preflight()["deny_list"]:
         assert d["rejected"] is True, d
         assert d["proof"]
+
+
+# ---------------------------------------------------------------------------
+# The complement is what tells an ignored filter from a saturated one.
+# Regression of 2026-09-09: over the licensed base `tag_count >= 1` returns the
+# whole base, and reading that as `ignored` threw away a legitimate 100%.
+# ---------------------------------------------------------------------------
+
+def test_saturated_filter_with_a_zero_complement_is_applied():
+    assert verdict(5885, 5885, 0) == "applied"
+
+
+def test_two_mutually_exclusive_filters_returning_everything_is_ignored():
+    assert verdict(327415, 327415, 327415) == "ignored"
+
+
+def test_saturation_without_a_complement_stays_conservative():
+    assert verdict(5885, 5885) == "ignored"
+
+
+def test_a_complement_that_neither_saturates_nor_empties_is_indeterminate():
+    assert verdict(100, 100, 40) == "indeterminate"
+
+
+def test_an_ordinary_filter_does_not_need_the_complement():
+    assert verdict(104205, 26307) == "applied"

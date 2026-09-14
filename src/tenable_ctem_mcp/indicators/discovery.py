@@ -36,8 +36,11 @@ from ..plugins import CENSUS_LIMIT, sample_with_details, rate
 # inventory without carrying Identity Exposure findings. D2 uses exposure_classes.
 EXPOSURE_CLASSES = ("VM", "WAS", "CLOUD", "IDENTITY", "OT", "AI", "CODE")
 
-ASSET_CLASSES = ("DEVICE", "IDENTITY", "ACCOUNT", "GROUP", "WEB_APPLICATION",
-                 "CLOUD_RESOURCE")
+# APPLICATION is what the Inventory actually returns for a WAS web application.
+# WEB_APPLICATION is kept because it is a documented value, but it answered zero
+# on both the sandbox and the production tenant.
+ASSET_CLASSES = ("DEVICE", "IDENTITY", "ACCOUNT", "GROUP", "APPLICATION",
+                 "WEB_APPLICATION", "CLOUD_RESOURCE")
 
 # The classes that consume licence. IDENTITY, ACCOUNT and GROUP are out on
 # purpose: a VM scan template that reads Active Directory to build attack paths
@@ -45,7 +48,10 @@ ASSET_CLASSES = ("DEVICE", "IDENTITY", "ACCOUNT", "GROUP", "WEB_APPLICATION",
 # consuming a licence. Measured in production on 2026-09-08: they were 94% of a
 # 104,205-asset corpus, and counting them dragged the tagging rate from 100%
 # down to 25.3%. See _docs/pendencia-denominador-licenciado-2026-09-08.md.
-LICENSED_CLASSES = ("DEVICE", "WEB_APPLICATION", "CLOUD_RESOURCE")
+# APPLICATION is in on purpose: measured on the sandbox on 2026-09-14, the WAS
+# application is licensed with asset_class=APPLICATION and ACR 9 - leaving it
+# out dropped the only Crown Jewel from the base and turned S4 false.
+LICENSED_CLASSES = ("DEVICE", "APPLICATION", "WEB_APPLICATION", "CLOUD_RESOURCE")
 
 
 def licensed_filters(extra: list[dict] | None = None) -> list[dict]:

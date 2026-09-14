@@ -60,7 +60,7 @@ for the 19 indicators plus 20 plugins. **Any change that undoes that gain is wro
 | Errors | Structured, never a silent partial number. A query that failed becomes a declared gap with a cause |
 | Rate limit | Exponential backoff honouring the `retry-after` header. The Tenable limit is **dynamic**; do not hard-code a number |
 | Single execution path | There is no parallel collector. If the MCP fails, every indicator fails. `mttr_collect` is the only path to MTTR |
-| v1 scope | CTEM only. No generic tools for other skills. **The measurement scope is the whole tenant** — no filtering by environment or exclusion by tag |
+| v1 scope | CTEM only. No generic tools for other skills. **The measurement scope is the whole tenant** — no filtering by environment or exclusion by tag. **Asset-rate denominators (S1–S4, D3, V4) are the tenant's licensed base**: `asset_class` in `LICENSED_CLASSES` AND `is_licensed = true`. That is not a scope cut — Active Directory objects loaded for attack paths consume no licence and are not the customer's estate. The whole corpus and the per-class breakdown are published beside the number. See `_docs/pendencia-denominador-licenciado-2026-09-08.md` |
 | Support | Community. The README and the Exchange state: "community/partner tooling, not supported by Tenable" |
 
 ---

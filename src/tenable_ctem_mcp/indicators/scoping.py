@@ -160,14 +160,21 @@ def compute(mapping: dict, indicators: list[str] | None = None,
     if "S1" in requested:
         f = licensed_filters(
             [{"property": "tag_count", "operator": ">=", "value": ["1"]}])
+        # The complement is what separates "the API ignored the filter" from
+        # "every licensed asset really is tagged". One extra call with limit=1.
+        f_complement = licensed_filters(
+            [{"property": "tag_count", "operator": "=", "value": ["0"]}])
         try:
             tagged = _count(f)
+            untagged = _count(f_complement)
             out.append(Indicator.ok(
                 "S1", _pct(tagged, total_assets), n=total_assets,
                 literal_filter=(f"{_literal(f)} over a licensed base of "
-                                f"{total_assets} assets"),
-                preflight_verdict=verdict(total_assets, tagged),
-                context={"tagged": tagged, "total": total_assets,
+                                f"{total_assets} assets; complement "
+                                f"{_literal(f_complement)} = {untagged}"),
+                preflight_verdict=verdict(total_assets, tagged, untagged),
+                context={"tagged": tagged, "untagged": untagged,
+                         "total": total_assets,
                          "corpus_all_classes": corpus_assets,
                          "by_asset_class": snapshot["assets"]["by_asset_class"]}))
         except ApiError as e:
@@ -195,13 +202,17 @@ def compute(mapping: dict, indicators: list[str] | None = None,
                        + ", ".join(sorted(categories))),
                 literal_filter="not executed"))
             continue
-        f = [{"property": "tag_names", "operator": "=", "value": values}]
+        # The numerator carries the same licensed filters as the denominator.
+        # Without them it counts tagged Active Directory objects over a base
+        # that excludes them, and the rate can pass 100%.
+        f = licensed_filters(
+            [{"property": "tag_names", "operator": "=", "value": values}])
         try:
             n = _count(f)
             out.append(Indicator.ok(
                 ind, _pct(n, total_assets), n=total_assets,
-                literal_filter=(f"{_literal(f)} (category {name!r}) over a corpus "
-                                f"of {total_assets} assets"),
+                literal_filter=(f"{_literal(f)} (category {name!r}) over a "
+                                f"licensed base of {total_assets} assets"),
                 preflight_verdict=verdict(total_assets, n),
                 context={"category": name, "values": values,
                          "tagged": n, "total": total_assets}))

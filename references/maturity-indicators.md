@@ -55,8 +55,8 @@ Matching official criteria: **Asset Visibility** and **People | Process**.
 
 | ID | Indicator | Formula | API path | Default cutoffs |
 |---|---|---|---|---|
-| S1 | % of assets with at least one tag | `assets(tag_count >= 1) / assets(total)` | assets search with the `tag_count >= 1` filter | 20 / 50 / 80 / 95 |
-| S2 | % of assets with a criticality tag | `assets in the criticality category / total` | tag categories and values to find the category, then assets search by `tag_names` | 10 / 40 / 70 / 90 |
+| S1 | % of assets with at least one tag | `licensed(tag_count >= 1) / licensed(total)` | assets search with the `tag_count >= 1` filter over the licensed base, plus the `tag_count = 0` complement | 20 / 50 / 80 / 95 |
+| S2 | % of assets with a criticality tag | `licensed assets in the criticality category / licensed total` | tag categories and values to find the category, then assets search by `tag_names` | 10 / 40 / 70 / 90 |
 | S3 | % of assets with an owner tag | same, on the owner category | same | 10 / 40 / 70 / 90 |
 | S4 | Declared Crown Jewels | a criticality category exists **and** >= 1 asset with `acr >= 9` | `acr` + tags | `informational` (gate) |
 
@@ -254,6 +254,13 @@ first customer with low recurrence.
 Tenable One inventory includes IDENTITY, ACCOUNT and GROUP, which have no software installed; using
 them in the denominator dilutes the indicator. In the sandbox the difference was large: 7 of 30
 assets gives 23%, and 7 of 8 DEVICE gives 87.5% — two stages apart.
+
+**The licensed base, 2026-09-14.** Every asset-rate denominator — S1, S2, S3, S4, D3, V4 — is the
+licensed base: `asset_class` in (DEVICE, APPLICATION, WEB_APPLICATION, CLOUD_RESOURCE) **and** `is_licensed = true`. `is_licensed` alone is not enough, because it comes back true on
+identities and accounts too. In production the corpus was 104,205 assets of which 97,890 were
+Active Directory objects, and S1 read 25.3% where the licensed base gives 100%. In the sandbox the
+base is 8 assets (7 DEVICE + 1 APPLICATION); D3 and V4 go from 87.5% to 100% because one DEVICE is
+not licensed. The whole corpus and the breakdown by `asset_class` travel beside the number.
 
 **On V4.** `unsupported_by_vendor` exists in the API but is not reachable. The valid path is a text
 search, which works: `finding_name contains` is a provably applied filter.
