@@ -36,7 +36,7 @@ VPR_MINIMUM_TO_EXIST = "0.1"
 
 
 def _count(filters: list[dict] | None) -> int | None:
-    body = {"filters": validate_filters(filters)} if filters else {}
+    body = {"filters": validate_filters(filters, target="findings")} if filters else {}
     return total_of(call("POST", FINDINGS_SEARCH, body=body, params={"limit": 1}))
 
 
@@ -109,16 +109,21 @@ def compute(mapping: dict, indicators: list[str] | None = None,
 
     # --- P1: business context in the critical backlog -------------------
     if "P1" in requested:
-        crit_name = mapping.get("criticality_category")
-        values = categories.get(crit_name) if crit_name else None
-        if not values:
+        from .scoping import resolve_values
+        r = resolve_values(mapping, "criticality_category", "criticality_values",
+                           snapshot["tags"])
+        crit_name, values = r["category"], r["values"]
+        if r["gap_cause"]:
             out.append(Indicator.declared_gap(
                 "P1",
-                cause=("the mapping did not provide `criticality_category`, or the "
-                       "category does not exist. Categories: "
-                       + ", ".join(sorted(categories))),
+                cause=("the mapping did not provide `criticality_category`. "
+                       "Categories: " + ", ".join(sorted(categories))
+                       if r["gap_cause"] == "mapping_missing" else r["gap_cause"]),
                 literal_filter="not executed"))
         else:
+            # `=` with the exact values, never `contains`: on findings
+            # `tag_names` accepts only = != exists and not exists, and
+            # `contains` is silently ignored. See preflight.py.
             f_denominator = [_vpr(">=", "9")]
             f_numerator = f_denominator + [
                 {"property": "tag_names", "operator": "=", "value": list(values)}]
@@ -142,6 +147,8 @@ def compute(mapping: dict, indicators: list[str] | None = None,
                             "on_asset_with_criticality": num,
                             "by_tag_value": by_value,
                             "category": crit_name,
+                            "values": list(values),
+                            "values_source": r["source"],
                             "difference_from_s1_and_s2": (
                                 "S2 measures tag coverage over the whole inventory; "
                                 "P1 measures coverage weighted by where the critical "

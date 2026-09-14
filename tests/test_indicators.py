@@ -160,6 +160,58 @@ def test_scoping_matches_the_measurement(sandbox, indicator, expected):
     assert r[indicator]["preflight_verdict"] == "applied"
 
 
+def _partial_catalog(snapshot):
+    """The production signature of 2026-09-09: the catalog declares more than it
+    lists, because the key lacks `Can View` on the tags."""
+    import copy
+    snap = copy.deepcopy(snapshot)
+    snap["tags"]["categories"] = {}
+    snap["tags"]["visibility"] = {
+        "complete": False,
+        "categories": {"listed": 0, "declared_total": 13, "complete": False},
+        "values": {"listed": 0, "declared_total": 47, "complete": False}}
+    return snap
+
+
+def test_the_sandbox_catalog_is_complete(sandbox):
+    from tenable_ctem_mcp.indicators.discovery import discover_tenant
+    v = discover_tenant(use_cache=False)["tags"]["visibility"]
+    assert v["complete"] is True
+    assert v["values"] == {"listed": 18, "declared_total": 18, "complete": True}
+
+
+def test_s2_over_a_partial_catalog_is_a_gap_that_names_the_permission(sandbox):
+    """An empty list with total 47 is not "the customer has no tags". Without
+    declared values the indicator must not become a number."""
+    from tenable_ctem_mcp.indicators.discovery import discover_tenant
+    from tenable_ctem_mcp.indicators.scoping import compute
+    snap = _partial_catalog(discover_tenant(use_cache=False))
+    s2 = _by_id(compute(MAPPING, indicators=["S2"], snapshot=snap))["S2"]
+    assert s2["gap"] is True and s2["value"] is None
+    assert "Can View" in s2["cause"] and "criticality_values" in s2["cause"]
+
+
+def test_s2_with_declared_values_measures_over_a_partial_catalog(sandbox):
+    """Option B of 2026-09-14: the operator types the values from the console,
+    and the report says they were declared, not read."""
+    from tenable_ctem_mcp.indicators.discovery import discover_tenant
+    from tenable_ctem_mcp.indicators.scoping import compute
+    snap = _partial_catalog(discover_tenant(use_cache=False))
+    mapping = dict(MAPPING, criticality_values=["Alta", "Baixa", "Crown Jewel", "Média"])
+    s2 = _by_id(compute(mapping, indicators=["S2"], snapshot=snap))["S2"]
+    assert s2["value"] == 87.5
+    assert s2["context"]["values_source"] == "operator_declared"
+
+
+def test_p1_over_a_partial_catalog_is_a_gap(sandbox):
+    from tenable_ctem_mcp.indicators.discovery import discover_tenant
+    from tenable_ctem_mcp.indicators.prioritization import compute
+    snap = _partial_catalog(discover_tenant(use_cache=False))
+    p1 = _by_id(compute(MAPPING, indicators=["P1"], snapshot=snap))["P1"]
+    assert p1["gap"] is True
+    assert "Can View" in p1["cause"]
+
+
 def test_s4_is_informational_and_does_not_score(sandbox):
     from tenable_ctem_mcp.indicators.scoping import compute
     s4 = _by_id(compute(MAPPING, indicators=["S4"]))["S4"]

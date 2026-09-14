@@ -80,8 +80,10 @@ class Recorder:
             yield
             return
         request.getfixturevalue("sandbox")
-        from tenable_ctem_mcp import plugins
-        from tenable_ctem_mcp.indicators import discovery, scoping
+        from tenable_ctem_mcp import cadence, mttr, plugins, preflight
+        from tenable_ctem_mcp.indicators import (discovery, mobilization,
+                                                 prioritization, scoping,
+                                                 validation)
         replay = client.call
 
         def call(method, path, body=None, params=None, **kw):
@@ -97,7 +99,8 @@ class Recorder:
                     REAL_CALL(method, path, body=body, params=params))
                 return self.new[sig]
 
-        for m in (client, discovery, scoping, plugins):
+        for m in (client, discovery, scoping, plugins, prioritization,
+                  validation, mobilization, preflight, cadence, mttr):
             if hasattr(m, "call"):
                 monkeypatch.setattr(m, "call", call)
         yield

@@ -35,12 +35,12 @@ EOL_TERMS = ("Unsupported Version Detection", "SEoL")
 
 
 def _count(filters: list[dict] | None) -> int | None:
-    body = {"filters": validate_filters(filters)} if filters else {}
+    body = {"filters": validate_filters(filters, target="findings")} if filters else {}
     return total_of(call("POST", FINDINGS_SEARCH, body=body, params={"limit": 1}))
 
 
 def _search(filters: list[dict], limit: int = 500) -> list[dict]:
-    body = {"filters": validate_filters(filters)}
+    body = {"filters": validate_filters(filters, target="findings")}
     resp = call("POST", FINDINGS_SEARCH, body=body, params={"limit": limit})
     d = resp.get("data")
     if isinstance(d, list):

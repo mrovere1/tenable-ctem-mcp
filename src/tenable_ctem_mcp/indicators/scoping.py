@@ -136,6 +136,55 @@ def _by_category(mapping: dict, key: str, categories: dict[str, list[str]]
     return name, list(values)
 
 
+def resolve_values(mapping: dict, key: str, values_key: str, tags: dict
+                   ) -> dict[str, Any]:
+    """Which tag values stand for a mapped category, and where they came from.
+
+    Shared by S2, S3 and P1. Two sources, and the report must say which one:
+
+      - `catalog`: read from /tags/values. Trusted only when the catalog is
+        complete - a key without `Can View` on some tags gets a shorter list
+        with a 200, so a partial catalog can undercount without any error.
+      - `operator_declared`: `mapping[values_key]`, typed by the operator from
+        the console. The way through when the permission cannot be granted.
+
+    Returns {"category", "values", "source", "gap_cause", "context"}; a
+    non-empty `gap_cause` means the indicator must become a declared gap.
+    """
+    categories = tags["categories"]
+    visibility = tags.get("visibility") or {"complete": True}
+    name, catalog_values = _by_category(mapping, key, categories)
+    declared = [str(v) for v in (mapping.get(values_key) or []) if str(v).strip()]
+    out: dict[str, Any] = {"category": name, "values": [], "source": None,
+                           "gap_cause": None, "context": {}}
+    if not name:
+        out["gap_cause"] = "mapping_missing"
+        return out
+    if declared:
+        out.update(values=declared, source="operator_declared")
+        if visibility.get("complete") and catalog_values:
+            missing = sorted(set(declared) - set(catalog_values))
+            if missing:
+                out["context"]["declared_not_in_catalog"] = missing
+        return out
+    if catalog_values and visibility.get("complete"):
+        out.update(values=list(catalog_values), source="catalog")
+        return out
+    if not visibility.get("complete"):
+        out["gap_cause"] = (
+            f"the tag catalog is partial ({visibility.get('values', {}).get('listed')} "
+            f"values listed of {visibility.get('values', {}).get('declared_total')} "
+            f"declared), so the values of {name!r} cannot be trusted or are not "
+            f"visible. Grant `Can View` on every tag to the API key's user "
+            f"(docs/permissions.md), or declare `{values_key}` in the mapping with "
+            "the values exactly as the console shows them.")
+        return out
+    out["gap_cause"] = (
+        f"the category {name!r} does not exist in the tenant, or has no values. "
+        "Available categories: " + ", ".join(sorted(categories)))
+    return out
+
+
 def compute(mapping: dict, indicators: list[str] | None = None,
             snapshot: dict | None = None) -> list[dict]:
     """S1 to S4. `indicators=None` computes all four.
@@ -182,25 +231,23 @@ def compute(mapping: dict, indicators: list[str] | None = None,
                                               literal_filter=_literal(f)))
 
     # --- S2 and S3: coverage by tag category ----------------------------
-    for ind, key, label in (("S2", "criticality_category", "criticality"),
-                            ("S3", "owner_category", "owner")):
+    for ind, key, values_key, label in (
+            ("S2", "criticality_category", "criticality_values", "criticality"),
+            ("S3", "owner_category", "owner_values", "owner")):
         if ind not in requested:
             continue
-        name, values = _by_category(mapping, key, categories)
-        if not name:
+        r = resolve_values(mapping, key, values_key, snapshot["tags"])
+        name, values = r["category"], r["values"]
+        if r["gap_cause"] == "mapping_missing":
             out.append(Indicator.declared_gap(
                 ind,
                 cause=(f"the mapping did not provide `{key}`. The server does not "
                        f"guess the name of the {label} category."),
                 literal_filter="not executed"))
             continue
-        if not values:
-            out.append(Indicator.declared_gap(
-                ind,
-                cause=(f"the category {name!r} does not exist in the tenant, or has "
-                       "no values. Available categories: "
-                       + ", ".join(sorted(categories))),
-                literal_filter="not executed"))
+        if r["gap_cause"]:
+            out.append(Indicator.declared_gap(ind, cause=r["gap_cause"],
+                                              literal_filter="not executed"))
             continue
         # The numerator carries the same licensed filters as the denominator.
         # Without them it counts tagged Active Directory objects over a base
@@ -215,6 +262,7 @@ def compute(mapping: dict, indicators: list[str] | None = None,
                                 f"licensed base of {total_assets} assets"),
                 preflight_verdict=verdict(total_assets, n),
                 context={"category": name, "values": values,
+                         "values_source": r["source"], **r["context"],
                          "tagged": n, "total": total_assets}))
         except ApiError as e:
             out.append(Indicator.declared_gap(ind, cause=str(e),
